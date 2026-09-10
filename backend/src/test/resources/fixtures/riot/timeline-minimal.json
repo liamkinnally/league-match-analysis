@@ -1,0 +1,34 @@
+{
+  "metadata": {"dataVersion": "2", "matchId": "NA1_9999999999"},
+  "info": {
+    "frameInterval": 60000,
+    "frames": [
+      {
+        "timestamp": 60000,
+        "participantFrames": {
+          "1": {
+            "participantId": 1,
+            "position": {"x": 1024, "y": 2048},
+            "currentGold": 500,
+            "totalGold": 1200,
+            "level": 3,
+            "xp": 900,
+            "minionsKilled": 12,
+            "jungleMinionsKilled": 0
+          },
+          "2": {
+            "participantId": 2,
+            "position": {"x": 13000, "y": 12000},
+            "currentGold": 450,
+            "totalGold": 1150,
+            "level": 3,
+            "xp": 850,
+            "minionsKilled": 11,
+            "jungleMinionsKilled": 1
+          }
+        },
+        "events": []
+      }
+    ]
+  }
+}

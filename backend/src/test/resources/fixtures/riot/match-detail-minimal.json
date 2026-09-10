@@ -1,0 +1,81 @@
+{
+  "metadata": {
+    "dataVersion": "2",
+    "matchId": "NA1_9999999999",
+    "participants": ["invented-puuid-1", "invented-puuid-2"]
+  },
+  "info": {
+    "gameCreation": 1788264000000,
+    "gameDuration": 1800,
+    "gameEndTimestamp": 1788265800000,
+    "gameId": 9999999999,
+    "gameMode": "CLASSIC",
+    "gameStartTimestamp": 1788264000000,
+    "gameType": "MATCHED_GAME",
+    "gameVersion": "16.17.810.4348",
+    "mapId": 11,
+    "queueId": 420,
+    "participants": [
+      {
+        "participantId": 1,
+        "puuid": "invented-puuid-1",
+        "riotIdGameName": "InventedPlayer",
+        "riotIdTagline": "NA1",
+        "teamId": 100,
+        "championId": 1,
+        "championName": "Annie",
+        "teamPosition": "MIDDLE",
+        "kills": 4,
+        "deaths": 2,
+        "assists": 5,
+        "totalMinionsKilled": 180,
+        "neutralMinionsKilled": 4,
+        "goldEarned": 11000,
+        "goldSpent": 10400,
+        "visionScore": 22,
+        "summoner1Id": 4,
+        "summoner2Id": 14,
+        "item0": 1056,
+        "item1": 2003,
+        "item2": 0,
+        "item3": 0,
+        "item4": 0,
+        "item5": 0,
+        "item6": 3340,
+        "win": true
+      },
+      {
+        "participantId": 2,
+        "puuid": "invented-puuid-2",
+        "riotIdGameName": "ExampleOpponent",
+        "riotIdTagline": "NA1",
+        "teamId": 200,
+        "championId": 2,
+        "championName": "Olaf",
+        "teamPosition": "TOP",
+        "kills": 2,
+        "deaths": 4,
+        "assists": 1,
+        "totalMinionsKilled": 170,
+        "neutralMinionsKilled": 8,
+        "goldEarned": 9800,
+        "goldSpent": 9200,
+        "visionScore": 18,
+        "summoner1Id": 4,
+        "summoner2Id": 12,
+        "item0": 0,
+        "item1": 0,
+        "item2": 0,
+        "item3": 0,
+        "item4": 0,
+        "item5": 0,
+        "item6": 0,
+        "win": false
+      }
+    ],
+    "teams": [
+      {"teamId": 100, "win": true, "objectives": {"champion": {"first": true, "kills": 10}}},
+      {"teamId": 200, "win": false, "objectives": {"champion": {"first": false, "kills": 6}}}
+    ]
+  }
+}

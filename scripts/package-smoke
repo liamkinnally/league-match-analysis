@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
+repo_dir=$(cd "$script_dir/.." && pwd -P)
+frontend_dir="$repo_dir/frontend"
+project_name="match-development-v1-package-smoke"
+frontend_port="${PACKAGE_SMOKE_FRONTEND_PORT:-3416}"
+
+export POSTGRES_DB=league_analysis_package_smoke
+export POSTGRES_USER=league_analysis_package_smoke
+export POSTGRES_PASSWORD=package-smoke-only
+export FRONTEND_PORT="$frontend_port"
+export RIOT_API_KEY=
+export RIOT_PUBLIC_LOOKUP_ENABLED=false
+export BACKEND_AUTH_REQUIRED=true
+export BACKEND_SERVICE_TOKEN=package-smoke-only-service-token-not-a-secret
+export PROTOTYPE_CONTACT_EMAIL=verification@example.test
+export RIOT_VERIFICATION_TOKEN=package-smoke-verification
+
+compose=(docker compose --project-name "$project_name" --file "$repo_dir/compose.app.yaml")
+
+cleanup() {
+  local result=$?
+  trap - EXIT
+  if [[ $result -ne 0 ]]; then
+    "${compose[@]}" logs --no-color || true
+  fi
+  "${compose[@]}" down --volumes --remove-orphans || true
+  exit "$result"
+}
+trap cleanup EXIT
+
+"${compose[@]}" down --volumes --remove-orphans
+"${compose[@]}" config --quiet
+"${compose[@]}" build
+"${compose[@]}" up --detach --wait postgres backend frontend
+
+"${compose[@]}" exec --no-TTY frontend node -e \
+  "fetch('http://backend:8080/api/v1/demo').then(response => { if (response.status !== 401) throw new Error('expected direct unauthenticated backend access to return 401, received ' + response.status); }).catch(error => { console.error(error); process.exit(1); })"
+
+"${compose[@]}" exec --no-TTY frontend node -e \
+  "fetch('http://backend:8080/api/v1/demo', {headers: {Authorization: 'Bearer ' + process.env.BACKEND_SERVICE_TOKEN}}).then(response => { if (response.status !== 404) throw new Error('expected pre-seed demo locator to return 404, received ' + response.status); }).catch(error => { console.error(error); process.exit(1); })"
+
+"${compose[@]}" run --rm --no-deps backend \
+  --spring.main.web-application-type=none --seed-demo
+
+"${compose[@]}" exec --no-TTY frontend node -e \
+  "fetch('http://backend:8080/api/v1/matches/NA1_7000000001/development?focus=6&compare=1', {headers: {Authorization: 'Bearer ' + process.env.BACKEND_SERVICE_TOKEN}}).then(async response => { if (!response.ok) throw new Error('match endpoint returned ' + response.status); const body = await response.json(); if (body.matchId !== 'NA1_7000000001' || body.summary.focusParticipantId !== 6) throw new Error('unexpected persisted match response'); }).catch(error => { console.error(error); process.exit(1); })"
+
+"${compose[@]}" restart backend
+"${compose[@]}" up --detach --wait backend frontend
+
+"${compose[@]}" exec --no-TTY frontend node -e \
+  "fetch('http://backend:8080/api/v1/demo', {headers: {Authorization: 'Bearer ' + process.env.BACKEND_SERVICE_TOKEN}}).then(async response => { if (!response.ok) throw new Error('post-restart demo locator returned ' + response.status); const body = await response.json(); if (body.matchId !== 'NA1_7000000001' || body.invented !== true) throw new Error('unexpected persisted demo locator'); }).catch(error => { console.error(error); process.exit(1); })"
+
+"${compose[@]}" exec --no-TTY frontend node -e \
+  "Promise.all(['/api/health', '/privacy', '/terms', '/robots.txt', '/riot.txt'].map(async path => { const response = await fetch('http://127.0.0.1:3000' + path); if (!response.ok) throw new Error(path + ' returned ' + response.status); const text = await response.text(); if (text.includes(process.env.BACKEND_SERVICE_TOKEN)) throw new Error('service token exposed'); if (path === '/riot.txt' && text !== 'package-smoke-verification') throw new Error('verification value mismatch'); if ((path === '/privacy' || path === '/terms') && !text.includes('verification@example.test')) throw new Error('contact missing'); })).catch(error => { console.error(error); process.exit(1); })"
+
+(cd "$frontend_dir" && \
+  PACKAGE_SMOKE_BASE_URL="http://127.0.0.1:${frontend_port}" \
+  npx playwright test --config=playwright.package.config.ts)
+
+"${compose[@]}" images

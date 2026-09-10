@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
+repo_dir=$(cd "$script_dir/.." && pwd -P)
+
+cd "$repo_dir/backend"
+exec ./mvnw spring-boot:run \
+  -Dspring-boot.run.profiles=local \
+  -Dspring-boot.run.jvmArguments=-Dspring.main.web-application-type=none \
+  -Dspring-boot.run.arguments=--seed-demo

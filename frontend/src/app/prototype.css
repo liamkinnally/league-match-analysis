@@ -1,0 +1,24 @@
+.prototype-shell { display: flex; flex-direction: column; min-block-size: 100svh; }
+.prototype-shell > .entry-app { flex: 1; min-block-size: 0; }
+.prototype-notice {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  gap: 0.15rem 0.65rem;
+  padding: 0.4rem 1rem;
+  background: #151515;
+  border-block-end: 1px solid #313131;
+  color: #a0a29b;
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+.prototype-notice strong { color: #c5c6bf; font-weight: 600; }
+.prototype-links { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; margin-block-end: 0.6rem; font-size: 0.76rem; }
+.prototype-links a, .policy-page a { color: #c9d4cb; text-underline-offset: 0.18em; }
+.prototype-links a:focus-visible, .policy-page a:focus-visible { outline: 1px solid #afc0b3; outline-offset: 3px; }
+.policy-page { max-inline-size: 46rem; margin-inline: auto; color: #c7c8c1; font-size: 0.94rem; line-height: 1.65; overflow-wrap: anywhere; }
+.policy-page h1 { margin-block: 0 0.35rem; color: #e4e4df; font-size: 1.8rem; line-height: 1.2; letter-spacing: -0.035em; }
+.policy-page .policy-date { margin-block: 0 1.7rem; color: #a0a29b; font-size: 0.78rem; }
+.policy-page h2 { margin-block: 1.8rem 0.5rem; color: #e4e4df; font-size: 1.04rem; line-height: 1.4; font-weight: 650; }
+.policy-page p { margin-block: 0.65rem; }

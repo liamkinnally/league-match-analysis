@@ -1,0 +1,17 @@
+{
+  "knowledgeVersion": "champion-capabilities-16.17-p3-v1",
+  "assertions": [{
+    "assertionId": "item-6631-active-slow-movement-v1",
+    "patch": "16.17",
+    "entityType": "ITEM",
+    "entityId": 6631,
+    "capabilities": ["SLOW", "MOVEMENT_SPEED"],
+    "prerequisites": ["OWNED", "ACTIVE_USE_REQUIRED", "CHAMPION_HIT_FOR_MOVEMENT"],
+    "summary": "Its active can slow nearby enemies and grant decaying movement speed per champion hit.",
+    "sourceUri": "https://ddragon.leagueoflegends.com/cdn/16.17.1/data/en_US/item.json",
+    "sourceRevision": "16.17.1",
+    "reviewerId": "league-analysis-product-owner",
+    "reviewStatus": "APPROVED",
+    "reviewRevision": 1
+  }]
+}

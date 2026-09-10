@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
+repo_dir=$(cd "$script_dir/.." && pwd -P)
+frontend_dir="$repo_dir/frontend"
+
+require_command() {
+  command -v "$1" >/dev/null 2>&1 || {
+    echo "Required command not found: $1" >&2
+    exit 1
+  }
+}
+
+require_command java
+require_command javac
+require_command node
+require_command npm
+require_command docker
+require_command git
+
+java_version=$(java -version 2>&1 | awk -F '"' 'NR == 1 { print $2 }')
+[[ ${java_version%%.*} == "21" ]] || {
+  echo "Java 21 is required; found $java_version" >&2
+  exit 1
+}
+
+node_version=$(node --version)
+[[ $node_version == v24.* ]] || {
+  echo "Node.js 24 is required; found $node_version" >&2
+  exit 1
+}
+
+docker compose version >/dev/null
+docker info >/dev/null
+
+[[ -e "$repo_dir/.env" ]] || cp "$repo_dir/.env.example" "$repo_dir/.env"
+[[ -e "$frontend_dir/.env.local" ]] || cp "$frontend_dir/.env.example" "$frontend_dir/.env.local"
+
+(cd "$frontend_dir" && npm ci)
+(cd "$frontend_dir" && npx playwright install chromium)
+
+echo "League Analysis development dependencies are ready."

@@ -1,0 +1,200 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
+repo_dir=$(cd "$script_dir/.." && pwd -P)
+backend_dir="$repo_dir/backend"
+frontend_dir="$repo_dir/frontend"
+visual_image="league-analysis-visual:playwright-1.63.0"
+
+usage() {
+  cat <<'EOF'
+Usage:
+  ./scripts/verify focused backend <native Maven args...>
+  ./scripts/verify focused frontend <native Vitest args...>
+  ./scripts/verify focused browser <native Playwright args...>
+  ./scripts/verify task backend
+  ./scripts/verify task frontend
+  ./scripts/verify task cross-layer
+  ./scripts/verify ui behavior [native Playwright args...]
+  ./scripts/verify ui visual [native Playwright args...]
+  ./scripts/verify hygiene
+  ./scripts/verify full
+
+Compositions:
+  task backend      Maven verify
+  task frontend     lint, typecheck, Vitest, production build
+  task cross-layer  Compose validation, backend task, frontend task, behavior E2E
+  full              Compose validation, both tasks, behavior E2E, visual E2E, hygiene
+
+Focused arguments are passed unchanged to Maven, Vitest, or Playwright.
+EOF
+}
+
+print_command() {
+  printf '%q ' "$@"
+  printf '\n'
+}
+
+run() {
+  if [[ "${VERIFY_DRY_RUN:-0}" == "1" ]]; then
+    print_command "$@"
+  else
+    "$@"
+  fi
+}
+
+run_in() {
+  local directory=$1
+  shift
+  if [[ "${VERIFY_DRY_RUN:-0}" == "1" ]]; then
+    printf '(cd %q && ' "$directory"
+    print_command "$@"
+    printf ')\n'
+  else
+    (cd "$directory" && "$@")
+  fi
+}
+
+ensure_local_environment() {
+  if [[ "${VERIFY_DRY_RUN:-0}" == "1" ]]; then
+    printf 'ensure ignored .env and frontend/.env.local exist without overwriting\n'
+    return
+  fi
+  [[ -e "$repo_dir/.env" ]] || cp "$repo_dir/.env.example" "$repo_dir/.env"
+  [[ -e "$frontend_dir/.env.local" ]] || cp "$frontend_dir/.env.example" "$frontend_dir/.env.local"
+}
+
+compose_validate() {
+  run_in "$repo_dir" docker compose --env-file .env.example config --quiet
+}
+
+task_backend() {
+  run_in "$backend_dir" ./mvnw -B -ntp verify
+}
+
+task_frontend() {
+  run_in "$frontend_dir" npm run lint
+  run_in "$frontend_dir" npm run typecheck
+  run_in "$frontend_dir" npm test
+  run_in "$frontend_dir" npm run build
+}
+
+ui_behavior() {
+  ensure_local_environment
+  if [[ "${VERIFY_DRY_RUN:-0}" == "1" ]]; then
+    run_in "$repo_dir" docker compose up -d --wait postgres
+    run_in "$backend_dir" ./mvnw -B -ntp test-compile
+    run_in "$frontend_dir" npm run test:e2e -- "$@"
+    return
+  fi
+
+  local started_postgres=0
+  if ! (cd "$repo_dir" && docker compose --env-file .env ps --status running --services) | grep -qx postgres; then
+    (cd "$repo_dir" && docker compose up -d --wait postgres)
+    started_postgres=1
+  fi
+
+  local result=0
+  (cd "$backend_dir" && ./mvnw -B -ntp test-compile) || result=$?
+  if [[ $result -eq 0 ]]; then
+    (cd "$frontend_dir" && npm run test:e2e -- "$@") || result=$?
+  fi
+  if [[ $started_postgres -eq 1 ]]; then
+    (cd "$repo_dir" && docker compose stop postgres) || result=$?
+  fi
+  return "$result"
+}
+
+ui_visual() {
+  run_in "$repo_dir" docker build --platform linux/amd64 -f frontend/Dockerfile.visual -t "$visual_image" .
+  run_in "$repo_dir" docker run --rm --platform linux/amd64 \
+    -v "$frontend_dir/e2e-visual/snapshots:/workspace/frontend/e2e-visual/snapshots" \
+    "$visual_image" npm run test:visual:raw -- "$@"
+}
+
+hygiene() {
+  run_in "$repo_dir" git diff --check
+  if [[ "${VERIFY_DRY_RUN:-0}" == "1" ]]; then
+    printf 'verify private planning, environment, build, and report artifacts are untracked\n'
+    return
+  fi
+  local tracked
+  tracked=$(cd "$repo_dir" && git ls-files \
+    .planning .worktrees .env frontend/.env.local backend/target \
+    frontend/node_modules frontend/.next frontend/playwright-report frontend/test-results)
+  if [[ -n "$tracked" ]]; then
+    echo "Tracked private or generated artifacts:" >&2
+    echo "$tracked" >&2
+    return 1
+  fi
+}
+
+require_focused_arguments() {
+  if [[ $# -eq 0 ]]; then
+    echo "Focused verification requires native selector arguments." >&2
+    usage >&2
+    exit 2
+  fi
+}
+
+if [[ $# -eq 0 || ${1:-} == "--help" || ${1:-} == "-h" ]]; then
+  usage
+  exit 0
+fi
+
+case "$1" in
+  focused)
+    [[ $# -ge 2 ]] || { usage >&2; exit 2; }
+    target=$2
+    shift 2
+    require_focused_arguments "$@"
+    case "$target" in
+      backend) run_in "$backend_dir" ./mvnw -B -ntp "$@" ;;
+      frontend) run_in "$frontend_dir" npm test -- "$@" ;;
+      browser) ui_behavior "$@" ;;
+      *) usage >&2; exit 2 ;;
+    esac
+    ;;
+  task)
+    [[ $# -eq 2 ]] || { usage >&2; exit 2; }
+    case "$2" in
+      backend) task_backend ;;
+      frontend) task_frontend ;;
+      cross-layer)
+        compose_validate
+        task_backend
+        task_frontend
+        ui_behavior
+        ;;
+      *) usage >&2; exit 2 ;;
+    esac
+    ;;
+  ui)
+    [[ $# -ge 2 ]] || { usage >&2; exit 2; }
+    target=$2
+    shift 2
+    case "$target" in
+      behavior) ui_behavior "$@" ;;
+      visual) ui_visual "$@" ;;
+      *) usage >&2; exit 2 ;;
+    esac
+    ;;
+  hygiene)
+    [[ $# -eq 1 ]] || { usage >&2; exit 2; }
+    hygiene
+    ;;
+  full)
+    [[ $# -eq 1 ]] || { usage >&2; exit 2; }
+    compose_validate
+    task_backend
+    task_frontend
+    ui_behavior
+    ui_visual
+    hygiene
+    ;;
+  *)
+    usage >&2
+    exit 2
+    ;;
+esac

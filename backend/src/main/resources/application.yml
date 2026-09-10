@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: league-analysis
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: league_analysis
+  sql:
+    init:
+      mode: never
+  flyway:
+    default-schema: public
+    clean-disabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      show-components: never

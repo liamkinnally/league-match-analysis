@@ -1,0 +1,21 @@
+spring:
+  config:
+    import: "file:../.env[.properties]"
+  datasource:
+    url: jdbc:postgresql://127.0.0.1:${POSTGRES_PORT:5432}/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+
+server:
+  address: 127.0.0.1
+
+league-analysis:
+  riot:
+    api-key: ${RIOT_API_KEY:}
+    regional-route: AMERICAS
+    platform-route: NA1
+    queue-id: 420
+    max-response-bytes: 16777216
+    connect-timeout: 3s
+    request-timeout: 10s
+    max-retry-delay: 5s
