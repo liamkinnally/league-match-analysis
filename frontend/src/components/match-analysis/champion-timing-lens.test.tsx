@@ -39,7 +39,7 @@ const championPayload = {
   ],
 };
 
-// Missing behavior: distinguish reconstructed ownership, expert knowledge and unknown use.
+// Distinguish reconstructed ownership, expert knowledge and unknown use.
 it("renders a qualified capability receipt with separate assertion labels", () => {
   render(<ChampionTimingLens payload={championPayload} />);
   expect(screen.getByText(/Stridebreaker became owned at 13:34.821/)).toBeVisible();
@@ -50,7 +50,7 @@ it("renders a qualified capability receipt with separate assertion labels", () =
   expect(screen.queryByText(/caused|wins the fight|best action/i)).not.toBeInTheDocument();
 });
 
-// Missing behavior: show maintained provenance and unmet prerequisites with the capability.
+// Show maintained provenance and unmet prerequisites with the capability.
 it("shows patch, review provenance and explicit active-use conditions", () => {
   render(<ChampionTimingLens payload={championPayload} />);
   expect(screen.getByRole("link", { name: /source revision 16.17.1/i }))
@@ -61,7 +61,7 @@ it("shows patch, review provenance and explicit active-use conditions", () => {
   expect(screen.getByText(/champion hits required for movement speed/i)).toBeVisible();
 });
 
-// Missing behavior: use this receipt only for the selected Champion/Timing stage.
+// Use this receipt only for the selected Champion/Timing stage.
 it("renders inside the selected stage and disappears when Receipt is selected", () => {
   const base = selectedResponse.active as ActiveAnalysis;
   const active = { ...base, lens: championPayload };
@@ -77,7 +77,7 @@ it("renders inside the selected stage and disappears when Receipt is selected", 
   expect(screen.queryByText(/Stridebreaker became owned/)).not.toBeInTheDocument();
 });
 
-// Missing behavior: response validation must reject malformed or unapproved knowledge metadata.
+// Response validation must reject malformed or unapproved knowledge metadata.
 it.each([
   { reviewStatus: "WITHDRAWN" }, { reviewRevision: 0 }, { sourceUri: "javascript:alert(1)" },
   { missingPrerequisites: "ACTIVE_USE_REQUIRED" }, { assertionMode: "OBSERVED" },

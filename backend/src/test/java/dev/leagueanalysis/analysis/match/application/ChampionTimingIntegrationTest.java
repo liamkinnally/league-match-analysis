@@ -25,7 +25,7 @@ import org.springframework.core.io.ClassPathResource;
 import tools.jackson.databind.ObjectMapper;
 
 class ChampionTimingIntegrationTest {
-    // Missing behavior: join exact reconstructed ownership to later focal participation,
+    // Join exact reconstructed ownership to later focal participation,
     // expose separate claims, and carry reviewed provenance through the real response mapper.
     @Test
     void admits_e2_ownership_before_participation_with_separate_qualified_claims() {
@@ -61,7 +61,7 @@ class ChampionTimingIntegrationTest {
         assertThat(active.claims()).containsAll(lens.claims());
     }
 
-    // Missing behavior: item and level evidence in E3 does not make its question applicable;
+    // Item and level evidence in E3 does not make its question applicable;
     // the port must not be called without a relevant exact ownership link.
     @Test
     void e3_item_and_level_data_do_not_admit_or_query_champion_context() {
@@ -75,7 +75,7 @@ class ChampionTimingIntegrationTest {
         assertThat(active.limitations()).contains("REQUESTED_LENS_UNAVAILABLE");
     }
 
-    // Missing behavior: versioned knowledge is an actual analysis input and must invalidate
+    // Versioned knowledge is an actual analysis input and must invalidate
     // old restoration revisions, consistently in calm and selected responses.
     @Test
     void knowledge_version_changes_evidence_revision_without_changing_receipt_or_sequence() throws Exception {
@@ -148,7 +148,7 @@ class ChampionTimingIntegrationTest {
         assertThat(restored.active().orElseThrow().context().selectedLens()).isEqualTo(LensKind.RECEIPT);
     }
 
-    // Missing behavior: end inventory, another participant's purchase, or a purchase
+    // End inventory, another participant's purchase, or a purchase
     // after the later sequence cannot establish the required ownership transition.
     @ParameterizedTest
     @ValueSource(strings = {"END_ITEMS_ONLY", "OTHER_PARTICIPANT", "AFTER_PARTICIPATION", "AMBIGUOUS"})
@@ -169,7 +169,7 @@ class ChampionTimingIntegrationTest {
                 .doesNotContain(LensKind.CHAMPION_TIMING);
     }
 
-    // Missing behavior: selling or undoing the purchase before participation removes
+    // Selling or undoing the purchase before participation removes
     // the ownership prerequisite, even though the purchase itself was observed.
     @ParameterizedTest
     @ValueSource(strings = {"ITEM_SOLD", "ITEM_UNDO"})
@@ -188,7 +188,7 @@ class ChampionTimingIntegrationTest {
                 .doesNotContain(LensKind.CHAMPION_TIMING);
     }
 
-    // Missing behavior: absent knowledge must omit the lens and preserve the receipt fallback.
+    // Absent knowledge must omit the lens and preserve the receipt fallback.
     @Test
     void missing_knowledge_is_abstention_not_an_analysis_failure() {
         var missing = new ClasspathChampionKnowledgeAdapter(new ClassPathResource("knowledge/absent.json"));
@@ -198,7 +198,7 @@ class ChampionTimingIntegrationTest {
         assertThat(result.revision().championKnowledgeVersion()).isEmpty();
     }
 
-    // Missing behavior: another purchase while already owned does not prove a new
+    // Another purchase while already owned does not prove a new
     // not-owned to owned transition at the claimed timestamp.
     @Test
     void abstains_when_the_item_was_already_owned_before_the_selected_purchase() {
@@ -210,7 +210,7 @@ class ChampionTimingIntegrationTest {
                 .doesNotContain(LensKind.CHAMPION_TIMING);
     }
 
-    // Missing behavior: missing item-event coverage leaves possible inventory changes
+    // Missing item-event coverage leaves possible inventory changes
     // between purchase and participation unknown, even with a purchase record.
     @Test
     void abstains_when_item_event_coverage_is_missing() {

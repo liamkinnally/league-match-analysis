@@ -1,13 +1,27 @@
 # Public match lookup
 
-The public lookup accepts a Riot game name and tag line for NA1, AMERICAS, ranked Solo/Duo (queue 420), and fetches the latest five matches. The browser calls the Next server at `/api/player-matches`; the Next server calls the backend at `/api/v1/player-matches`. Poll a returned run ID no more often than once every two seconds. Completed match rows remain available while the rest of a run is loading or incomplete.
+The public lookup accepts a Riot game name and tag line for NA1 / AMERICAS, ranked Solo/Duo (queue 420), and requests the latest five matches. These values are fixed by the backend.
 
-Live lookup is disabled by default. The hosted pre-release prototype may enable `RIOT_PUBLIC_LOOKUP_ENABLED=true` with a server-side development/personal key during testing and Riot review under the operator's specific Discord guidance; production-key approval is not a hosting prerequisite for that phase. See [deployment scope](deployment.md). The sample is independent of that flag and key. Provider keys, PUUIDs and captured response bodies stay server-side; public run reads expose an explicit match-summary projection and sanitized status messages. Local `ingest(command)` and its existing endpoint retain their request and response contracts.
+The browser submits to `/api/player-matches`; the Next.js server forwards to `/api/v1/player-matches`. Poll `/api/player-matches/{runId}` (backend `/api/v1/player-matches/{runId}`) no more often than once every two seconds. Completed match rows remain available while other matches in the run are loading or incomplete.
 
-This implementation supports one backend instance: one worker, at most four waiting requests, identical active-request sharing, and a 15-minute successful or empty result cache. Complete stored matches are reused. It has no distributed coordination. After a restart, unfinished public runs become failed and users may search again; completed rows remain available.
+Live lookup is disabled by default. Enable it with `RIOT_PUBLIC_LOOKUP_ENABLED=true` and a backend `RIOT_API_KEY`; see [deployment configuration](deployment.md). The invented sample is independent of both settings. Provider credentials, PUUIDs, and captured response bodies stay server-side. Public responses contain match summaries and sanitized status messages.
 
-Provider 429 responses immediately stop public provider calls. The complete numeric `Retry-After` is persisted as an absolute cooldown. New submissions and already queued work consult it; neither retries early. Missing or invalid provider guidance uses a conservative 60-second fallback. A queued request stopped by cooldown returns the same retry time. Application busy/rate responses also carry a retry time.
+## Work and cache limits
 
-The submission budget is six new runs per minute per actual backend socket peer. `server.forward-headers-strategy=none` is intentional: `Forwarded`, `X-Forwarded-For` and browser-supplied client identity headers do not create new budgets. Behind Next or another proxy, its clients conservatively share that ingress budget. This is a shared-ingress limit, not a claim that the backend can distinguish end users. Preserve this setting and keep the backend on the intended private/loopback ingress when deploying; choosing a host-specific trusted end-user identity is outside this implementation.
+The lookup service supports one backend instance, with one worker and at most four waiting requests. Identical active lookups share work. Successful and empty results are reused for 15 minutes, and complete stored matches do not need to be fetched again. Scheduling and active-request sharing are process-local.
 
-The test-classpath-only `e2e` profile substitutes an invented provider gateway and enables lookup without a Riot key. `Lookup<digits>#NA1` yields a separate invented `NA1_<digits>` match, while `Unavailable#NA1` returns a safe unavailable result. Ordinary application startup cannot load the fixture gateway. Automated integration tests use isolated PostgreSQL and an injected clock; browser tests assert that their generated match is absent before submission, then open its persisted development summary.
+After a restart, unfinished public runs become failed and can be submitted again. Already completed match rows remain available. The synchronous local ingestion endpoint is separate and retains its request and response contracts; see [local ingestion](developer-guide.md#local-riot-match-ingestion).
+
+## Cooldowns and submission budget
+
+A provider 429 stops the current public ingestion run. The full numeric `Retry-After` is persisted as an absolute cooldown. New submissions and queued work check that cooldown before calling the provider. Missing or invalid retry guidance uses a 60-second fallback. Cooldown and application busy/rate-limit responses include a retry time.
+
+Each actual backend socket peer may create six new runs per minute. Active-request sharing and cache hits do not consume that budget. `server.forward-headers-strategy=none` prevents `Forwarded`, `X-Forwarded-For`, or browser-supplied identity headers from creating additional budgets.
+
+Behind Next.js or another proxy, clients share the proxy's ingress budget. The service does not distinguish end users at that boundary. Preserve the socket-peer setting and the intended backend ingress; a trusted per-user limiter would require a separate design.
+
+## Test fixtures
+
+The test-classpath-only `e2e` profile substitutes an invented provider gateway and enables lookup without a Riot key. `Lookup<digits>#NA1`, with 1–16 digits, yields an invented `NA1_<digits>` match. `Unavailable#NA1` returns a sanitized unavailable result. The gateway is absent from the production application classpath.
+
+Integration tests use disposable PostgreSQL databases and injected clocks. Browser tests verify that their generated match is absent before submission, then open its persisted development page. Use `./scripts/verify ui behavior` for this path; the frontend-only UI lab does not exercise ingestion.

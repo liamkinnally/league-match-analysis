@@ -1071,7 +1071,7 @@ html:has(.development-app) [data-spell-id] {
   color: #a0a29b;
 }
 
-/* React components retain the reviewed appearance with independent controls. */
+/* Shared styling for the chart controls and match sections. */
 .development-app .asset-tooltip-trigger {
   display: inline-flex;
   align-items: center;

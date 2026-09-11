@@ -128,6 +128,7 @@
 !/.gitignore
 !/.node-version
 !/README.md
+!/THIRD_PARTY_NOTICES.md
 !/backend/.mvn/wrapper/maven-wrapper.properties
 !/backend/Dockerfile
 !/backend/mvnw
@@ -322,6 +323,7 @@
 !/docs/deployment.md
 !/docs/developer-guide.md
 !/docs/images/sample-development.png
+!/docs/images/sample-scoreboard.png
 !/docs/public-match-lookup.md
 !/frontend/.env.example
 !/frontend/Dockerfile
@@ -450,7 +452,7 @@
 !/scripts/tests/export_policy_test.py
 !/scripts/verify
 
-# Reviewed match interface integration
+# Match interface
 !/backend/src/main/java/dev/leagueanalysis/analysis/rank/
 !/backend/src/main/java/dev/leagueanalysis/analysis/rank/CurrentRankController.java
 !/backend/src/main/java/dev/leagueanalysis/analysis/rank/CurrentRankService.java

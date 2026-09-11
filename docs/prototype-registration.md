@@ -1,24 +1,23 @@
-# Prototype registration and Riot review
+# Riot registration and review
 
-This is a prepared registration package for the verified hosted prototype. It is not a submitted application or a claim of Riot approval.
+Reference details and review steps for LoL Match Analysis. The prototype UI currently displays `match-analysis-v1`. API access, including a personal key, does not imply production-key approval. LoL Match Analysis is not endorsed by Riot Games.
 
 ## Product details
 
-| Field | Prepared value |
+| Field | Value |
 | --- | --- |
-| Product name | match-analysis-v1 |
+| Product name | LoL Match Analysis |
 | Game | League of Legends |
-| Stage | Functional pre-release prototype for testing and Riot review |
-| Operator | Liam Kinnally |
+| Stage | Prototype for development, testing and review |
 | Contact | lol.match.analysis@gmail.com |
-| Website | https://match-analysis-v1.vercel.app |
-| Privacy Policy | https://match-analysis-v1.vercel.app/privacy |
-| Terms of Service | https://match-analysis-v1.vercel.app/terms |
-| Verification | https://match-analysis-v1.vercel.app/riot.txt (404 until the portal value is supplied) |
+| Website | [lolmatchanalysis.app](https://lolmatchanalysis.app) |
+| Privacy Policy | [Privacy Policy](https://lolmatchanalysis.app/privacy) |
+| Terms of Service | [Terms of Service](https://lolmatchanalysis.app/terms) |
+| Verification | [riot.txt](https://lolmatchanalysis.app/riot.txt), the endpoint for the portal-issued public value |
 
-Suggested product description:
+Product description:
 
-> match-analysis-v1 lets players inspect how a completed League of Legends match developed. A Riot ID search retrieves the latest five NA1 ranked Solo/Duo matches. The match page shows final team results, a ten-player scoreboard, builds and current queue-specific ranks. Players can compare recorded gold, CS and XP differences over time and inspect timestamped events within a selected interval. Missing data remains explicit, current ranks are not presented as historical ranks or MMR, and the app makes no causal coaching or replay claims. A clearly labeled synthetic sample is also available. This hosted version is an unpromoted pre-release prototype for testing and Riot review.
+> LoL Match Analysis lets players inspect how a completed League of Legends match developed. A Riot ID search retrieves the latest five NA1 ranked Solo/Duo matches. The match page shows final team results, a ten-player scoreboard, builds and current queue-specific ranks. Players can compare recorded gold, CS and XP differences over time and inspect timestamped events within a selected interval. Missing data remains explicit, current ranks are not presented as historical ranks or MMR, and the app makes no causal coaching or replay claims. A clearly labeled synthetic sample is also available. The hosted prototype is intended for development, testing, and review—not intended for general public use.
 
 ## Data and API use
 
@@ -31,11 +30,13 @@ Suggested product description:
 | League-V4 `/lol/league/v4/entries/by-puuid/{puuid}` | Current queue-specific NA1 ranks |
 | Riot Data Dragon and game-asset CDNs | Champion, item, spell, objective and rank images |
 
-Keys are backend runtime secrets. Public projections omit PUUIDs and raw captures. Matches/timelines persist in PostgreSQL; completed searches are reused for 15 minutes and current ranks have a 5-minute process cache. Provider cooldown and finite queues constrain ingestion. No RSO, passwords, payments or advertising are part of this prototype. The policy pages disclose manual data retention and hosting providers.
+Riot API keys are backend runtime secrets. Public projections omit PUUIDs and raw captures. Matches/timelines persist in PostgreSQL; completed searches are reused for 15 minutes and current ranks have a 5-minute process cache. Provider cooldown and finite queues constrain ingestion. The prototype has no Riot account sign-in, user passwords, payments or advertising. The policy pages disclose manual data retention and hosting providers.
+
+[Player-data removal](player-data-removal.md) requires an operator-verified request and removes whole affected matches for all participants. Database backups can retain earlier copies until a successful scheduled run removes archives older than seven days. Restoring them requires the current external removal ledger.
 
 ## Review flow
 
-1. Open the HTTPS homepage; confirm the pre-release label and policy links.
+1. Open the HTTPS homepage; confirm the Prototype label and policy links.
 2. Search for an NA1 Riot ID. Loading may expose completed matches while remaining matches are retrieved. Open a result.
 3. Inspect final team kills/KDA/gold/objectives and all ten participants. Current-rank coverage and unavailable values are disclosed.
 4. Change the focal player, opponent, metric and selected interval. Open sampled values and events; inspect item/spell/objective tooltips and record details.
@@ -44,8 +45,8 @@ Keys are backend runtime secrets. Public projections omit PUUIDs and raw capture
 
 ## Ownership verification
 
-Riot's [verification instructions](https://support-developer.riotgames.com/hc/en-us/articles/22801461443091-Verification-for-Production-Applications) describe a portal-issued text value after application submission. Put that public value in the frontend runtime variable `RIOT_VERIFICATION_TOKEN`, then redeploy. Never use `RIOT_API_KEY` for this field. Check that the final website's `/riot.txt` returns HTTP 200 and exactly the supplied plain-text value without requiring an account. Then complete verification in the portal and record the observed status.
+Riot's [verification instructions](https://support-developer.riotgames.com/hc/en-us/articles/22801461443091-Verification-for-Production-Applications) describe a portal-issued text value after application submission. Put that public value in the frontend runtime variable `RIOT_VERIFICATION_TOKEN`, then redeploy. Never use `RIOT_API_KEY` for this field. Check that the final website's `/riot.txt` returns HTTP 200 and exactly the supplied plain-text value without requiring an account. Then complete verification in the portal.
 
-The endpoint deliberately returns 404 while unset. That does not prevent hosting the prototype before the portal issues a verification value. No fake value should be published merely to turn the response into 200.
+The endpoint returns 404 while unset or invalid. Publish only the portal-issued value.
 
-Riot's [application guidance](https://support-developer.riotgames.com/hc/en-us/articles/22801383038867-Production-Key-Applications) calls for a functioning website with visible user flows and policy pages. Prepare the website first; submitting the registration and completing portal verification are explicit separate actions. Production approval remains pending until Riot confirms it.
+Riot's [application guidance](https://support-developer.riotgames.com/hc/en-us/articles/22801383038867-Production-Key-Applications) calls for a functioning website with visible user flows and policy pages. Submission, ownership verification and production-key approval are separate steps. Record their status in the private operator record; treat production approval as granted only when Riot confirms it.

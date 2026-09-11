@@ -1,6 +1,6 @@
 # Private player-data removal
 
-This workflow is for the operator's authenticated shell. It has no HTTP admin endpoint, browser control, or public request form. Implementation/testing does not itself remove any hosted data. Use the reviewed backend containing migration V6 and these commands; do not deploy unrelated working-tree changes.
+This workflow runs in the operator's authenticated shell. It has no HTTP admin endpoint or public request form. Use a reviewed backend containing migration V6 and a clean release checkout; follow the [deployment workflow](deployment.md).
 
 ## What is removed
 
@@ -26,13 +26,13 @@ Choose the mode explicitly:
 - `--mode exclude`: remove current records and prevent future imports for the verified PUUID, including renamed accounts and matches found through another player's lookup. Match hashes accelerate skipping. A reused Riot ID belonging to a different verified PUUID is allowed.
 - `--mode erase-only`: remove current records without promising future exclusion. Later lookup can import this player's data again. Keep the ledger so restoring an old backup still requires explicit reconciliation.
 
-The command defaults to a read-only, repeatable-read dry run. It does not start Spring, recover interrupted lookups, seed data, migrate the database, or write a ledger. Explicit execution of `initialize` or `prepare-restore` is the only schema-migration exception; neither removes player records.
+Removal and reconciliation default to a read-only, repeatable-read dry run. It does not start Spring, recover interrupted lookups, seed data, migrate the database, or write a ledger. Explicit execution of `initialize` or `prepare-restore` is the only schema-migration exception; neither removes player records.
 
 ## First installation and Railway maintenance
 
 Use the existing private Railway database connection. Do not enable a public PostgreSQL proxy. Secrets remain the backend's server-side `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` and `SPRING_DATASOURCE_PASSWORD`; the removal command does not require the Riot key. Never put credentials or a PUUID in a command argument.
 
-1. Build/test the reviewed backend and prepare a clean release checkout using the existing deployment workflow. V6 adds privacy tables and write guards. Keep the previous public application offline while changing versions; do not roll back to code predating the privacy guard after completing a removal.
+1. Prepare and verify the backend release using the deployment workflow. V6 adds privacy tables and write guards. Keep the previous public application offline while changing versions; do not roll back to code predating the privacy guard after completing a removal.
 2. In Railway backend settings, record the normal start/healthcheck settings, temporarily set the custom Start Command to `/bin/sleep infinity`, and temporarily clear the healthcheck path. Deploy the reviewed image in that maintenance configuration. Retain the existing `/data` volume and one replica. This starts an operator-accessible container with **no Java application or HTTP listener**. Pause the backup schedule for the short execution window and wait for any current backup to finish. Other database consoles must disconnect before execution.
 3. Enter the container through the authenticated Railway CLI:
 
@@ -46,7 +46,15 @@ Use the existing private Railway database connection. Do not enable a public Pos
    install -d -m 0700 -o 10001 -g 10001 /data/player-removal
    ```
 
-5. Set the backend runtime variable `PLAYER_REMOVAL_LEDGER_FILE=/data/player-removal/ledger.json`. Railway's application profile uses this path by default. Inside the non-root maintenance shell, initialize only once:
+5. Railway SSH can open a root shell even when the application runs as a non-root user. After provisioning the directory, check `id -u`. If it reports `0`, enter a shell as the application user:
+
+   ```sh
+   runuser -u application -- /bin/sh
+   id -u
+   ```
+
+   Require UID `10001` before running the Java commands below. Keep the server-side datasource variables available in this shell; do not print their values.
+6. Set the backend runtime variable `PLAYER_REMOVAL_LEDGER_FILE=/data/player-removal/ledger.json`. Railway's application profile uses this path by default. Inside the non-root maintenance shell, initialize only once:
 
    ```sh
    java -jar /app/application.jar --player-removal initialize --ledger /data/player-removal/ledger.json
@@ -56,9 +64,11 @@ Use the existing private Railway database connection. Do not enable a public Pos
 
 Initialization refuses an already initialized checkpoint or a ledger containing removals. Never replace a missing ledger with an empty one to make a restored database start. Initialization writes no player deletions, but its explicit execution applies schema migrations. Save a current, access-controlled copy of the ledger outside the database backup system.
 
-Deployment verification is part of maintenance: inspect the resulting deployment and the actual container command before continuing. In the September 11 release, reusing a previous deployment image retained its old sleep command, and an unchanged source upload was skipped by `backend/**` watch patterns. Publish the current service configuration rather than reusing the previous deployment snapshot. For a configuration-only source upload that is skipped, temporarily clear the backend watch patterns, upload the clean release again, verify its manifest and process, and restore the recorded watch patterns afterward. Do not treat Railway “SUCCESS” alone as proof that Java is serving; require `/actuator/health` and the frontend `/api/health` to return `UP`.
+Inspect the active deployment and container command whenever entering or leaving maintenance. Publish the current service configuration; reusing a deployment snapshot can retain its prior start command. If watch patterns skip a configuration-only source upload, temporarily clear the recorded backend watch patterns, upload the clean release, verify the active command, then restore the patterns.
 
-Railway's [custom command replaces the Docker entrypoint](https://docs.railway.com/deployments/start-command), [volumes are mounted at runtime with root ownership](https://docs.railway.com/volumes), and [deployments without a configured healthcheck become active when the container starts](https://docs.railway.com/deployments/reference). These provider steps are documented deployment preparation, not a claim that a hosted removal was performed during implementation.
+After initialization, continue with the verified removal request or restore the normal runtime settings below. When leaving maintenance, confirm the normal Java process is running and both backend `/actuator/health` and frontend `/api/health` return `UP`. A provider deployment status alone does not prove the application is serving.
+
+Railway's [custom command replaces the Docker entrypoint](https://docs.railway.com/deployments/start-command), [volumes are mounted at runtime with root ownership](https://docs.railway.com/volumes), and [deployments without a configured healthcheck become active when the container starts](https://docs.railway.com/deployments/reference).
 
 ## Dry run, execute, check
 
@@ -84,7 +94,7 @@ java -jar /app/application.jar --player-removal check \
   --ledger /data/player-removal/ledger.json
 ```
 
-Any database data change between planning and execution invalidates the fingerprint. Re-run the dry run and review it again. No execution is accepted merely because `--execute` was present. The command refuses when the backend's lifetime lease or another database client remains active; it never kills sessions for the operator. All deletion, exclusion inserts and completion/checkpoint writes commit together. A post-removal rescan must find zero affected records before commit.
+A change to the retained application data or ledger between planning and execution invalidates the fingerprint. Re-run the dry run and review it again. No execution is accepted merely because `--execute` was present. The command refuses when the backend's lifetime lease or another database client remains active; it never kills sessions for the operator. All deletion, exclusion inserts and completion/checkpoint writes commit together. A post-removal rescan must find zero affected records before commit.
 
 For raw-only cases with no normalized match participant, privately create a `0600` file containing only the verified PUUID. Pass its path, not its contents:
 
@@ -104,11 +114,11 @@ After `COMPLETE` and `LEDGER_SYNCHRONIZED`:
 2. Restore the normal Java start command by removing the sleep override, restore `/actuator/health`, retain the ledger environment/path and redeploy. The startup guard compares the ledger digest, operation receipts and required exclusions before lookup recovery or serving. A lost lifetime database connection also latches the old process unavailable; restart is required, so recovered connections cannot reuse old caches to bypass maintenance.
 3. Resume the backup schedule. Open each affected match URL: it must be unavailable. The former lookup URL must be unavailable, and another participant's history must omit the deleted matches. Verify an unrelated match still works. For `exclude`, search the removed player and a co-player: removed data must not return; a co-player's unrelated matches must remain available. Use a private browser session to avoid viewing previously delivered client memory.
 
-Backend writes also take a transaction maintenance lock and check exclusions before payload persistence. The operator takes exclusive locks and table locks. Tests cover an INSERT already waiting during removal, not merely an INSERT started afterward. PostgreSQL [session and transaction lock behavior](https://www.postgresql.org/docs/17/explicit-locking.html) informs this boundary.
+Backend writes take a transaction maintenance lock and check exclusions before payload persistence. The operator takes exclusive advisory and table locks; see PostgreSQL [lock behavior](https://www.postgresql.org/docs/17/explicit-locking.html).
 
 ## Backup expiry, interrupted removal and restore
 
-Removal is logical deletion from the application database. Previously created backups can still contain the data until the seven-day retention window expires. Do not restore or use those archives for analytics. If the request requires earlier backup disposal, the operator must privately identify and delete the affected pre-removal archives (including any separately retained copies/object versions) and verify their absence. The application command does not claim secure erasure of PostgreSQL free pages, WAL, provider snapshots, browser copies, or records already delivered to another person.
+Removal is logical deletion from the application database. Previously created backups can still contain the data until a successful backup job removes archives older than seven days. Failed or paused jobs can extend that period. Do not restore or use those archives for analytics. If the request requires earlier backup disposal, the operator must privately identify and delete the affected pre-removal archives (including any separately retained copies/object versions) and verify their absence. The application command does not claim secure erasure of PostgreSQL free pages, WAL, provider snapshots, browser copies, or records already delivered to another person.
 
 The authoritative ledger is **outside** the PostgreSQL dump on the backend volume. It contains only a version, random ledger/operation IDs, timestamps, mode and SHA-256 matching keys for verified PUUIDs, aliases and affected matches. These hashes are pseudonymous data, not anonymization; alias hashes may be guessable. The file must remain `0600` in a private directory. The database completion receipt keeps only operation ID, time, mode and aggregate counts. Neither is exposed by the application. Do not restore an older ledger together with an older database.
 
@@ -140,9 +150,9 @@ Restore procedure:
 
 ## Retention verification
 
-The existing private backup job is scheduled daily at 07:00 UTC. Read-only inspection on September 11, 2026 found successful jobs reaching the end of the existing retention loop. Its older logs did not report expired-object counts, so they do not establish that any expired object was present or deleted.
+The private backup job runs daily at 07:00 UTC and removes exactly named dumps older than seven days after verifying a new backup.
 
-For read-only deployment verification, run the updated backup image's entrypoint with its existing private runtime environment:
+For read-only deployment verification, run the backup image's entrypoint with its private runtime environment:
 
 ```sh
 /usr/local/bin/league-analysis-backup --dry-run
@@ -150,23 +160,15 @@ For read-only deployment verification, run the updated backup image's entrypoint
 
 This checks the database connection in a read-only transaction, lists all pages using the same exact backup-name and seven-day retention filters, and labels eligible objects `retain` or `would-delete`. The `DRY RUN retention` summary reports `matching`, `expired` and `would_delete` counts. It performs no dump, upload, download or deletion and does not establish that expired objects were removed. Leave the scheduled job's normal command without arguments to preserve its backup and cleanup behavior; other arguments are refused.
 
-The updated script logs, after verified upload and successful cleanup:
+A successful scheduled run reports retention counts, for example:
 
 ```text
 Retention verified: matching=2 expired=1 deleted=1 remaining_expired=0
 PostgreSQL backup uploaded and verified
 ```
 
-It lists all pages, removes only exactly named expired dumps, lists again, and fails if an expired object remains or any listing/deletion fails. A recent-only bucket legitimately reports zero deletions. After separately deploying the updated backup image, inspect the next scheduled run for `remaining_expired=0`; if expired objects existed, require matching nonzero expired/deleted counts. Do not infer a successful cleanup from upload success alone.
+It lists all pages, removes only exactly named expired dumps, lists again, and fails if an expired object remains or any listing/deletion fails. A recent-only bucket legitimately reports zero deletions. Inspect scheduled runs for `remaining_expired=0`; if expired objects existed, require matching nonzero expired/deleted counts. Do not infer a successful cleanup from upload success alone.
 
-Verification commands (disposable fixtures, no production credentials):
+The backup regression suite runs with `python3 ops/postgres-backup/backup.test.py`; run it inside the backup image with networking disabled to include the installed AWS CLI paginator check against a synthetic loopback server. See the [developer guide](developer-guide.md) for backend verification using disposable databases.
 
-```sh
-./scripts/verify focused backend -Dtest=RemovalPlannerIntegrationTest,PlayerRemovalCommandTest,RemovalLedgerTest,PrivacyExclusionIntegrationTest,PrivacyAwareIngestionIntegrationTest test
-./scripts/verify task backend
-./scripts/verify task frontend
-python3 ops/postgres-backup/backup.test.py
-python3 scripts/tests/export_policy_test.py
-```
-
-The backup test suite also runs inside the production-style backup image with network disabled; its real AWS CLI paginator talks only to a synthetic loopback server. The removal suite uses disposable PostgreSQL containers, including a real `pg_dump`/`pg_restore` round trip, shared and unrelated matches, duplicates, raw-only and orphan captures, interrupted requests, stale confirmations, ambiguous provenance, maintenance contention and future reimport attempts. This workflow intentionally scans retained data in memory for a complete dry-run report; reassess that implementation before using it on a much larger database.
+The removal planner scans retained data in memory for a complete dry-run report. Reassess its memory requirements before using it on a much larger database.

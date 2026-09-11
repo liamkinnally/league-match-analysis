@@ -1,33 +1,37 @@
 # Architecture
 
+[LoL Match Analysis](https://lolmatchanalysis.app) uses a Next.js frontend, a Spring Boot backend, and PostgreSQL. The backend owns provider access, persistence, and analysis. The frontend validates response contracts and renders the selected match view.
+
 ## Data flow
 
-The browser submits a Riot ID to the Next.js `/api/player-matches` proxy. Spring’s `/api/v1/player-matches` facade owns the fixed region/queue scope, bounded work, cache and provider cooldown. The existing Riot gateway retrieves Match-V5 details/timeline; a decoder and transactional store write captures plus normalized matches, teams, participants, observations, events and coverage into PostgreSQL. Public polling returns safe history projections, not raw captures or PUUIDs.
+A Riot ID lookup goes from the browser to Next.js at `/api/player-matches`, then to Spring at `/api/v1/player-matches`. The backend fixes the region and queue, schedules ingestion, and applies cache and cooldown rules. The Riot gateway retrieves account, match-list, Match-V5 detail, and timeline responses. The decoder and transactional store persist captures and normalized matches, teams, participants, observations, events, and coverage. Public polling exposes match summaries and sanitized status messages; PUUIDs and raw captures remain server-side.
 
-`/api/v1/matches/{matchId}/development?focus=6&compare=1` reads normalized data and returns the result summary, roster, timestamped differences, recorded events, selectable windows and suggestions. Java computes both signed values and factual summary prose. The frontend validates the response, renders React components, and preserves focus, comparison and interval in the URL. Missing/ambiguous evidence stays unavailable. Chart lines do not establish continuous state between observations.
+`/api/v1/matches/{matchId}/development?focus=6&compare=1` reads normalized evidence in a consistent database snapshot. It returns final results, the roster, timestamped samples and events, selectable windows, and suggestions. The frontend preserves participant, comparison, interval, and metric selections in the URL. Final match results remain separate from interval calculations.
 
-The explicit `--seed-demo` command feeds invented Match-V5 fixtures through the normal decoder and store. A marked locator at `/api/v1/demo` identifies the persisted sample; it returns 404 before seed. Startup never silently creates demo data.
+The explicit `--seed-demo` command sends invented Match-V5 fixtures through the normal decoder and store. `/api/v1/demo` locates the persisted sample and returns 404 before it is seeded. Ordinary startup does not create sample data.
 
-## Runtime boundaries
+## Runtime and security
 
-Next.js keeps `BACKEND_URL` server-side. Only the frontend is published by the production Compose configuration; Spring and PostgreSQL use private networking. The database owns durable state, Flyway applies migrations, and the application images run as unprivileged users. Riot keys are runtime backend secrets. The optional game-asset route resolves a matching Data Dragon patch with cached server fetches; catalog failures preserve readable text/ID fallbacks.
+Next.js keeps `BACKEND_URL` and the backend service token server-side. In `compose.app.yaml`, only the frontend has a host port; Spring and PostgreSQL communicate over the Compose network. Flyway manages database migrations, and both application images run as unprivileged users. Riot credentials are backend runtime secrets.
 
-In the hosted prototype, Vercel calls Railway over HTTPS with a separate server-only service token. The Railway profile refuses startup without a valid token. A filter protects every backend route except exact status-only GET/HEAD `/actuator/health`; frontend transport pins the backend origin, strips caller authorization and refuses redirects. PostgreSQL remains private. A backend volume enforces Railway's non-overlapping deployments for the singleton worker, accepting brief redeploy downtime.
+The hosted frontend on Vercel calls the Railway backend over HTTPS. The Railway profile requires a valid service token. `ServiceAuthenticationFilter` checks backend requests except GET/HEAD `/actuator/health` with no query string. The frontend transport fixes the destination to the configured backend origin, replaces caller authorization with the service token, and disables automatic redirect following. PostgreSQL has no public ingress.
 
-Current ranks use Riot League-V4 for the match's queue and are cached for five minutes. The UI distinguishes confirmed unranked participants from unavailable or failed lookups, labels ranks as current and reports verified coverage in the average-tier disclosure. Stored game identities are kept in their original language; regular inventory slots are compacted only in presentation.
+Public ingestion supports one persistent backend instance. It has one worker, four waiting slots, shared work for identical active requests, and a 15-minute cache for successful or empty lookups. Complete stored matches are reused. Provider cooldowns persist across restarts; interrupted public runs become failed. The Railway volume prevents overlapping deployments of this worker. See [public lookup](public-match-lookup.md) for request limits and [deployment](deployment.md) for runtime configuration.
 
-One persistent backend instance runs public ingestion with one worker and four waiting slots. Identical active lookups share work; successful/empty lookups cache for 15 minutes. Complete stored matches are reused. Provider cooldown survives restart, while interrupted work becomes failed. The request budget uses the backend socket peer, so users behind Next share its ingress budget. See [lookup limits](public-match-lookup.md) and [deployment](deployment.md).
+Current ranks use League-V4 and a separate process-local five-minute cache. A successful lookup without a rank for the match's queue means unranked; failed or unsupported lookups remain unavailable. Rank displays describe current ranks, not ranks at the time of the match.
 
-## Deterministic calculations
+Optional Data Dragon assets are fetched and cached server-side for the resolved patch. Catalog failures leave readable text and identifier fallbacks.
 
-For each represented timestamp, the backend reconciles focus/opponent samples and computes focus minus opponent for CS, total gold and XP, retaining levels and exact timestamps. It summarizes actual endpoint values and selects a small set of bounded gold-change windows using the heuristic documented in the [README](../README.md). Purchase/kill/objective context retains source timestamps and explicit actor/assistant roles. Temporal proximity is not causality, and generic participant membership is not interpreted as an assistant role.
+## Analysis boundaries
 
-## Retained analysis and engineering evidence
+At each represented timestamp, the backend reconciles participant samples and calculates focus minus opponent for CS, total gold, and XP. Missing or conflicting evidence remains unavailable. Window summaries use recorded endpoints. Suggested windows pair each gold-bearing sample with its first endpoint 2–3 minutes later, require an absolute change of at least 300 in gold difference, and select up to three nonoverlapping windows ranked by that change. They are displayed chronologically.
 
-The older `/matches/{matchId}?focus=...` experience and `/api/matches/{matchId}/analysis` contract remain available. Their evidence-aware Explore/Review/Investigation views and required versioned champion-capability resource are retained; they are separate from the simpler development-window experience. [Developer guide](developer-guide.md) records those APIs and limitations.
+Events retain their timestamps and explicit actor and assister roles. Chart segments connect samples for display; they do not establish continuous state. Neither event proximity nor a change in a metric establishes causality or player knowledge.
 
-Tests exercise provider decoding, normalized PostgreSQL persistence, privacy/response contracts, deterministic windows, React selection, real browser navigation and pinned visual regressions. The package smoke uses actual production containers and a fresh database; only optional catalog images are stubbed for repeatability. The public screenshot instead uses the normal catalog with the invented persisted sample. CI configuration is included; local checks and configured remote jobs are distinct evidence.
+The retained `/matches/{matchId}?focus=...` route uses `/api/matches/{matchId}/analysis` for Explore, Review, and Investigation. Its evidence model and versioned champion-capability resource remain separate from the development page. The backend also supports death-context analysis without a dedicated public endpoint. See the [developer guide](developer-guide.md) for these contracts and limitations.
 
-## Public source boundary
+## Verification and public source
 
-The root `.gitignore` denies files by default and lists each public source, fixture, configuration and documentation file explicitly, along with its parent directories. When adding a public file, add its exact exception and any missing parents, then run `python3 scripts/tests/export_policy_test.py` (Python 3 required). Do not force-add files. The test stages synthetic probes in a temporary empty repository and checks required files, executable wrapper mode and nested private/output exclusions. Ignored local material is never a runtime dependency.
+Tests cover provider decoding, PostgreSQL persistence, response privacy, deterministic calculations, frontend state, browser behavior, and visual regressions. The package smoke test runs production containers against a fresh database, with optional catalog images stubbed for repeatability. Verification commands are documented in the [developer guide](developer-guide.md) and [deployment guide](deployment.md).
+
+The root `.gitignore` denies files by default and explicitly allows public source, fixtures, configuration, and documentation. To add a public file, add its exact exception and any missing parent directories, then run `python3 scripts/tests/export_policy_test.py`. Do not force-add ignored files. The test uses a temporary empty repository to check allowed files, executable wrapper mode, and private/generated-file exclusions. Ignored local material must not be a runtime dependency.

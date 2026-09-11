@@ -1,4 +1,4 @@
-// shadcn/ui Charts (MIT), carried forward from the reviewed Recharts preview.
+// Adapted from shadcn/ui Charts (MIT). See THIRD_PARTY_NOTICES.md.
 "use client";
 
 import * as React from "react";

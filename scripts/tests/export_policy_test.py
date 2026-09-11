@@ -43,6 +43,7 @@ REQUIRED = [
     'frontend/e2e-visual/snapshots/sample-development-wide.png',
     'docs/deployment.md', 'docs/developer-guide.md', 'docs/architecture.md',
     'docs/public-match-lookup.md', 'docs/images/sample-development.png',
+    'docs/images/sample-scoreboard.png', 'THIRD_PARTY_NOTICES.md',
     'scripts/setup', 'scripts/dev', 'scripts/seed-demo', 'scripts/verify',
     'scripts/package-smoke', 'scripts/tests/export_policy_test.py',
     'backend/src/test/java/dev/leagueanalysis/ingestion/riot/adapter/out/persistence/JdbcIngestionLeaseGuardTest.java',

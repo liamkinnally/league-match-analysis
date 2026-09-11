@@ -21,7 +21,7 @@ class ClasspathChampionKnowledgeAdapterTest {
     private final ChampionKnowledgePort port = new ClasspathChampionKnowledgeAdapter(
             new ClassPathResource("knowledge/champion-capabilities-16.17.json"));
 
-    // Missing behavior: load the reviewed resource, match the build to patch 16.17,
+    // Load the reviewed resource, match the build to patch 16.17,
     // and return its applicable capability with expert-maintained provenance.
     @Test
     void returns_only_approved_patch_scoped_applicable_assertions() {
@@ -38,14 +38,14 @@ class ClasspathChampionKnowledgeAdapterTest {
         });
     }
 
-    // Missing behavior: a reviewed 16.17 record must not apply to another patch.
+    // A reviewed 16.17 record must not apply to another patch.
     @Test
     void abstains_for_patch_mismatch() {
         assertThat(port.findApplicable(new ChampionKnowledgeQuery(
                 "16.18", 86, 6631, 814_821, QuestionKind.CONVERSION))).isEmpty();
     }
 
-    // Missing behavior: champion identity and an observation time do not establish
+    // Champion identity and an observation time do not establish
     // item ownership; a null observed item identity cannot satisfy OWNED.
     @Test
     void abstains_without_observed_ownership() {
@@ -53,7 +53,7 @@ class ClasspathChampionKnowledgeAdapterTest {
                 "16.17.810.4348", 86, null, 814_821, QuestionKind.CONVERSION))).isEmpty();
     }
 
-    // Missing behavior: parse review status and exclude both non-current statuses;
+    // Parse review status and exclude both non-current statuses;
     // the APPROVED control proves this same resource boundary can admit the record.
     @ParameterizedTest
     @ValueSource(strings = {"WITHDRAWN", "SUPERSEDED"})
@@ -65,7 +65,7 @@ class ClasspathChampionKnowledgeAdapterTest {
         assertThat(portWithStatus(reviewStatus).findApplicable(query)).isEmpty();
     }
 
-    // Missing behavior: the sole conversion capability must not be returned merely
+    // The sole conversion capability must not be returned merely
     // because a non-conversion question has an item identity and timestamp.
     @Test
     void abstains_for_an_irrelevant_question() {
@@ -74,7 +74,7 @@ class ClasspathChampionKnowledgeAdapterTest {
                 QuestionKind.ADVERSE_CONSEQUENCE))).isEmpty();
     }
 
-    // Missing behavior: duplicate logical identities must fail during loading.
+    // Duplicate logical identities must fail during loading.
     @Test
     void rejects_duplicate_assertion_ids() {
         var document = new ObjectMapper().readTree(knowledgeJson("APPROVED"));
@@ -83,7 +83,7 @@ class ClasspathChampionKnowledgeAdapterTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
-    // Missing behavior: every provenance component is required for a reviewed claim.
+    // Every provenance component is required for a reviewed claim.
     @ParameterizedTest
     @ValueSource(strings = {"sourceUri", "sourceRevision", "reviewerId"})
     void rejects_blank_provenance(String field) {
@@ -93,7 +93,7 @@ class ClasspathChampionKnowledgeAdapterTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
-    // Missing behavior: unrecognized controlled vocabulary must never be admitted.
+    // Unrecognized controlled vocabulary must never be admitted.
     @ParameterizedTest
     @ValueSource(strings = {"SLOW", "OWNED", "APPROVED", "ITEM"})
     void rejects_unknown_capability_prerequisite_status_or_entity(String token) {
@@ -102,7 +102,7 @@ class ClasspathChampionKnowledgeAdapterTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
-    // Missing behavior: a review revision must be a positive integer, without coercion.
+    // A review revision must be a positive integer, without coercion.
     @ParameterizedTest
     @ValueSource(strings = {"0", "-1", "1.5", "null", "\"1\""})
     void rejects_invalid_review_revision(String revision) {
@@ -111,7 +111,7 @@ class ClasspathChampionKnowledgeAdapterTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
-    // Missing behavior: records without patch scope cannot be safely matched.
+    // Records without patch scope cannot be safely matched.
     @Test
     void rejects_absent_patch() {
         assertThatThrownBy(() -> portFor(knowledgeJson("APPROVED")

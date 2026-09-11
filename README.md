@@ -1,73 +1,94 @@
-# match-analysis-v1
+# LoL Match Analysis
 
-A League of Legends match-history app for exploring how a match developed. Open a match, compare two champions, and follow recorded CS, gold and XP differences alongside purchases and events.
+A League of Legends match-history and timeline application built with Java, Spring Boot, Next.js and PostgreSQL. Look up a player, open a match, and compare how two champions’ gold, CS and experience changed over time alongside recorded events.
 
-[Open the hosted pre-release prototype](https://match-analysis-v1.vercel.app). It supports real NA1 ranked Solo/Duo lookup and the independently labeled invented sample. Hosting for testing and Riot review does not imply Riot approval.
+[Open the demo](https://lolmatchanalysis.app) — [Architecture](docs/architecture.md) — [Development guide](docs/developer-guide.md)
 
-The included sample is invented data stored in PostgreSQL. From **8:00 to 10:00**, Garen’s difference against Darius changes from **+4 to +13 CS**, **+100 to +510 gold**, and **+20 to +220 XP**. The page shows the before/after values, a Black Cleaver purchase at 8:25, Garen’s kill on Darius at 9:12 with recorded assists from Vi and Orianna, and Vi’s dragon event at 9:49. Nearby events provide context; they do not establish what caused a change.
+The hosted prototype is intended for development, testing, and review—not intended for general public use. No Riot account sign-in is required. The included synthetic match can be explored without an API key.
 
-![Invented sample match in the local production application, showing the selected window, recorded differences and event context](docs/images/sample-development.png)
+## Match review
 
-*Local production screenshot using the normal optional game-asset catalog. All match and participant data in this sample is synthetic.*
+- NA1 ranked Solo/Duo lookup with the player’s five most recent matches.
+- Final team scores, gold, objectives and a ten-player scoreboard with identities, builds and current queue-specific ranks when available.
+- An area chart for gold, CS or XP differences, with player, opponent and interval selections preserved in the URL.
+- Timestamped kills, objectives, item changes and ward events, plus expandable source details and sampled values.
+
+![Synthetic sample match with final results and a gold-difference timeline](docs/images/sample-development.png)
+
+*The screenshots use the built-in synthetic match. Missing source fields are shown as unavailable.*
+
+<details>
+<summary>Events and scoreboard</summary>
+
+![Synthetic sample events and ten-player scoreboard](docs/images/sample-scoreboard.png)
+
+</details>
+
+## Architecture
+
+```text
+Browser → Next.js server → Spring Boot → PostgreSQL
+                                ↓
+                           Riot Games API
+```
+
+| Layer | Responsibilities |
+| --- | --- |
+| Next.js 16, React 19, TypeScript | Server-rendered pages, response validation, URL state and interactive match views |
+| Recharts, shadcn chart component, Tailwind CSS | Timeline chart and interface styling |
+| Java 21, Spring Boot 4, JDBC, Flyway | Riot ingestion, normalization, match calculations, schema migrations and private operator commands |
+| PostgreSQL 17 | Player identities, lookup runs, normalized match data and original API captures |
+| Vercel and Railway | Frontend hosting; one persistent backend, private PostgreSQL and scheduled backups |
+
+The browser calls Next.js. Server-side requests authenticate to the backend with a separate service token; Riot keys and database credentials stay on the server. Ingestion retains raw responses separately from normalized records so match calculations can be traced to their source. See [architecture](docs/architecture.md) and [lookup behavior](docs/public-match-lookup.md).
 
 ## Run locally
 
-Requirements: Docker with Compose for the production package. Source development also requires Java 21 JDK, Node.js 24 (see `.node-version`), npm and Git. The Maven wrapper is included.
+The packaged app needs Docker with Compose and Git. From a fresh clone:
 
-From the repository root, create ignored configuration and start the production package:
-
-```bash
+```sh
+git clone https://github.com/liamkinnally/league-match-analysis.git
+cd league-match-analysis
 test -e .env || cp .env.example .env
 docker compose --project-name league-analysis-app --file compose.app.yaml --env-file .env up --detach --build --wait
-```
-
-Keep `RIOT_API_KEY` blank and `RIOT_PUBLIC_LOOKUP_ENABLED=false` for sample-only use. The example password is for local development. Ordinary startup applies database migrations but does not seed a match. Run the explicit seed:
-
-```bash
 docker compose --project-name league-analysis-app --file compose.app.yaml --env-file .env run --rm --no-deps backend --spring.main.web-application-type=none --seed-demo
 ```
 
-Open [localhost:3416](http://127.0.0.1:3416) and select **Explore sample match**. Choose another interval and refresh: the selection remains in the URL. The seed is idempotent and refuses to replace unrelated data at its reserved match ID. PostgreSQL persists the sample across restarts in its named volume.
+Open [localhost:3416](http://127.0.0.1:3416) and choose **Explore sample match**. Keep `RIOT_API_KEY` blank and `RIOT_PUBLIC_LOOKUP_ENABLED=false` for the sample. Startup applies migrations; the explicit, idempotent seed command adds the synthetic match. PostgreSQL data persists in a named volume.
 
-For source development:
+For source development, install Java 21 JDK and Node.js 24 in addition to Docker, then run:
 
-```bash
+```sh
 ./scripts/setup
 ./scripts/dev app
-# In a second terminal, after the database is ready:
+# In a second terminal, after PostgreSQL is ready:
 ./scripts/seed-demo
 ```
 
-Open [localhost:3000](http://127.0.0.1:3000). Setup creates missing `.env` and `frontend/.env.local` without replacing existing values, installs locked frontend dependencies and Playwright Chromium. Keep ports 3000 and 8080 available; set `POSTGRES_PORT` in `.env` if 5432 is occupied. The backend local profile reads the root `.env`; the frontend reads the server-only `BACKEND_URL` from `frontend/.env.local`.
+Open [localhost:3000](http://127.0.0.1:3000). Setup installs locked frontend dependencies and Playwright Chromium, and creates missing environment files without replacing existing values. See the [development guide](docs/developer-guide.md) for API routes, local ingestion and test fixtures.
 
-[Deployment and runtime configuration](docs/deployment.md) covers private service boundaries, environment variables, seeding and container verification.
+To enable Riot lookup, configure `RIOT_API_KEY` and `RIOT_PUBLIC_LOOKUP_ENABLED=true` only in the backend’s environment. Personal API access and production approval are separate; a personal key does not establish Riot approval. [Deployment](docs/deployment.md) covers service authentication, private networking and runtime configuration.
 
-## Scope and limitations
+## Tests
 
-Live Riot ID lookup supports **NA1 / AMERICAS, ranked Solo/Duo (queue 420), latest five matches**. The hosted release is an unpromoted pre-release prototype for testing and Riot review. Product registration and production approval are separate from hosting this prototype; no Riot approval is claimed. Local configuration disables live lookup by default and the sample works without a Riot key. See the [registration package](docs/prototype-registration.md).
-
-The match page provides final team results, a ten-player scoreboard with names and current queue-specific ranks, a unified opponent selector, an area chart, suggested windows, other recorded intervals, and timestamped events. Final results remain separate from the selected interval. Blue means victory and red means defeat regardless of map side. Sampled values and events expand into contained scrollable tables. It defaults to the unique same-role opponent when available. Positive differences describe recorded quantities; they do not prove better play. Missing or conflicting samples remain gaps. No interpolation supplies exact state at a kill, and the app makes no causal coaching or replay claims.
-
-Suggestions use a small deterministic heuristic: for each gold-bearing sample, consider the first gold-bearing endpoint 2–3 minutes later; require an absolute change in gold difference of at least 300; rank by that change, select up to three nonoverlapping windows, and display them chronologically. Adjacent comparable samples remain selectable even without a suggestion. Summary text reports the endpoint differences. This is a browsing aid, not a general interpretation model.
-
-Riot keys, PUUIDs and captured provider response bodies remain server-side. PostgreSQL retains captured payloads, retrieval/ingestion records and normalized match data; re-ingestion replaces current normalized rows while preserving capture history. No scheduled data-cleanup policy is implemented. Optional patch-matched Data Dragon images fall back to text/IDs when unavailable. Live ingestion currently supports one persistent backend instance; see [lookup behavior and limits](docs/public-match-lookup.md).
-
-The [private operator removal workflow](docs/player-data-removal.md) supports reviewed dry runs, explicit whole-match deletion, ongoing player exclusion and backup reconciliation. It requires maintenance mode and a private ledger outside PostgreSQL backups; it is not a public endpoint or an automatic retention policy.
-
-## Architecture and verification
-
-The request path is browser → Next.js server → Spring Boot → PostgreSQL. Java performs Riot ingestion, normalization and deterministic calculations; React/TypeScript renders validated responses and keeps comparison/interval state in the URL. [Architecture](docs/architecture.md) explains these boundaries and retained analysis routes. [Developer/API guide](docs/developer-guide.md) covers local ingestion, legacy analysis and focused checks.
-
-```bash
+```sh
 ./scripts/verify full
 ./scripts/package-smoke
 python3 scripts/tests/export_policy_test.py
 ```
 
-Local release verification passed 327 backend tests, 253 frontend tests, 19 browser behavior tests and 11 pinned visual checks, plus lint, typecheck, production builds and the publication allowlist check. The production package was exercised on arm64 with service authentication enabled, a clean database, explicit seed and restart persistence. See [GitHub CI](https://github.com/liamkinnally/league-match-analysis/actions/workflows/ci.yml) for automated verification, including the amd64 container build.
+The suite covers backend and frontend behavior, disposable PostgreSQL integration, browser interactions, pinned visual snapshots and the packaged application. CI runs lint, type checking, tests and production builds. [View CI](https://github.com/liamkinnally/league-match-analysis/actions/workflows/ci.yml) or use the [focused commands](docs/developer-guide.md#verification) during development.
 
-Hosted verification covered real lookup, five-match history, the reviewed match and another victory, URL state, keyboard metric switching, opponent selection, tooltips, contained event/sample disclosures, policies and desktop/narrow layouts. The backend rejects absent or invalid service credentials, PostgreSQL has no public ingress, and scans of served pages, loaded JavaScript and release source found none of the actual runtime credentials. A daily private backup was restored into an isolated PostgreSQL 17 database and reproduced the real match results. Seven backup behavior tests passed. See [deployment status and operational limits](docs/deployment.md#verified-release-status). No traffic-scale or usage-cost claims have been measured.
+## Limits and data handling
 
-## Riot attribution
+- Live lookup supports NA1 / AMERICAS, ranked Solo/Duo (queue 420), and five recent matches. Provider errors or rate limits can prevent lookup or current-rank retrieval.
+- Current ranks are queue-specific snapshots, not historical ranks or MMR. Unranked and unavailable results are distinct.
+- Timeline samples do not describe every instant. Missing data remains a gap; suggested intervals identify recorded changes without claiming their cause.
+- Patch-matched game assets fall back to names or IDs when unavailable. The synthetic sample has fewer recorded fields than a real match.
+- Match data and raw captures have no automatic expiry. Successful backup jobs remove archives older than seven days. The [private removal workflow](docs/player-data-removal.md) supports dry-run review, whole-match deletion, future exclusion and guarded backup recovery.
 
-match-analysis-v1 isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
+[Privacy Policy](https://lolmatchanalysis.app/privacy) — [Terms](https://lolmatchanalysis.app/terms) — [Third-party notices](THIRD_PARTY_NOTICES.md)
+
+## Riot notice
+
+LoL Match Analysis isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
