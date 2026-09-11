@@ -50,7 +50,7 @@ The packaged app needs Docker with Compose and Git:
 ```sh
 git clone https://github.com/liamkinnally/league-match-analysis.git
 cd league-match-analysis
-cp .env.example .env
+test -e .env || cp .env.example .env
 docker compose --project-name league-analysis-app --file compose.app.yaml --env-file .env up --detach --build --wait
 docker compose --project-name league-analysis-app --file compose.app.yaml --env-file .env run --rm --no-deps backend --spring.main.web-application-type=none --seed-demo
 ```

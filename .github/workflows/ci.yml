@@ -108,11 +108,11 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Verify application containers with a clean database
         run: ./scripts/package-smoke
-      - name: Upload packaged browser receipt
+      - name: Upload packaged browser screenshot
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: packaged-browser-receipt
+          name: packaged-browser-screenshot
           path: frontend/test-results/package-smoke-*.png
           if-no-files-found: ignore
           retention-days: 7

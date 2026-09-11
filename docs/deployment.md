@@ -23,7 +23,7 @@ The backend runs on Java 21 as an unprivileged user. The frontend uses Node 24 a
 For a local production-shaped stack:
 
 ```bash
-cp .env.example .env
+test -e .env || cp .env.example .env
 docker compose --project-name league-analysis-app \
   --file compose.app.yaml \
   --env-file .env \
