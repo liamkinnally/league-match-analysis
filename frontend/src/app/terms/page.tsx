@@ -7,14 +7,15 @@ export const metadata: Metadata = { title: `Terms of Service — ${PRODUCT_NAME}
 
 export default function TermsPage() {
   return <PolicyPage title="Terms of Service">
-    <p>{PRODUCT_NAME} is a free, pre-release prototype operated by Liam Kinnally for testing and Riot review. It is not an official Riot Games service, and production approval has not been claimed.</p>
+    <p>{PRODUCT_NAME} is a free prototype intended for development, testing, and review—not intended for general public use. It is not an official Riot Games service.</p>
 
     <h2>Using the prototype</h2>
-    <p>You may use the site to inspect the included sample and supported League of Legends match records. Live lookup currently supports NA1 players, ranked Solo/Duo and the latest five matches. No Riot password or account sign-in is required.</p>
+    <p>You may use the site to inspect the included sample and supported League of Legends match records. Live lookup currently supports NA1 players, ranked Solo/Duo and the latest five matches. No Riot account sign-in is required.</p>
+    <p>The prototype is accessible by direct link and uses search-engine directives to request that its pages not be indexed.</p>
     <p>Do not bypass request limits, attempt unauthorized access, disrupt the service, harvest data in bulk, or use displayed player information to harass others. Access may be limited to protect the prototype and its API allowance.</p>
 
     <h2>Availability and accuracy</h2>
-    <p>The prototype may be changed, interrupted or withdrawn. Live lookup depends on Riot API availability, key validity and rate limits. It may be temporarily unavailable during testing or deployment.</p>
+    <p>The prototype may be changed, interrupted or withdrawn. Live lookup depends on Riot API availability and rate limits. It may be temporarily unavailable during testing or deployment.</p>
     <p>Statistics reflect recorded API data and may be missing, delayed or inconsistent. Chart samples do not establish exact state between timestamps or explain what caused a result. Ranks are current queue-specific observations, not rank at the time of the match or MMR. The sample match is clearly labeled as invented data.</p>
 
     <h2>Riot Games and other materials</h2>

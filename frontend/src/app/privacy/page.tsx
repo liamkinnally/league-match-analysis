@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: `Privacy Policy — ${PRODUCT_NAME}` 
 
 export default function PrivacyPage() {
   return <PolicyPage title="Privacy Policy">
-    <p>{PRODUCT_NAME} is a pre-release League of Legends match-analysis prototype operated by Liam Kinnally for testing and Riot review. This policy describes the current prototype.</p>
+    <p>{PRODUCT_NAME} is a League of Legends match-analysis prototype intended for development, testing, and review—not intended for general public use. This policy describes the current prototype.</p>
 
     <h2>Information the app uses</h2>
     <p>When you search for a player, the app sends the game name and tag line you enter to its server and queries Riot’s APIs. It retrieves account identifiers, in-game names, recent match details and timelines, and current queue-specific ranks. Match records include information about all ten participants.</p>
@@ -25,7 +25,7 @@ export default function PrivacyPage() {
 
     <h2>Retention and requests</h2>
     <p>Stored matches and retrieval records remain until manually removed or the prototype database is reset. There is currently no automatic deletion schedule. Short-lived search and rank caches do not delete the underlying stored match records. Database backups may retain earlier copies.</p>
-    <p>You can contact the operator below about information displayed by this prototype or request correction or removal from its stored data. This app cannot change Riot’s source records. Please include only the Riot ID or match URL needed to identify the record, never your password or API key.</p>
+    <p>You can contact the operator below about information displayed by this prototype or request correction or removal from its stored data. This app cannot change Riot’s source records. Please include only the Riot ID or match URL needed to identify the record.</p>
 
     <h2>Changes</h2>
     <p>The prototype and this policy may change as development continues. The date above identifies this version.</p>
