@@ -226,7 +226,7 @@ public class RiotIngestionService {
                         partial,
                         failed,
                         "MATERIALIZATION_PERSISTENCE_FAILED",
-                        "Match materialization failed");
+                        "Match materialization persistence failed");
             }
 
             if (timelineFailure == null) {
