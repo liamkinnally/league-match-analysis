@@ -2,7 +2,7 @@
 
 A League of Legends match-history app for exploring how a match developed. Open a match, compare two champions, and follow recorded CS, gold and XP differences alongside purchases and events.
 
-[Open the hosted pre-release prototype](https://league-match-analysis.vercel.app). It supports real NA1 ranked Solo/Duo lookup and the independently labeled invented sample. Hosting for testing and Riot review does not imply Riot approval.
+[Open the hosted pre-release prototype](https://match-analysis-v1.vercel.app). It supports real NA1 ranked Solo/Duo lookup and the independently labeled invented sample. Hosting for testing and Riot review does not imply Riot approval.
 
 The included sample is invented data stored in PostgreSQL. From **8:00 to 10:00**, Garen’s difference against Darius changes from **+4 to +13 CS**, **+100 to +510 gold**, and **+20 to +220 XP**. The page shows the before/after values, a Black Cleaver purchase at 8:25, Garen’s kill on Darius at 9:12 with recorded assists from Vi and Orianna, and Vi’s dragon event at 9:49. Nearby events provide context; they do not establish what caused a change.
 

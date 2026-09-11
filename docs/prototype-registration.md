@@ -11,10 +11,10 @@ This is a prepared registration package for the verified hosted prototype. It is
 | Stage | Functional pre-release prototype for testing and Riot review |
 | Operator | Liam Kinnally |
 | Contact | lol.match.analysis@gmail.com |
-| Website | https://league-match-analysis.vercel.app |
-| Privacy Policy | https://league-match-analysis.vercel.app/privacy |
-| Terms of Service | https://league-match-analysis.vercel.app/terms |
-| Verification | https://league-match-analysis.vercel.app/riot.txt (404 until the portal value is supplied) |
+| Website | https://match-analysis-v1.vercel.app |
+| Privacy Policy | https://match-analysis-v1.vercel.app/privacy |
+| Terms of Service | https://match-analysis-v1.vercel.app/terms |
+| Verification | https://match-analysis-v1.vercel.app/riot.txt (404 until the portal value is supplied) |
 
 Suggested product description:
 

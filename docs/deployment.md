@@ -122,7 +122,7 @@ Before relying on the schedule, download a successful backup through authenticat
 
 ## Verified release status
 
-The pre-release prototype is hosted at **https://league-match-analysis.vercel.app**. The backend is **https://backend-production-8941a.up.railway.app** and requires the frontend's service credential for application routes. Only status-only health is anonymously accessible. PostgreSQL has no public TCP proxy, service domain or custom domain. Backend and backup connections use Railway's private PostgreSQL hostname in the same US East region. No credentials belong in either URL.
+The pre-release prototype is hosted at **https://match-analysis-v1.vercel.app**. The backend is **https://backend-production-8941a.up.railway.app** and requires the frontend's service credential for application routes. Only status-only health is anonymously accessible. PostgreSQL has no public TCP proxy, service domain or custom domain. Backend and backup connections use Railway's private PostgreSQL hostname in the same US East region. No credentials belong in either URL.
 
 Verification on September 10, 2026 (America/New_York) covered:
 
