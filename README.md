@@ -2,6 +2,8 @@
 
 A League of Legends match-history app for exploring how a match developed. Open a match, compare two champions, and follow recorded CS, gold and XP differences alongside purchases and events.
 
+[Open the hosted pre-release prototype](https://league-match-analysis.vercel.app). It supports real NA1 ranked Solo/Duo lookup and the independently labeled invented sample. Hosting for testing and Riot review does not imply Riot approval.
+
 The included sample is invented data stored in PostgreSQL. From **8:00 to 10:00**, Garen’s difference against Darius changes from **+4 to +13 CS**, **+100 to +510 gold**, and **+20 to +220 XP**. The page shows the before/after values, a Black Cleaver purchase at 8:25, Garen’s kill on Darius at 9:12 with recorded assists from Vi and Orianna, and Vi’s dragon event at 9:49. Nearby events provide context; they do not establish what caused a change.
 
 ![Invented sample match in the local production application, showing the selected window, recorded differences and event context](docs/images/sample-development.png)
@@ -60,7 +62,9 @@ The request path is browser → Next.js server → Spring Boot → PostgreSQL. J
 python3 scripts/tests/export_policy_test.py
 ```
 
-Local release verification passed 327 backend tests, 253 frontend tests, 19 browser behavior tests and 11 pinned visual checks, plus lint, typecheck, production builds and the publication allowlist check. The production package was built and exercised locally on arm64 with server authentication enabled, a clean database, explicit seed, restart persistence, policy/verification endpoints and desktop/mobile browser checks. CI defines corresponding checks and an amd64 container build; remote CI has not run. Deployment, a public smoke test and an unfamiliar-human review remain pending. No usage or performance claims have been measured.
+Local release verification passed 327 backend tests, 253 frontend tests, 19 browser behavior tests and 11 pinned visual checks, plus lint, typecheck, production builds and the publication allowlist check. The production package was exercised on arm64 with service authentication enabled, a clean database, explicit seed and restart persistence. [The initial GitHub release CI](https://github.com/liamkinnally/league-match-analysis/actions/runs/34543239413) also passed, including its amd64 container build.
+
+Hosted verification covered real lookup, five-match history, the reviewed match and another victory, URL state, keyboard metric switching, opponent selection, tooltips, contained event/sample disclosures, policies and desktop/narrow layouts. The backend rejects absent or invalid service credentials, PostgreSQL has no public ingress, and scans of served pages, loaded JavaScript and release source found none of the actual runtime credentials. A daily private backup was restored into an isolated PostgreSQL 17 database and reproduced the real match results. Seven backup behavior tests passed. See [deployment status and operational limits](docs/deployment.md#verified-release-status). No traffic-scale or usage-cost claims have been measured.
 
 ## Riot attribution
 

@@ -522,3 +522,10 @@
 !/frontend/src/lib/product.ts
 !/frontend/e2e-visual/snapshots/home-narrow.png
 !/frontend/e2e-visual/snapshots/history-loading-narrow.png
+
+# Private scheduled database backup container (credentials are runtime-only)
+!/ops/
+!/ops/postgres-backup/
+!/ops/postgres-backup/Dockerfile
+!/ops/postgres-backup/backup.sh
+!/ops/postgres-backup/backup.test.py

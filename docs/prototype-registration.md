@@ -1,6 +1,6 @@
 # Prototype registration and Riot review
 
-This is a prepared registration package. It is not a submitted application or a claim of Riot approval. Supply the final HTTPS origin from the successful deployment before copying URL fields into the Riot developer portal.
+This is a prepared registration package for the verified hosted prototype. It is not a submitted application or a claim of Riot approval.
 
 ## Product details
 
@@ -11,10 +11,10 @@ This is a prepared registration package. It is not a submitted application or a 
 | Stage | Functional pre-release prototype for testing and Riot review |
 | Operator | Liam Kinnally |
 | Contact | lol.match.analysis@gmail.com |
-| Website | Final HTTPS frontend origin from deployment |
-| Privacy Policy | Frontend origin + `/privacy` |
-| Terms of Service | Frontend origin + `/terms` |
-| Verification | Frontend origin + `/riot.txt` |
+| Website | https://league-match-analysis.vercel.app |
+| Privacy Policy | https://league-match-analysis.vercel.app/privacy |
+| Terms of Service | https://league-match-analysis.vercel.app/terms |
+| Verification | https://league-match-analysis.vercel.app/riot.txt (404 until the portal value is supplied) |
 
 Suggested product description:
 

@@ -26,6 +26,9 @@ jobs:
       - name: Validate Compose configuration
         working-directory: .
         run: docker compose --env-file .env.example config --quiet
+      - name: Verify private backup job behavior
+        working-directory: .
+        run: python3 ops/postgres-backup/backup.test.py
       - name: Verify Docker availability
         run: docker info --format '{{.OSType}}'
       - name: Test and package backend
