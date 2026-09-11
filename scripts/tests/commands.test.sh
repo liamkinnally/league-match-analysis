@@ -90,7 +90,17 @@ assert_file_contains backend/Dockerfile "eclipse-temurin:21"
 assert_file_contains backend/Dockerfile "USER application"
 assert_file_contains frontend/Dockerfile "node:24"
 assert_file_contains frontend/Dockerfile "USER nextjs"
-assert_file_contains frontend/next.config.ts 'output: "standalone"'
+node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --input-type=module <<'NODE'
+import assert from "node:assert/strict";
+
+for (const [vercel, expected] of [[undefined, "standalone"], ["0", "standalone"], ["1", undefined]]) {
+  if (vercel === undefined) delete process.env.VERCEL;
+  else process.env.VERCEL = vercel;
+  // A fresh import evaluates the real config for each environment.
+  const { default: config } = await import(`./frontend/next.config.ts?vercel=${vercel ?? "unset"}`);
+  assert.equal(config.output, expected, `Unexpected Next.js output for VERCEL=${vercel ?? "unset"}`);
+}
+NODE
 assert_file_contains compose.app.yaml "SPRING_DATASOURCE_URL"
 assert_file_contains compose.app.yaml 'RIOT_API_KEY: ${RIOT_API_KEY:-}'
 assert_file_contains compose.app.yaml '127.0.0.1:${FRONTEND_PORT:-3416}:3000'
