@@ -1,11 +1,8 @@
-# Publication allowlist: every file is private unless explicitly listed below.
-# Add new public source/config/test files here deliberately; do not force-add.
-# Directory exceptions permit traversal only: the default * still denies children.
-# Private context, credentials, captures, research, dependencies and build output
-# remain ignored at every depth, including inside an allowed source directory.
+# Track only the files listed below.
+# Directory entries allow traversal; new files stay ignored.
 *
 
-# Required parent directories
+# Parent directories
 !/.github/
 !/.github/workflows/
 !/backend/
@@ -120,7 +117,7 @@
 !/scripts/
 !/scripts/tests/
 
-# Reviewed application, tests, fixtures, configuration and public documentation
+# Source, tests, configuration and documentation
 !/.dockerignore
 !/.env.example
 !/.gitattributes
@@ -484,14 +481,14 @@
 !/frontend/src/lib/development/use-current-ranks.ts
 !/frontend/src/lib/utils.ts
 
-# Entry pages, loading, and shared branding
+# Entry pages and loading states
 !/frontend/src/app/entry-pages.css
 !/frontend/src/app/loading.tsx
 !/frontend/src/app/error.tsx
 !/frontend/src/app/not-found.tsx
 !/frontend/src/app/search/loading.tsx
 
-# Hosted prototype boundary, disclosure and verification
+# Hosted prototype
 !/backend/src/main/java/dev/leagueanalysis/config/
 !/backend/src/main/java/dev/leagueanalysis/config/ServiceAuthenticationFilter.java
 !/backend/src/test/java/dev/leagueanalysis/config/
@@ -525,14 +522,14 @@
 !/frontend/e2e-visual/snapshots/home-narrow.png
 !/frontend/e2e-visual/snapshots/history-loading-narrow.png
 
-# Private scheduled database backup container (credentials are runtime-only)
+# Backup job
 !/ops/
 !/ops/postgres-backup/
 !/ops/postgres-backup/Dockerfile
 !/ops/postgres-backup/backup.sh
 !/ops/postgres-backup/backup.test.py
 
-# Private operator workflow source; runtime ledgers and reports stay ignored.
+# Player-data removal; runtime ledgers and reports remain ignored.
 !/backend/src/main/java/dev/leagueanalysis/privacy/
 !/backend/src/test/java/dev/leagueanalysis/privacy/
 !/backend/src/main/java/dev/leagueanalysis/privacy/PlayerRemovalCommand.java
