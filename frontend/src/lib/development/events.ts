@@ -12,8 +12,8 @@ const WARDS: Record<string, string> = {
   BLUE_TRINKET: "Farsight ward",
 };
 const DRAGONS: Record<string, { name: string; file: string }> = {
-  AIR_DRAGON: { name: "Cloud Dragon", file: "dragon_air" },
-  FIRE_DRAGON: { name: "Infernal Dragon", file: "dragon_fire" },
+  AIR_DRAGON: { name: "Cloud Dragon", file: "dragon_cloud" },
+  FIRE_DRAGON: { name: "Infernal Dragon", file: "dragon_infernal" },
   EARTH_DRAGON: { name: "Mountain Dragon", file: "dragon_mountain" },
   WATER_DRAGON: { name: "Ocean Dragon", file: "dragon_ocean" },
   HEXTECH_DRAGON: { name: "Hextech Dragon", file: "dragon_hextech" },

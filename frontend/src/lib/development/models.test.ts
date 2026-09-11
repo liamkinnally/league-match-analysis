@@ -6,11 +6,33 @@ import {
   currentRankAverage,
   rankDisplay,
 } from "./results";
-import { eventDisplayRows } from "./events";
+import { dragonAcquisitions, eventDisplayRows } from "./events";
 import { developmentFixture } from "../../test/match-development-fixture";
 import { developmentHref, parseDevelopmentSearch } from "./route";
 
 describe("reviewed data models", () => {
+  it.each([
+    ["AIR_DRAGON", "Cloud Dragon", "dragon_cloud"],
+    ["FIRE_DRAGON", "Infernal Dragon", "dragon_infernal"],
+    ["EARTH_DRAGON", "Mountain Dragon", "dragon_mountain"],
+    ["WATER_DRAGON", "Ocean Dragon", "dragon_ocean"],
+    ["HEXTECH_DRAGON", "Hextech Dragon", "dragon_hextech"],
+    ["CHEMTECH_DRAGON", "Chemtech Dragon", "dragon_chemtech"],
+    ["ELDER_DRAGON", "Elder Dragon", "dragon_elder"],
+  ])("resolves %s to its published dragon icon", (type, name, file) => {
+    const event = {
+      ...developmentFixture.events[2],
+      type: "ELITE_MONSTER_KILL",
+      fields: { monsterType: "DRAGON", monsterSubType: type },
+    };
+    expect(dragonAcquisitions([event], developmentFixture.roster, "16.17.810.4348"))
+      .toEqual([expect.objectContaining({
+        name,
+        imageUrl: `https://raw.communitydragon.org/16.17/game/assets/ux/minimap/icons/${file}.png`,
+        timestampMs: event.timestampMs,
+        teamId: 200,
+      })]);
+  });
   it("keeps exact samples, missing gaps and comparison direction", () => {
     const rows = chartRows(developmentFixture.samples, "gold", true);
     expect(rows.map((row) => row.timestampMs)).toEqual([
