@@ -27,6 +27,10 @@ public interface RiotIngestionStore {
 
     boolean isCompleteMatch(String matchId);
 
+    default boolean isCompleteMatch(String matchId, String puuid) {
+        return isCompleteMatch(matchId);
+    }
+
     void recordRetryNotBefore(UUID runId, Instant retryNotBefore);
 
     CapturedDocument saveCapture(UUID runId, ProviderDocument document);

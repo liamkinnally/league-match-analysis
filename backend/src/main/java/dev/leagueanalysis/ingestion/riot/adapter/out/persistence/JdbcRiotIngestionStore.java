@@ -158,6 +158,21 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
     }
 
     @Override
+    public boolean isCompleteMatch(String matchId, String puuid) {
+        requireHealthy();
+        return Boolean.TRUE.equals(jdbc.queryForObject("""
+                select exists(
+                    select 1
+                    from league_analysis.riot_match m
+                    join league_analysis.riot_participant p on p.match_id = m.match_id
+                    where m.match_id = ? and m.queue_id = 420
+                        and m.timeline_source_capture_id is not null
+                        and p.puuid = ?
+                )
+                """, Boolean.class, matchId, puuid));
+    }
+
+    @Override
     public void recordRetryNotBefore(UUID runId, Instant retryNotBefore) {
         requireHealthy();
         jdbc.update("""
