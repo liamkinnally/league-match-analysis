@@ -94,7 +94,7 @@ class PublicMatchLookupServiceTest {
         var decoder = new CacheDecoder();
         var ingestionService = new RiotIngestionService(gateway, decoder, cacheStore, clock);
 
-        ingestionService.executePublic(UUID.randomUUID(), new RiotIngestionCommand("KitingInYourLane", "000", 5));
+        ingestionService.executePublic(UUID.randomUUID(), new RiotIngestionCommand("ExamplePlayer", "NA1", 5));
 
         assertThat(gateway.detailCalls).isEqualTo(1);
         assertThat(cacheStore.materializeCalls).isEqualTo(1);
