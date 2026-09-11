@@ -93,7 +93,7 @@ public class RiotIngestionService {
         for (var index = 0; index < matchIds.size(); index++) {
             var matchId = matchIds.get(index);
             store.markItemRunning(runId, matchId, clock.instant());
-            if (publicLookup && store.isCompleteMatch(matchId)) {
+            if (publicLookup && store.isCompleteMatch(matchId, accountLookup.account().puuid())) {
                 store.markItemTerminal(runId, matchId, IngestionItemStatus.COMPLETE, null, null, clock.instant());
                 complete++;
                 continue;
@@ -226,7 +226,7 @@ public class RiotIngestionService {
                         partial,
                         failed,
                         "MATERIALIZATION_PERSISTENCE_FAILED",
-                        "Match materialization persistence failed");
+                        "Match materialization failed");
             }
 
             if (timelineFailure == null) {
