@@ -58,6 +58,7 @@ REQUIRED = [
     'backend/src/test/java/dev/leagueanalysis/privacy/RemovalLedgerTest.java',
     'backend/src/test/java/dev/leagueanalysis/privacy/PlayerRemovalCommandTest.java',
     'backend/src/test/java/dev/leagueanalysis/privacy/RemovalPlannerIntegrationTest.java',
+    'backend/src/test/java/dev/leagueanalysis/privacy/RemovalPlannerFingerprintTest.java',
     'backend/src/test/java/dev/leagueanalysis/privacy/PrivacyExclusionIntegrationTest.java',
     'backend/src/test/java/dev/leagueanalysis/ingestion/riot/application/PrivacyAwareIngestionIntegrationTest.java',
 

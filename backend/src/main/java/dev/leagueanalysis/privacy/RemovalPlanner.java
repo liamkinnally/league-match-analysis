@@ -1,5 +1,12 @@
 package dev.leagueanalysis.privacy;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
+import java.security.DigestOutputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.OffsetDateTime;
 import java.util.*;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -233,10 +240,28 @@ public final class RemovalPlanner {
         return new Data(payloads,captures,identities,participants,runs,items,matches,rows);
     }
     private static String fingerprint(Set<String> subjects, Set<String> aliases, Set<String> matches, List<String> rows) {
-        var content = new StringBuilder("removal-plan-v1\n");
-        for (var group : List.of(subjects,aliases,matches)) { content.append(new TreeSet<>(group)).append('\n'); }
-        for (String row : rows) content.append(row.length()).append(':').append(row).append('\n');
-        return PrivacyHash.of(content.toString());
+        try {
+            var digest = MessageDigest.getInstance("SHA-256");
+            // Preserve the v1 character lengths and UTF-8 encoding without
+            // allocating the complete dataset again as text or a byte array.
+            try (var content = new OutputStreamWriter(new DigestOutputStream(OutputStream.nullOutputStream(), digest),
+                    StandardCharsets.UTF_8)) {
+                content.write("removal-plan-v1\n");
+                for (var group : List.of(subjects,aliases,matches)) {
+                    content.write(new TreeSet<>(group).toString());
+                    content.write('\n');
+                }
+                for (String row : rows) {
+                    content.write(Integer.toString(row.length()));
+                    content.write(':');
+                    content.write(row);
+                    content.write('\n');
+                }
+            }
+            return HexFormat.of().formatHex(digest.digest());
+        } catch (IOException | NoSuchAlgorithmException impossible) {
+            throw new IllegalStateException(impossible);
+        }
     }
     private static boolean isMatch(String kind) { return kind.equals("MATCH_DETAIL") || kind.equals("MATCH_TIMELINE"); }
     private static void addMatch(Set<String> matches, String match) {

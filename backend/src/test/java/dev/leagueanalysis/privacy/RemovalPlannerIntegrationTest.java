@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.*;
@@ -62,6 +63,26 @@ class RemovalPlannerIntegrationTest {
         assertThat(plan.aliasHashes()).contains(PrivacyHash.riotId("InventedPlayer", "NA1"));
         assertThat(planner.plan(TARGET).fingerprint()).isEqualTo(plan.fingerprint());
         assertThat(snapshot()).isEqualTo(before);
+    }
+
+    @Test void fingerprintPreservesV1DatabaseEncodingAndRejectsUnrelatedRawOrNormalizedDrift() throws Exception {
+        match(UNRELATED, "other-puuid", "invented-puuid-2", 0);
+        match(SHARED, TARGET, "invented-puuid-2", 1);
+        var original = planner.plan(TARGET);
+        assertThat(original.fingerprint()).isEqualTo(legacyFingerprint(original));
+
+        jdbc.update("update league_analysis.source_payload set payload_json=payload_json || cast(? as jsonb) where source_kind='MATCH_TIMELINE'",
+                "{\"legacyNote\":\"Å玩家🦊\\n\"}");
+        var rawChanged = planner.plan(TARGET);
+        assertThat(rawChanged.affectedRecords()).isEqualTo(original.affectedRecords());
+        assertThat(rawChanged.fingerprint()).isEqualTo(legacyFingerprint(rawChanged)).isNotEqualTo(original.fingerprint());
+        assertThatThrownBy(() -> execute(original)).hasMessageContaining("REMOVAL_PLAN_CHANGED");
+
+        jdbc.update("update league_analysis.riot_identity set game_name=? where puuid='other-puuid'", "Unrelated Å玩家🦊");
+        var normalizedChanged = planner.plan(TARGET);
+        assertThat(normalizedChanged.affectedRecords()).isEqualTo(rawChanged.affectedRecords());
+        assertThat(normalizedChanged.fingerprint()).isEqualTo(legacyFingerprint(normalizedChanged)).isNotEqualTo(rawChanged.fingerprint());
+        assertThatThrownBy(() -> execute(rawChanged)).hasMessageContaining("REMOVAL_PLAN_CHANGED");
     }
 
     @Test void deletesDuplicateRawCapturesAndInterruptedLookupButPreservesOtherMatchAndReanchorsIdentity() throws Exception {
@@ -216,5 +237,19 @@ class RemovalPlannerIntegrationTest {
     }
     static List<Map<String,Object>> snapshot() {
         return jdbc.queryForList("select 'run' kind, to_jsonb(t)::text data from league_analysis.ingestion_run t union all select 'identity',to_jsonb(t)::text from league_analysis.riot_identity t union all select 'capture',to_jsonb(t)::text from league_analysis.source_capture t order by kind,data");
+    }
+    private static String legacyFingerprint(RemovalPlan plan) {
+        // Frozen v1 encoding verifies compatibility with confirmations issued
+        // before the streaming implementation, against actual PostgreSQL JSON.
+        var content = new StringBuilder("removal-plan-v1\n");
+        for (var group : List.of(plan.puuidHashes(), plan.aliasHashes(), plan.matchHashes()))
+            content.append(new TreeSet<>(group)).append('\n');
+        for (String table : List.of("ingestion_run", "source_payload", "source_capture", "ingestion_item", "riot_identity",
+                "riot_match", "riot_team", "riot_participant", "participant_state_observation", "match_event", "evidence_coverage")) {
+            content.append(table.length()).append(':').append(table).append('\n');
+            for (String row : jdbc.queryForList("select to_jsonb(t)::text from league_analysis." + table + " t order by to_jsonb(t)::text", String.class))
+                content.append(row.length()).append(':').append(row).append('\n');
+        }
+        return PrivacyHash.of(content.toString());
     }
 }
