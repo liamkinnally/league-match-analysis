@@ -1,9 +1,17 @@
 package dev.leagueanalysis.ingestion.riot.application;
 
+import dev.leagueanalysis.ingestion.riot.adapter.out.riot.MatchV5Decoder;
+import dev.leagueanalysis.ingestion.riot.domain.CapturedDocument;
+import dev.leagueanalysis.ingestion.riot.domain.ProviderDocument;
+import dev.leagueanalysis.ingestion.riot.domain.RiotAccount;
+import dev.leagueanalysis.ingestion.riot.domain.RiotId;
+import dev.leagueanalysis.ingestion.riot.domain.RiotMatchMaterialization;
+import dev.leagueanalysis.ingestion.riot.domain.SourceKind;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.*;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.node.JsonNodeFactory;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -80,8 +88,93 @@ class PublicMatchLookupServiceTest {
         assertThat(work).isEmpty();
     }
 
+    @Test void publicIngestionRefetchesCompleteCachedMatchWhenResolvedPuuidIsMissing() {
+        var gateway = new CacheGateway();
+        var cacheStore = new CacheStore();
+        var decoder = new CacheDecoder();
+        var ingestionService = new RiotIngestionService(gateway, decoder, cacheStore, clock);
+
+        ingestionService.executePublic(UUID.randomUUID(), new RiotIngestionCommand("KitingInYourLane", "000", 5));
+
+        assertThat(gateway.detailCalls).isEqualTo(1);
+        assertThat(cacheStore.materializeCalls).isEqualTo(1);
+    }
+
     @Test void startupFailsInterruptedPublicRunsAndRetainsRows() {
         service.interruptPreviousRuns();
         verify(store).failInterrupted(clock.instant());
+    }
+
+    private ProviderDocument document(SourceKind kind, String resource) {
+        return new ProviderDocument(
+                kind, resource, clock.instant(), 200, "AMERICAS", "NA1", null,
+                "a".repeat(64), 2, JsonNodeFactory.instance.objectNode(),
+                JsonNodeFactory.instance.objectNode(), "test-v1", 1);
+    }
+
+    private final class CacheGateway implements RiotGateway {
+        int detailCalls;
+
+        @Override public RiotAccountLookup resolveAccount(RiotId riotId) {
+            return new RiotAccountLookup(
+                    new RiotAccount("current-puuid", riotId.gameName(), riotId.tagLine()),
+                    document(SourceKind.ACCOUNT, "account"));
+        }
+
+        @Override public RiotMatchList listRankedMatchIds(String puuid, int count) {
+            return new RiotMatchList(List.of("NA1_101"), document(SourceKind.MATCH_LIST, puuid));
+        }
+
+        @Override public ProviderDocument fetchMatchDetail(String matchId) {
+            detailCalls++;
+            return document(SourceKind.MATCH_DETAIL, matchId);
+        }
+
+        @Override public ProviderDocument fetchMatchTimeline(String matchId) {
+            return document(SourceKind.MATCH_TIMELINE, matchId);
+        }
+    }
+
+    private static final class CacheDecoder extends MatchV5Decoder {
+        @Override public RiotMatchMaterialization decode(
+                CapturedDocument detail, Optional<CapturedDocument> timeline) {
+            return null;
+        }
+    }
+
+    private static final class CacheStore implements RiotIngestionStore {
+        int materializeCalls;
+
+        @Override public UUID startRun(RiotIngestionCommand command, Instant startedAt) {
+            return UUID.randomUUID();
+        }
+
+        @Override public boolean isCompleteMatch(String matchId) {
+            return true;
+        }
+
+        public boolean isCompleteMatch(String matchId, String puuid) {
+            return "old-puuid".equals(puuid);
+        }
+
+        @Override public void recordRetryNotBefore(UUID runId, Instant retryNotBefore) {}
+
+        @Override public CapturedDocument saveCapture(UUID runId, ProviderDocument document) {
+            return new CapturedDocument(UUID.randomUUID(), UUID.randomUUID(), document);
+        }
+
+        @Override public void recordResolvedAccount(UUID runId, RiotAccount account, CapturedDocument source) {}
+        @Override public void addItems(UUID runId, List<String> matchIds) {}
+        @Override public void markItemRunning(UUID runId, String matchId, Instant startedAt) {}
+
+        @Override public void materialize(UUID runId, String matchId, RiotMatchMaterialization materialization) {
+            materializeCalls++;
+        }
+
+        @Override public void markItemTerminal(UUID runId, String matchId, IngestionItemStatus status,
+                String failureCode, String failureMessage, Instant completedAt) {}
+
+        @Override public void finishRun(UUID runId, IngestionRunStatus status,
+                String failureCode, String failureMessage, Instant completedAt) {}
     }
 }
