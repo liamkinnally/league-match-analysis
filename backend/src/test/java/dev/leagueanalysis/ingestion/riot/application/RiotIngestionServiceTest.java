@@ -42,7 +42,6 @@ class RiotIngestionServiceTest {
                 "store.save.ACCOUNT",
                 "store.account",
                 "gateway.list",
-                "store.save.MATCH_LIST",
                 "store.items",
                 "store.running.NA1_101",
                 "gateway.detail.NA1_101",
@@ -58,6 +57,7 @@ class RiotIngestionServiceTest {
                 "store.save.MATCH_TIMELINE",
                 "store.materialize.NA1_102",
                 "store.terminal.NA1_102.COMPLETE",
+                "store.save.MATCH_LIST",
                 "store.finish.COMPLETE");
         assertThat(decoder.calls).isEqualTo(2);
     }
@@ -226,6 +226,77 @@ class RiotIngestionServiceTest {
         assertThat(events).doesNotContain("gateway.detail.NA1_102");
     }
 
+    @Test
+    void lateMatchListCaptureFailureRetainsActualImportedCounts() {
+        var events = new ArrayList<String>();
+        var gateway = new FakeGateway(events, List.of("NA1_101"));
+        var store = new FakeStore(events);
+        store.captureFailureKind = SourceKind.MATCH_LIST;
+
+        var result = new RiotIngestionService(gateway, new FakeDecoder(), store, CLOCK).ingest(COMMAND);
+
+        assertThat(result).isEqualTo(new RiotIngestionResult(RUN_ID, IngestionRunStatus.FAILED, 1, 1, 0, 0));
+        assertThat(store.finish.code()).isEqualTo("SOURCE_PERSISTENCE_FAILED");
+    }
+
+    @Test
+    void excludedResolvedPlayerLeavesNoLookupIdentityOrCaptures() {
+        var events = new ArrayList<String>();
+        var gateway = new FakeGateway(events, List.of("NA1_101"));
+        var store = new FakeStore(events);
+        store.excludedAccount = true;
+
+        var result = new RiotIngestionService(gateway, new FakeDecoder(), store, CLOCK).ingest(COMMAND);
+
+        assertThat(result.status()).isEqualTo(IngestionRunStatus.FAILED);
+        assertThat(events).containsExactly("store.start", "gateway.account", "store.discardRun");
+    }
+
+    @Test
+    void knownExcludedSharedMatchIsSkippedWithoutSavingItsRawList() {
+        var events = new ArrayList<String>();
+        var gateway = new FakeGateway(events, List.of("NA1_101", "NA1_102"));
+        var store = new FakeStore(events);
+        store.excludedMatches.add("NA1_101");
+
+        var result = new RiotIngestionService(gateway, new FakeDecoder(), store, CLOCK).ingest(COMMAND);
+
+        assertThat(result.complete()).isEqualTo(1);
+        assertThat(result.requested()).isEqualTo(1);
+        assertThat(store.addedItems).containsExactly("NA1_102");
+        assertThat(events).doesNotContain("gateway.detail.NA1_101", "store.save.MATCH_LIST");
+        assertThat(events).contains("store.materialize.NA1_102");
+    }
+
+    @Test
+    void newlyEncounteredExcludedParticipantSkipsSharedMatchAndRetainsUnrelatedMatch() {
+        var events = new ArrayList<String>();
+        var gateway = new FakeGateway(events, List.of("NA1_101", "NA1_102"));
+        var store = new FakeStore(events);
+        store.excludedDocuments.put("NA1_101", SourceKind.MATCH_DETAIL);
+
+        var result = new RiotIngestionService(gateway, new FakeDecoder(), store, CLOCK).ingest(COMMAND);
+
+        assertThat(result.complete()).isEqualTo(1);
+        assertThat(result.requested()).isEqualTo(1);
+        assertThat(events).contains("store.discardMatch.NA1_101", "store.materialize.NA1_102");
+        assertThat(events).doesNotContain("gateway.timeline.NA1_101", "store.materialize.NA1_101", "store.save.MATCH_LIST");
+        assertThat(events.stream().filter("store.save.MATCH_DETAIL"::equals)).hasSize(1);
+    }
+
+    @Test
+    void excludedTimelineDiscardsEarlierDetailWithoutPersistingTimelineOrList() {
+        var events = new ArrayList<String>();
+        var gateway = new FakeGateway(events, List.of("NA1_101"));
+        var store = new FakeStore(events);
+        store.excludedDocuments.put("NA1_101", SourceKind.MATCH_TIMELINE);
+
+        new RiotIngestionService(gateway, new FakeDecoder(), store, CLOCK).ingest(COMMAND);
+
+        assertThat(events).contains("store.save.MATCH_DETAIL", "store.discardMatch.NA1_101");
+        assertThat(events).doesNotContain("store.save.MATCH_TIMELINE", "store.materialize.NA1_101", "store.save.MATCH_LIST");
+    }
+
     private static ProviderDocument document(SourceKind kind, String resource) {
         return new ProviderDocument(
                 kind, resource, CLOCK.instant(), 200, "AMERICAS", "NA1", null,
@@ -289,6 +360,20 @@ class RiotIngestionServiceTest {
         private Finish finish;
         private SourceKind captureFailureKind;
         private boolean materializationFailure;
+        private boolean excludedAccount;
+        private final List<String> excludedMatches = new ArrayList<>();
+        private final Map<String, SourceKind> excludedDocuments = new HashMap<>();
+        private List<String> addedItems = List.of();
+
+        public boolean isExcludedAccount(RiotAccount account) { return excludedAccount; }
+        public boolean isExcludedMatch(String matchId) { return excludedMatches.contains(matchId); }
+        public boolean isExcludedDocument(ProviderDocument document) {
+            return document.kind() == excludedDocuments.get(document.resourceKey());
+        }
+        public void discardRun(UUID runId) { events.add("store.discardRun"); }
+        public void discardExcludedMatch(UUID runId, String matchId) {
+            events.add("store.discardMatch." + matchId);
+        }
 
         FakeStore(List<String> events) {
             this.events = events;
@@ -322,6 +407,7 @@ class RiotIngestionServiceTest {
         @Override
         public void addItems(UUID runId, List<String> matchIds) {
             events.add("store.items");
+            addedItems = List.copyOf(matchIds);
         }
 
         @Override

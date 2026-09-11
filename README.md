@@ -52,6 +52,8 @@ Suggestions use a small deterministic heuristic: for each gold-bearing sample, c
 
 Riot keys, PUUIDs and captured provider response bodies remain server-side. PostgreSQL retains captured payloads, retrieval/ingestion records and normalized match data; re-ingestion replaces current normalized rows while preserving capture history. No scheduled data-cleanup policy is implemented. Optional patch-matched Data Dragon images fall back to text/IDs when unavailable. Live ingestion currently supports one persistent backend instance; see [lookup behavior and limits](docs/public-match-lookup.md).
 
+The [private operator removal workflow](docs/player-data-removal.md) supports reviewed dry runs, explicit whole-match deletion, ongoing player exclusion and backup reconciliation. It requires maintenance mode and a private ledger outside PostgreSQL backups; it is not a public endpoint or an automatic retention policy.
+
 ## Architecture and verification
 
 The request path is browser → Next.js server → Spring Boot → PostgreSQL. Java performs Riot ingestion, normalization and deterministic calculations; React/TypeScript renders validated responses and keeps comparison/interval state in the URL. [Architecture](docs/architecture.md) explains these boundaries and retained analysis routes. [Developer/API guide](docs/developer-guide.md) covers local ingestion, legacy analysis and focused checks.

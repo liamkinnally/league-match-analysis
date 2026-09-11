@@ -119,3 +119,13 @@ it("renders patch-matched champion and final-item assets in a compact history ro
   expect(inventory.children[6]).toHaveClass("development-item-slot--trinket");
   expect(screen.getByText("Match development →")).toBeVisible();
 });
+
+it.each(["RUNNING", "FAILED"])("labels an unresolved %s lookup without rendering an empty Riot ID", async (status) => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ ...running, status, gameName: "", tagLine: "" })));
+  await act(async () => render(<PlayerSearch initialRunId={runId} />));
+  expect(screen.getByRole("heading", { name: "Player lookup" })).toBeVisible();
+  expect(screen.queryByRole("heading", { name: "#" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(screen.getByLabelText("Game name")).toHaveValue("");
+  expect(screen.getByRole("button", { name: "Find matches" })).toBeEnabled();
+});

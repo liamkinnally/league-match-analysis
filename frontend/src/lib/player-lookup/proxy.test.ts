@@ -61,3 +61,25 @@ it("projects version and ordered final item IDs for patch-matched history assets
   expect(result.matches[0].endItemIds).toEqual([3071, 3047, 3053, 6333, 3065, 0, 3364]);
   expect(result.matches[0]).not.toHaveProperty("raw");
 });
+
+it.each(["RUNNING", "FAILED"])("accepts an unresolved %s lookup without persisting player identity", async (status) => {
+  const unresolved = { ...lookup, gameName: "", tagLine: "", status };
+  expect(parseLookup(unresolved)).toEqual(unresolved);
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(unresolved)));
+  const response = await GET(new Request("http://localhost"), { params: Promise.resolve({ runId }) });
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual(unresolved);
+});
+
+it.each(["COMPLETE", "EMPTY", "PARTIAL"])("rejects missing identity on a verified %s result", (status) => {
+  expect(() => parseLookup({ ...lookup, status, gameName: "", tagLine: "" })).toThrow("INVALID_LOOKUP");
+});
+
+it.each([
+  { gameName: "", tagLine: "NA1" },
+  { gameName: "Invented", tagLine: "" },
+])("rejects partially missing identity: %j", (identity) => {
+  for (const status of ["RUNNING", "FAILED"]) {
+    expect(() => parseLookup({ ...lookup, status, ...identity })).toThrow("INVALID_LOOKUP");
+  }
+});

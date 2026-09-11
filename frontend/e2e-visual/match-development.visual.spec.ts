@@ -110,10 +110,12 @@ test("failed lookup", async ({ page }) => {
   const height = await page.evaluate(() => ({
     document: document.documentElement.scrollHeight,
     viewport: document.documentElement.clientHeight,
+    notice: document.querySelector(".prototype-notice")?.getBoundingClientRect().height ?? 0,
   }));
-  expect(height.document).toBeLessThanOrEqual(height.viewport);
+  // Policy notice length may grow independently of the compact failure content.
+  expect(height.document - height.notice).toBeLessThanOrEqual(height.viewport);
   expect(errors).toEqual([]);
-  await expect(page).toHaveScreenshot("failed-lookup-narrow.png", { animations: "disabled" });
+  await expect(page).toHaveScreenshot("failed-lookup-narrow.png", { animations: "disabled", fullPage: true });
 });
 
 test("home narrow", async ({ page }) => {

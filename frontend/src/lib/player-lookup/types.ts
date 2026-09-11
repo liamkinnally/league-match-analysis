@@ -41,8 +41,10 @@ export function parseLookup(value: unknown): PlayerLookup {
   const runId = text(r.runId);
   if (!runIdPattern.test(runId) || !["RUNNING", "COMPLETE", "EMPTY", "PARTIAL", "FAILED"].includes(String(r.status))
       || !Array.isArray(r.matches) || r.matches.length > 5) throw new Error("INVALID_LOOKUP");
+  const unresolved = (r.status === "RUNNING" || r.status === "FAILED")
+    && r.gameName === "" && r.tagLine === "";
   return {
-    runId, gameName: text(r.gameName), tagLine: text(r.tagLine, 16), status: r.status as PlayerLookup["status"],
+    runId, gameName: unresolved ? "" : text(r.gameName), tagLine: unresolved ? "" : text(r.tagLine, 16), status: r.status as PlayerLookup["status"],
     message: typeof r.message === "string" && messages.has(r.message) ? r.message : null,
     retryNotBefore: retryDate(r.retryNotBefore),
     matches: r.matches.map((value) => {

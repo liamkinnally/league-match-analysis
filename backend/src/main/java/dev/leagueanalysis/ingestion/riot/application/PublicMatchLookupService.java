@@ -29,6 +29,9 @@ public class PublicMatchLookupService {
     private final boolean enabled;
     private final Executor worker;
     private final Map<RequestKey, UUID> active = new HashMap<>();
+    // Unverified user input must not survive a crash/restart. It is used only to
+    // label active responses until the Account lookup verifies ownership.
+    private final Map<UUID, RiotIngestionCommand> pendingIdentities = new HashMap<>();
     private final Map<String, List<Instant>> submissions = new HashMap<>();
 
     @Autowired
@@ -81,10 +84,12 @@ public class PublicMatchLookupService {
         if (times.size() >= 6) throw new PublicLookupException(429, "Too many lookups from this connection. Try again shortly.", times.getFirst().plusSeconds(60));
         UUID runId = store.startPublicRun(command, now);
         active.put(key, runId);
+        pendingIdentities.put(runId, command);
         try {
             worker.execute(() -> execute(key, runId, command));
         } catch (RejectedExecutionException exception) {
             active.remove(key);
+            pendingIdentities.remove(runId);
             store.failPublicRun(runId, now);
             throw busy(now.plusSeconds(2));
         }
@@ -102,12 +107,22 @@ public class PublicMatchLookupService {
         } catch (RuntimeException exception) {
             store.failPublicRun(runId, clock.instant());
         } finally {
-            synchronized (this) { active.remove(key); }
+            synchronized (this) {
+                active.remove(key);
+                pendingIdentities.remove(runId);
+            }
         }
     }
 
-    public PublicMatchLookup get(UUID runId) {
-        return store.readPublicRun(runId).orElseThrow(() -> new PublicLookupException(404, "Lookup not found. Search again.", null));
+    public synchronized PublicMatchLookup get(UUID runId) {
+        var lookup = store.readPublicRun(runId)
+                .orElseThrow(() -> new PublicLookupException(404, "Lookup not found. Search again.", null));
+        var pending = pendingIdentities.get(runId);
+        if (pending != null && lookup.gameName().isEmpty() && lookup.tagLine().isEmpty()) {
+            return new PublicMatchLookup(lookup.runId(), pending.gameName(), pending.tagLine(), lookup.status(),
+                    lookup.message(), lookup.retryNotBefore(), lookup.matches());
+        }
+        return lookup;
     }
 
     private PublicLookupException busy(Instant retry) {

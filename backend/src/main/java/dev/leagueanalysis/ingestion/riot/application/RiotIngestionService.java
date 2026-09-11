@@ -6,6 +6,7 @@ import dev.leagueanalysis.ingestion.riot.domain.ProviderDocument;
 import dev.leagueanalysis.ingestion.riot.domain.RiotId;
 import dev.leagueanalysis.ingestion.riot.domain.RiotMatchMaterialization;
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -49,9 +50,15 @@ public class RiotIngestionService {
             return failUnexpectedSetup(runId);
         }
 
+        if (store.isExcludedAccount(accountLookup.account()) || store.isExcludedDocument(accountLookup.source())) {
+            store.discardRun(runId);
+            return new RiotIngestionResult(runId, IngestionRunStatus.FAILED, 0, 0, 0, 0);
+        }
+
         try {
             var accountCapture = store.saveCapture(runId, accountLookup.source());
             store.recordResolvedAccount(runId, accountLookup.account(), accountCapture);
+            store.recordVerifiedRequestedIdentity(runId, command);
         } catch (RuntimeException exception) {
             return failPersistenceSetup(runId, "SOURCE_PERSISTENCE_FAILED",
                     "Source evidence persistence failed");
@@ -69,19 +76,17 @@ public class RiotIngestionService {
         }
 
         final List<String> matchIds;
+        boolean retainRawMatchList;
         try {
-            store.saveCapture(runId, matchList.source());
-            matchIds = matchList.matchIds();
+            matchIds = new ArrayList<>(matchList.matchIds().stream().filter(id -> !store.isExcludedMatch(id)).toList());
+            retainRawMatchList = matchIds.size() == matchList.matchIds().size()
+                    && !store.isExcludedDocument(matchList.source());
             store.addItems(runId, matchIds);
         } catch (RuntimeException exception) {
             return failPersistenceSetup(runId, "SOURCE_PERSISTENCE_FAILED",
                     "Source evidence persistence failed");
         }
 
-        if (publicLookup && matchIds.isEmpty()) {
-            store.finishRun(runId, IngestionRunStatus.COMPLETE, null, null, clock.instant());
-            return new RiotIngestionResult(runId, IngestionRunStatus.COMPLETE, 0, 0, 0, 0);
-        }
         var complete = 0;
         var partial = 0;
         var failed = 0;
@@ -120,6 +125,13 @@ public class RiotIngestionService {
             } catch (RuntimeException exception) {
                 markUnexpectedFailure(runId, matchId);
                 failed++;
+                continue;
+            }
+
+            if (store.isExcludedDocument(detailDocument)) {
+                store.discardExcludedMatch(runId, matchId);
+                matchIds.remove(index--);
+                retainRawMatchList = false;
                 continue;
             }
 
@@ -173,6 +185,12 @@ public class RiotIngestionService {
             }
 
             if (timelineDocument != null) {
+                if (store.isExcludedDocument(timelineDocument)) {
+                    store.discardExcludedMatch(runId, matchId);
+                    matchIds.remove(index--);
+                    retainRawMatchList = false;
+                    continue;
+                }
                 try {
                     timeline = Optional.of(store.saveCapture(runId, timelineDocument));
                 } catch (RuntimeException exception) {
@@ -237,6 +255,22 @@ public class RiotIngestionService {
             }
         }
 
+        // The original response is evidence, not a filtered synthetic list. Defer its
+        // capture until details have revealed whether a previously unknown match is excluded.
+        if (retainRawMatchList) {
+            try {
+                store.saveCapture(runId, matchList.source());
+            } catch (RuntimeException exception) {
+                store.finishRun(runId, IngestionRunStatus.FAILED, "SOURCE_PERSISTENCE_FAILED",
+                        "Source evidence persistence failed", clock.instant());
+                return new RiotIngestionResult(runId, IngestionRunStatus.FAILED,
+                        matchIds.size(), complete, partial, failed);
+            }
+        }
+        if (publicLookup && matchIds.isEmpty()) {
+            store.finishRun(runId, IngestionRunStatus.COMPLETE, null, null, clock.instant());
+            return new RiotIngestionResult(runId, IngestionRunStatus.COMPLETE, 0, 0, 0, 0);
+        }
         return finishNormally(runId, matchIds.size(), complete, partial, failed);
     }
 

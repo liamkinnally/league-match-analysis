@@ -1,5 +1,7 @@
 package dev.leagueanalysis.ingestion.riot.adapter.out.persistence;
 
+import dev.leagueanalysis.privacy.PrivacyHash;
+import dev.leagueanalysis.privacy.PrivacyRuntimeGuard;
 import dev.leagueanalysis.ingestion.riot.application.IngestionItemStatus;
 import dev.leagueanalysis.ingestion.riot.application.IngestionRunStatus;
 import dev.leagueanalysis.ingestion.riot.application.RiotIngestionCommand;
@@ -24,10 +26,19 @@ import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.ObjectMapper;
 
 @Repository
+@org.springframework.context.annotation.DependsOn("privacyRuntimeGuard")
 public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueanalysis.ingestion.riot.application.PublicMatchLookupStore {
     private final JdbcTemplate jdbc;
     private final TransactionTemplate transactions;
     private final ObjectMapper json;
+    private PrivacyRuntimeGuard privacyRuntimeGuard;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setPrivacyRuntimeGuard(PrivacyRuntimeGuard guard) { this.privacyRuntimeGuard = guard; }
+
+    private void requireHealthy() {
+        if (privacyRuntimeGuard != null) privacyRuntimeGuard.requireHealthy();
+    }
 
     public JdbcRiotIngestionStore(
             JdbcTemplate jdbc,
@@ -39,19 +50,97 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
     }
 
     @Override
+    public boolean isExcludedAccount(RiotAccount account) {
+        requireHealthy();
+        // Riot IDs can be reassigned. Only the verified stable PUUID determines
+        // whether this account is the excluded person.
+        return excludedHash("puuid", PrivacyHash.of(account.puuid()));
+    }
+
+    @Override
+    public boolean isExcludedMatch(String matchId) {
+        requireHealthy();
+        return excludedHash("match", PrivacyHash.of(matchId));
+    }
+
+    private boolean excludedHash(String kind, String hash) {
+        return Boolean.TRUE.equals(jdbc.queryForObject("""
+                select exists(select 1 from league_analysis.privacy_exclusion
+                    where kind = ? and subject_hash = ?)
+                """, Boolean.class, kind, hash));
+    }
+
+    @Override
+    public boolean isExcludedDocument(ProviderDocument document) {
+        requireHealthy();
+        return Boolean.TRUE.equals(jdbc.queryForObject("""
+                select league_analysis.privacy_json_excluded(cast(? as jsonb))
+                    or league_analysis.privacy_json_excluded(cast(? as jsonb))
+                    or league_analysis.privacy_blocked('puuid', ?)
+                    or league_analysis.privacy_blocked('match', ?)
+                """, Boolean.class, document.payload().toString(), document.responseMetadata().toString(),
+                document.resourceKey(), document.resourceKey()));
+    }
+
+    @Override
+    public void discardRun(UUID runId) {
+        requireHealthy();
+        // Called before persisting an excluded account response. Do not risk deleting
+        // other evidence if a future caller mistakenly uses this after setup.
+        int removed = jdbc.update("""
+                delete from league_analysis.ingestion_run r where r.id = ? and r.resolved_puuid is null
+                    and not exists(select 1 from league_analysis.source_capture c where c.ingestion_run_id = r.id)
+                    and not exists(select 1 from league_analysis.ingestion_item i where i.ingestion_run_id = r.id)
+                """, runId);
+        if (removed != 1) throw new IllegalStateException("Unresolved lookup discard failed");
+    }
+
+    @Override
+    public void discardExcludedMatch(UUID runId, String matchId) {
+        requireHealthy();
+        transactions.executeWithoutResult(status -> {
+            var payloadIds = jdbc.query("""
+                    select source_payload_id from league_analysis.source_capture
+                    where ingestion_run_id = ? and resource_key = ?
+                        and source_kind in ('MATCH_DETAIL', 'MATCH_TIMELINE')
+                    """, (rs, row) -> rs.getObject(1, UUID.class), runId, matchId);
+            jdbc.update("delete from league_analysis.ingestion_item where ingestion_run_id = ? and match_id = ?",
+                    runId, matchId);
+            jdbc.update("""
+                    delete from league_analysis.source_capture where ingestion_run_id = ? and resource_key = ?
+                        and source_kind in ('MATCH_DETAIL', 'MATCH_TIMELINE')
+                    """, runId, matchId);
+            for (var payloadId : payloadIds) {
+                jdbc.update("""
+                        delete from league_analysis.source_payload p where id = ?
+                            and not exists(select 1 from league_analysis.source_capture c where c.source_payload_id = p.id)
+                        """, payloadId);
+            }
+            // The association was just verified from the provider document. Retaining
+            // only its hash also lets later match-list responses be rejected before capture.
+            jdbc.update("""
+                    insert into league_analysis.privacy_exclusion(kind, subject_hash) values ('match', ?)
+                    on conflict do nothing
+                    """, PrivacyHash.of(matchId));
+        });
+    }
+
+    @Override
     public UUID startRun(RiotIngestionCommand command, Instant startedAt) {
+        requireHealthy();
         var runId = UUID.randomUUID();
         jdbc.update("""
                 insert into league_analysis.ingestion_run
                     (id, requested_game_name, requested_tag_line, platform_route,
                      regional_route, queue_id, match_limit, status, started_at)
-                values (?, ?, ?, 'NA1', 'AMERICAS', 420, ?, 'RUNNING', ?)
-                """, runId, command.gameName(), command.tagLine(), command.matchLimit(), timestamp(startedAt));
+                values (?, '', '', 'NA1', 'AMERICAS', 420, ?, 'RUNNING', ?)
+                """, runId, command.matchLimit(), timestamp(startedAt));
         return runId;
     }
 
     @Override
     public UUID startPublicRun(RiotIngestionCommand command, Instant now) {
+        requireHealthy();
         return Objects.requireNonNull(transactions.execute(status -> {
             var id = startRun(command, now);
             jdbc.update("update league_analysis.ingestion_run set public_request = true where id = ?", id);
@@ -61,6 +150,7 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
 
     @Override
     public boolean isCompleteMatch(String matchId) {
+        requireHealthy();
         return Boolean.TRUE.equals(jdbc.queryForObject("""
                 select exists(select 1 from league_analysis.riot_match
                 where match_id = ? and queue_id = 420 and timeline_source_capture_id is not null)
@@ -69,6 +159,7 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
 
     @Override
     public void recordRetryNotBefore(UUID runId, Instant retryNotBefore) {
+        requireHealthy();
         jdbc.update("""
                 update league_analysis.ingestion_run set retry_not_before = greatest(retry_not_before, ?)
                 where id = ?
@@ -77,6 +168,7 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
 
     @Override
     public Optional<Instant> latestCooldown() {
+        requireHealthy();
         var value = jdbc.queryForObject("""
                 select max(retry_not_before) from league_analysis.ingestion_run where public_request
                 """, OffsetDateTime.class);
@@ -85,6 +177,7 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
 
     @Override
     public Optional<PublicMatchLookup> findFresh(RiotIngestionCommand command, Instant since) {
+        requireHealthy();
         return jdbc.query("""
                 select id from league_analysis.ingestion_run
                 where public_request and status = 'COMPLETE' and completed_at > ?
@@ -96,6 +189,7 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
 
     @Override
     public Optional<PublicMatchLookup> readPublicRun(UUID runId) {
+        requireHealthy();
         return jdbc.query("""
                 select id, requested_game_name, requested_tag_line, status, failure_code, retry_not_before
                 from league_analysis.ingestion_run r where id = ? and public_request
@@ -151,6 +245,7 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
 
     @Override
     public void failInterrupted(Instant now) {
+        requireHealthy();
         transactions.executeWithoutResult(status -> {
             jdbc.update("""
                     update league_analysis.ingestion_item set status = 'SKIPPED', failure_code = 'INTERRUPTED',
@@ -168,6 +263,7 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
 
     @Override
     public void stopForCooldown(UUID runId, Instant retryNotBefore, Instant now) {
+        requireHealthy();
         transactions.executeWithoutResult(status -> {
             recordRetryNotBefore(runId, retryNotBefore);
             finishRun(runId, IngestionRunStatus.FAILED, "RATE_LIMITED", "Riot rate limit was exceeded", now);
@@ -176,11 +272,13 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
 
     @Override
     public void failPublicRun(UUID runId, Instant now) {
+        requireHealthy();
         finishRun(runId, IngestionRunStatus.FAILED, "INTERRUPTED", "Lookup interrupted", now);
     }
 
     @Override
     public CapturedDocument saveCapture(UUID runId, ProviderDocument document) {
+        requireHealthy();
         return Objects.requireNonNull(transactions.execute(status -> {
             var candidatePayloadId = UUID.randomUUID();
             var payloadId = jdbc.queryForObject("""
@@ -223,7 +321,20 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
     }
 
     @Override
+    public void recordVerifiedRequestedIdentity(UUID runId, RiotIngestionCommand command) {
+        requireHealthy();
+        int updated = jdbc.update("""
+                update league_analysis.ingestion_run r set requested_game_name = ?, requested_tag_line = ?
+                where id = ? and resolved_puuid is not null
+                    and exists(select 1 from league_analysis.source_capture c
+                        where c.ingestion_run_id = r.id and c.source_kind = 'ACCOUNT')
+                """, command.gameName(), command.tagLine(), runId);
+        if (updated != 1) throw new IllegalStateException("Verified lookup identity unavailable");
+    }
+
+    @Override
     public void recordResolvedAccount(UUID runId, RiotAccount account, CapturedDocument source) {
+        requireHealthy();
         requireCaptureInRun(runId, source);
         jdbc.update("update league_analysis.ingestion_run set resolved_puuid = ? where id = ?", account.puuid(), runId);
         jdbc.update("""
@@ -269,6 +380,7 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
 
     @Override
     public void addItems(UUID runId, List<String> matchIds) {
+        requireHealthy();
         transactions.executeWithoutResult(status -> {
             for (var ordinal = 0; ordinal < matchIds.size(); ordinal++) {
                 jdbc.update("""
@@ -283,6 +395,7 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
 
     @Override
     public void markItemRunning(UUID runId, String matchId, Instant startedAt) {
+        requireHealthy();
         jdbc.update("""
                 update league_analysis.ingestion_item
                 set status = 'RUNNING', failure_code = null, failure_message = null,
@@ -293,6 +406,7 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
 
     @Override
     public void materialize(UUID runId, String matchId, RiotMatchMaterialization materialization) {
+        requireHealthy();
         if (!matchId.equals(materialization.match().matchId())) {
             throw new IllegalArgumentException("MISMATCHED_MATCH_ID");
         }
@@ -319,6 +433,7 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
             String failureCode,
             String failureMessage,
             Instant completedAt) {
+        requireHealthy();
         jdbc.update("""
                 update league_analysis.ingestion_item
                 set status = ?, failure_code = ?, failure_message = ?, completed_at = ?
@@ -333,6 +448,7 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
             String failureCode,
             String failureMessage,
             Instant completedAt) {
+        requireHealthy();
         jdbc.update("""
                 update league_analysis.ingestion_run
                 set status = ?, failure_code = ?, failure_message = ?, completed_at = ?

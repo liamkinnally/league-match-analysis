@@ -24,6 +24,7 @@ export default function PlayerSearch({ initialRunId }: { initialRunId?: string }
   const running = !issue && lookup?.status === "RUNNING";
   const count = lookup?.matches.length ?? 0;
   const busy = submitting || loading || running;
+  const identityKnown = Boolean(lookup?.gameName && lookup?.tagLine);
   const failed = !issue && lookup?.status === "FAILED";
 
   return <section className="player-lookup" aria-label="Player lookup">
@@ -40,7 +41,8 @@ export default function PlayerSearch({ initialRunId }: { initialRunId?: string }
 
     {(lookup || busy || issue) && <div className="player-lookup__results">
       {lookup && <div className="player-lookup__identity">
-        <h2 title={`${lookup.gameName}#${lookup.tagLine}`}>{lookup.gameName}<span>#{lookup.tagLine}</span></h2>
+        <h2 title={identityKnown ? `${lookup.gameName}#${lookup.tagLine}` : undefined}>{identityKnown
+          ? <>{lookup.gameName}<span>#{lookup.tagLine}</span></> : "Player lookup"}</h2>
         <span>Recent matches</span>
       </div>}
       <div className="player-lookup__status">

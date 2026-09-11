@@ -529,3 +529,23 @@
 !/ops/postgres-backup/Dockerfile
 !/ops/postgres-backup/backup.sh
 !/ops/postgres-backup/backup.test.py
+
+# Private operator workflow source; runtime ledgers and reports stay ignored.
+!/backend/src/main/java/dev/leagueanalysis/privacy/
+!/backend/src/test/java/dev/leagueanalysis/privacy/
+!/backend/src/main/java/dev/leagueanalysis/privacy/PlayerRemovalCommand.java
+!/backend/src/main/java/dev/leagueanalysis/privacy/PrivacyRuntimeGuard.java
+!/backend/src/main/java/dev/leagueanalysis/privacy/PrivacyHash.java
+!/backend/src/main/java/dev/leagueanalysis/privacy/RemovalPlanner.java
+!/backend/src/main/java/dev/leagueanalysis/privacy/PrivacyAvailabilityFilter.java
+!/backend/src/main/java/dev/leagueanalysis/privacy/RemovalLedger.java
+!/backend/src/main/java/dev/leagueanalysis/privacy/RemovalPlan.java
+!/backend/src/test/java/dev/leagueanalysis/privacy/RemovalLedgerTest.java
+!/backend/src/test/java/dev/leagueanalysis/privacy/PlayerRemovalCommandTest.java
+!/backend/src/test/java/dev/leagueanalysis/privacy/RemovalPlannerIntegrationTest.java
+!/backend/src/test/java/dev/leagueanalysis/privacy/PrivacyExclusionIntegrationTest.java
+!/backend/src/test/java/dev/leagueanalysis/ingestion/riot/application/PrivacyAwareIngestionIntegrationTest.java
+!/backend/src/main/resources/db/migration/V6__private_player_removal.sql
+!/scripts/player-removal
+!/docs/player-data-removal.md
+!/backend/src/test/java/dev/leagueanalysis/ingestion/riot/adapter/out/persistence/JdbcIngestionLeaseGuardTest.java

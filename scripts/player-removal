@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
+jar=${PLAYER_REMOVAL_JAR:-"$script_dir/../backend/target/backend-0.0.1-SNAPSHOT.jar"}
+if [[ ! -f "$jar" ]]; then
+  echo "Build the reviewed backend first: ./scripts/verify task backend" >&2
+  exit 2
+fi
+exec java -jar "$jar" --player-removal "$@"

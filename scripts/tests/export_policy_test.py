@@ -9,6 +9,8 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 NEGATIVE = [
+    'data/player-removal/ledger.json', 'ops/player-removal/ledger.json',
+    'docs/private/removal-receipt.json', '.planning/player-removal/subject.txt',
     '.planning/CURRENT.md', '.planning/reports/review.md',
     '.worktrees/nested/frontend/src/app/page.tsx',
     'backend/src/main/resources/.env.production',
@@ -43,6 +45,22 @@ REQUIRED = [
     'docs/public-match-lookup.md', 'docs/images/sample-development.png',
     'scripts/setup', 'scripts/dev', 'scripts/seed-demo', 'scripts/verify',
     'scripts/package-smoke', 'scripts/tests/export_policy_test.py',
+    'backend/src/test/java/dev/leagueanalysis/ingestion/riot/adapter/out/persistence/JdbcIngestionLeaseGuardTest.java',
+    'scripts/player-removal', 'docs/player-data-removal.md',
+    'backend/src/main/resources/db/migration/V6__private_player_removal.sql',
+    'backend/src/main/java/dev/leagueanalysis/privacy/PlayerRemovalCommand.java',
+    'backend/src/main/java/dev/leagueanalysis/privacy/PrivacyRuntimeGuard.java',
+    'backend/src/main/java/dev/leagueanalysis/privacy/PrivacyHash.java',
+    'backend/src/main/java/dev/leagueanalysis/privacy/RemovalPlanner.java',
+    'backend/src/main/java/dev/leagueanalysis/privacy/PrivacyAvailabilityFilter.java',
+    'backend/src/main/java/dev/leagueanalysis/privacy/RemovalLedger.java',
+    'backend/src/main/java/dev/leagueanalysis/privacy/RemovalPlan.java',
+    'backend/src/test/java/dev/leagueanalysis/privacy/RemovalLedgerTest.java',
+    'backend/src/test/java/dev/leagueanalysis/privacy/PlayerRemovalCommandTest.java',
+    'backend/src/test/java/dev/leagueanalysis/privacy/RemovalPlannerIntegrationTest.java',
+    'backend/src/test/java/dev/leagueanalysis/privacy/PrivacyExclusionIntegrationTest.java',
+    'backend/src/test/java/dev/leagueanalysis/ingestion/riot/application/PrivacyAwareIngestionIntegrationTest.java',
+
 ]
 
 

@@ -1,7 +1,7 @@
 FROM postgres:17.11-bookworm
 
 RUN apt-get update \
-    && apt-get install --yes --no-install-recommends awscli ca-certificates \
+    && apt-get install --yes --no-install-recommends awscli ca-certificates python3 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY backup.sh /usr/local/bin/league-analysis-backup
