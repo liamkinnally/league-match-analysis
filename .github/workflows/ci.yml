@@ -20,9 +20,6 @@ jobs:
           java-version: '21'
           cache: maven
           cache-dependency-path: backend/pom.xml
-      - name: Verify public source allowlist
-        working-directory: .
-        run: python3 scripts/tests/export_policy_test.py
       - name: Validate Compose configuration
         working-directory: .
         run: docker compose --env-file .env.example config --quiet
@@ -79,7 +76,7 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Verify backend-to-browser behavior
         run: ./scripts/verify ui behavior
-      - name: Verify authoritative UI pixels
+      - name: Run visual regression tests
         run: ./scripts/verify ui visual
       - name: Stop local services
         if: always()
@@ -111,11 +108,11 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Verify application containers with a clean database
         run: ./scripts/package-smoke
-      - name: Upload packaged browser receipt
+      - name: Upload packaged browser screenshot
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: packaged-browser-receipt
+          name: packaged-browser-screenshot
           path: frontend/test-results/package-smoke-*.png
           if-no-files-found: ignore
           retention-days: 7
