@@ -56,6 +56,8 @@ Use the existing private Railway database connection. Do not enable a public Pos
 
 Initialization refuses an already initialized checkpoint or a ledger containing removals. Never replace a missing ledger with an empty one to make a restored database start. Initialization writes no player deletions, but its explicit execution applies schema migrations. Save a current, access-controlled copy of the ledger outside the database backup system.
 
+Deployment verification is part of maintenance: inspect the resulting deployment and the actual container command before continuing. In the September 11 release, reusing a previous deployment image retained its old sleep command, and an unchanged source upload was skipped by `backend/**` watch patterns. Publish the current service configuration rather than reusing the previous deployment snapshot. For a configuration-only source upload that is skipped, temporarily clear the backend watch patterns, upload the clean release again, verify its manifest and process, and restore the recorded watch patterns afterward. Do not treat Railway “SUCCESS” alone as proof that Java is serving; require `/actuator/health` and the frontend `/api/health` to return `UP`.
+
 Railway's [custom command replaces the Docker entrypoint](https://docs.railway.com/deployments/start-command), [volumes are mounted at runtime with root ownership](https://docs.railway.com/volumes), and [deployments without a configured healthcheck become active when the container starts](https://docs.railway.com/deployments/reference). These provider steps are documented deployment preparation, not a claim that a hosted removal was performed during implementation.
 
 ## Dry run, execute, check
