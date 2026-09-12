@@ -18,6 +18,7 @@ test("tokenless sample supports match selection and URL restoration", async ({ p
   await expect(page.getByText("Sample match — synthetic data")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Garen vs Darius" })).toBeVisible();
   await page.getByRole("link", { name: /^8:00–10:00 Garen's recorded comparison:/ }).click();
+  await expect(page).toHaveURL(/focus=6&compare=1&from=480000&to=600000/);
   await page.getByRole("tab", { name: "XP" }).click();
   await expect(page).toHaveURL(/focus=6&compare=1&from=480000&to=600000&metric=xp/);
   await expect(page.getByLabel("Selected interval 8:00–10:00")).toContainText("+20 XP");
