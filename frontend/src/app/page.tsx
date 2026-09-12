@@ -1,18 +1,20 @@
 import { Suspense } from "react";
-import PlayerSearch from "../components/player-search";
+import { PlayerSearchEntry } from "../components/player-search-entry";
+import { isSamplePreview } from "../lib/preview-mode";
 import { EntryShell } from "../components/entry-shell";
 import { SampleMatchLink, SampleMatchPending } from "../components/sample-match-link";
 
 export const dynamic = "force-dynamic";
 
 export default function Home() {
+  const sample = isSamplePreview();
   return <EntryShell active="home" compact>
     <header className="entry-heading">
       <p className="development-kicker">Match review</p>
-      <h1>Find a player</h1>
-      <p>Open a recent match to compare opponents and review how the game developed.</p>
+      <h1>{sample ? "Explore a sample match" : "Find a player"}</h1>
+      <p>{sample ? "Compare opponents and review a match using invented data." : "Open a recent match to compare opponents and review how the game developed."}</p>
     </header>
-    <PlayerSearch />
+    <PlayerSearchEntry />
     <Suspense fallback={<SampleMatchPending />}><SampleMatchLink /></Suspense>
   </EntryShell>;
 }

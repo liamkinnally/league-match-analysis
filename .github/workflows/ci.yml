@@ -76,6 +76,8 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Verify backend-to-browser behavior
         run: ./scripts/verify ui behavior
+      - name: Verify sample previews without a backend
+        run: ./scripts/verify ui sample
       - name: Run visual regression tests
         run: ./scripts/verify ui visual
       - name: Stop local services

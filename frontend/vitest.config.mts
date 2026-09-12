@@ -4,7 +4,7 @@ import { configDefaults, defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [react()],
   test: {
-    exclude: [...configDefaults.exclude, "e2e/**", "e2e-package/**", "e2e-visual/**"],
+    exclude: [...configDefaults.exclude, "e2e/**", "e2e-package/**", "e2e-visual/**", "e2e-sample/**"],
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
     restoreMocks: true,

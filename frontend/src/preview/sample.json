@@ -1,0 +1,1426 @@
+{
+  "source": "backend/src/main/resources/demo/{match,timeline}.json — demo-match-v1; regenerate with node frontend/scripts/generate-preview-sample.mjs",
+  "summary": {
+    "queueId": 420,
+    "mapId": 11,
+    "gameMode": "CLASSIC",
+    "gameVersion": "16.17.1",
+    "gameCreationMs": 1788890400000,
+    "durationMs": 1800000
+  },
+  "roster": [
+    {
+      "participantId": 1,
+      "teamId": 100,
+      "championId": 122,
+      "championName": "Darius",
+      "teamPosition": "TOP",
+      "win": false,
+      "kills": 5,
+      "deaths": 6,
+      "assists": 3,
+      "laneCs": 198,
+      "jungleCs": 0,
+      "totalCs": 198,
+      "goldEarned": 12600,
+      "goldSpent": 11950,
+      "visionScore": 24,
+      "summonerSpellOneId": 4,
+      "summonerSpellTwoId": 12,
+      "endItemIds": [
+        3071,
+        3047,
+        3065,
+        1037,
+        0,
+        0,
+        3340
+      ],
+      "gameName": "Invented Player 1",
+      "tagLine": "DEMO",
+      "summonerName": null
+    },
+    {
+      "participantId": 2,
+      "teamId": 100,
+      "championId": 64,
+      "championName": "LeeSin",
+      "teamPosition": "JUNGLE",
+      "win": false,
+      "kills": 4,
+      "deaths": 7,
+      "assists": 5,
+      "laneCs": 42,
+      "jungleCs": 136,
+      "totalCs": 178,
+      "goldEarned": 11800,
+      "goldSpent": 11200,
+      "visionScore": 31,
+      "summonerSpellOneId": 4,
+      "summonerSpellTwoId": 11,
+      "endItemIds": [
+        6630,
+        3047,
+        3071,
+        0,
+        0,
+        0,
+        3364
+      ],
+      "gameName": "Invented Player 2",
+      "tagLine": "DEMO",
+      "summonerName": null
+    },
+    {
+      "participantId": 3,
+      "teamId": 100,
+      "championId": 103,
+      "championName": "Ahri",
+      "teamPosition": "MIDDLE",
+      "win": false,
+      "kills": 6,
+      "deaths": 5,
+      "assists": 4,
+      "laneCs": 185,
+      "jungleCs": 4,
+      "totalCs": 189,
+      "goldEarned": 12400,
+      "goldSpent": 11750,
+      "visionScore": 22,
+      "summonerSpellOneId": 4,
+      "summonerSpellTwoId": 14,
+      "endItemIds": [
+        6655,
+        3020,
+        3089,
+        1058,
+        0,
+        0,
+        3340
+      ],
+      "gameName": "Invented Player 3",
+      "tagLine": "DEMO",
+      "summonerName": null
+    },
+    {
+      "participantId": 4,
+      "teamId": 100,
+      "championId": 222,
+      "championName": "Jinx",
+      "teamPosition": "BOTTOM",
+      "win": false,
+      "kills": 7,
+      "deaths": 6,
+      "assists": 2,
+      "laneCs": 221,
+      "jungleCs": 2,
+      "totalCs": 223,
+      "goldEarned": 13100,
+      "goldSpent": 12600,
+      "visionScore": 17,
+      "summonerSpellOneId": 4,
+      "summonerSpellTwoId": 7,
+      "endItemIds": [
+        6672,
+        3006,
+        3031,
+        1042,
+        0,
+        0,
+        3340
+      ],
+      "gameName": "Invented Player 4",
+      "tagLine": "DEMO",
+      "summonerName": null
+    },
+    {
+      "participantId": 5,
+      "teamId": 100,
+      "championId": 412,
+      "championName": "Thresh",
+      "teamPosition": "UTILITY",
+      "win": false,
+      "kills": 1,
+      "deaths": 8,
+      "assists": 10,
+      "laneCs": 31,
+      "jungleCs": 0,
+      "totalCs": 31,
+      "goldEarned": 9100,
+      "goldSpent": 8500,
+      "visionScore": 48,
+      "summonerSpellOneId": 4,
+      "summonerSpellTwoId": 14,
+      "endItemIds": [
+        3190,
+        3047,
+        3109,
+        2055,
+        0,
+        0,
+        3364
+      ],
+      "gameName": "Invented Player 5",
+      "tagLine": "DEMO",
+      "summonerName": null
+    },
+    {
+      "participantId": 6,
+      "teamId": 200,
+      "championId": 86,
+      "championName": "Garen",
+      "teamPosition": "TOP",
+      "win": true,
+      "kills": 8,
+      "deaths": 3,
+      "assists": 7,
+      "laneCs": 211,
+      "jungleCs": 3,
+      "totalCs": 214,
+      "goldEarned": 13800,
+      "goldSpent": 13100,
+      "visionScore": 23,
+      "summonerSpellOneId": 4,
+      "summonerSpellTwoId": 12,
+      "endItemIds": [
+        6631,
+        3047,
+        3071,
+        3051,
+        0,
+        0,
+        3340
+      ],
+      "gameName": "Invented Player 6",
+      "tagLine": "DEMO",
+      "summonerName": null
+    },
+    {
+      "participantId": 7,
+      "teamId": 200,
+      "championId": 254,
+      "championName": "Vi",
+      "teamPosition": "JUNGLE",
+      "win": true,
+      "kills": 5,
+      "deaths": 4,
+      "assists": 9,
+      "laneCs": 36,
+      "jungleCs": 148,
+      "totalCs": 184,
+      "goldEarned": 12500,
+      "goldSpent": 11900,
+      "visionScore": 29,
+      "summonerSpellOneId": 4,
+      "summonerSpellTwoId": 11,
+      "endItemIds": [
+        6630,
+        3047,
+        3071,
+        1028,
+        0,
+        0,
+        3364
+      ],
+      "gameName": "Invented Player 7",
+      "tagLine": "DEMO",
+      "summonerName": null
+    },
+    {
+      "participantId": 8,
+      "teamId": 200,
+      "championId": 61,
+      "championName": "Orianna",
+      "teamPosition": "MIDDLE",
+      "win": true,
+      "kills": 4,
+      "deaths": 2,
+      "assists": 11,
+      "laneCs": 204,
+      "jungleCs": 5,
+      "totalCs": 209,
+      "goldEarned": 13200,
+      "goldSpent": 12550,
+      "visionScore": 26,
+      "summonerSpellOneId": 4,
+      "summonerSpellTwoId": 12,
+      "endItemIds": [
+        6657,
+        3020,
+        3089,
+        1058,
+        0,
+        0,
+        3340
+      ],
+      "gameName": "Invented Player 8",
+      "tagLine": "DEMO",
+      "summonerName": null
+    },
+    {
+      "participantId": 9,
+      "teamId": 200,
+      "championId": 145,
+      "championName": "Kaisa",
+      "teamPosition": "BOTTOM",
+      "win": true,
+      "kills": 9,
+      "deaths": 4,
+      "assists": 6,
+      "laneCs": 234,
+      "jungleCs": 0,
+      "totalCs": 234,
+      "goldEarned": 14300,
+      "goldSpent": 13600,
+      "visionScore": 18,
+      "summonerSpellOneId": 4,
+      "summonerSpellTwoId": 7,
+      "endItemIds": [
+        6672,
+        3006,
+        3031,
+        1042,
+        0,
+        0,
+        3340
+      ],
+      "gameName": "Invented Player 9",
+      "tagLine": "DEMO",
+      "summonerName": null
+    },
+    {
+      "participantId": 10,
+      "teamId": 200,
+      "championId": 111,
+      "championName": "Nautilus",
+      "teamPosition": "UTILITY",
+      "win": true,
+      "kills": 2,
+      "deaths": 5,
+      "assists": 13,
+      "laneCs": 34,
+      "jungleCs": 0,
+      "totalCs": 34,
+      "goldEarned": 9600,
+      "goldSpent": 9000,
+      "visionScore": 51,
+      "summonerSpellOneId": 4,
+      "summonerSpellTwoId": 14,
+      "endItemIds": [
+        3190,
+        3047,
+        3109,
+        2055,
+        0,
+        0,
+        3364
+      ],
+      "gameName": "Invented Player 10",
+      "tagLine": "DEMO",
+      "summonerName": null
+    }
+  ],
+  "teams": [
+    {
+      "teamId": 100,
+      "win": false,
+      "kills": 23,
+      "deaths": 32,
+      "assists": 24,
+      "goldEarned": 59000,
+      "objectives": {
+        "tower": 3,
+        "inhibitor": null,
+        "dragon": 1,
+        "baron": null,
+        "riftHerald": null,
+        "horde": null
+      }
+    },
+    {
+      "teamId": 200,
+      "win": true,
+      "kills": 28,
+      "deaths": 18,
+      "assists": 46,
+      "goldEarned": 63400,
+      "objectives": {
+        "tower": 7,
+        "inhibitor": null,
+        "dragon": 3,
+        "baron": null,
+        "riftHerald": null,
+        "horde": null
+      }
+    }
+  ],
+  "frames": [
+    {
+      "timestampMs": 120000,
+      "participants": {
+        "1": {
+          "totalGold": 1200,
+          "xp": 800,
+          "level": 3,
+          "cs": 15
+        },
+        "2": {
+          "totalGold": 1393,
+          "xp": 1129,
+          "level": 3,
+          "cs": 12
+        },
+        "3": {
+          "totalGold": 1433,
+          "xp": 1134,
+          "level": 3,
+          "cs": 13
+        },
+        "4": {
+          "totalGold": 1480,
+          "xp": 1139,
+          "level": 3,
+          "cs": 15
+        },
+        "5": {
+          "totalGold": 1213,
+          "xp": 1143,
+          "level": 3,
+          "cs": 2
+        },
+        "6": {
+          "totalGold": 1250,
+          "xp": 820,
+          "level": 3,
+          "cs": 17
+        },
+        "7": {
+          "totalGold": 1440,
+          "xp": 1153,
+          "level": 3,
+          "cs": 12
+        },
+        "8": {
+          "totalGold": 1487,
+          "xp": 1157,
+          "level": 3,
+          "cs": 14
+        },
+        "9": {
+          "totalGold": 1560,
+          "xp": 1162,
+          "level": 3,
+          "cs": 16
+        },
+        "10": {
+          "totalGold": 1247,
+          "xp": 1167,
+          "level": 3,
+          "cs": 2
+        }
+      }
+    },
+    {
+      "timestampMs": 240000,
+      "participants": {
+        "1": {
+          "totalGold": 1800,
+          "xp": 1500,
+          "level": 5,
+          "cs": 29
+        },
+        "2": {
+          "totalGold": 2137,
+          "xp": 1759,
+          "level": 5,
+          "cs": 24
+        },
+        "3": {
+          "totalGold": 2217,
+          "xp": 1768,
+          "level": 5,
+          "cs": 25
+        },
+        "4": {
+          "totalGold": 2310,
+          "xp": 1777,
+          "level": 5,
+          "cs": 30
+        },
+        "5": {
+          "totalGold": 1777,
+          "xp": 1787,
+          "level": 5,
+          "cs": 4
+        },
+        "6": {
+          "totalGold": 1900,
+          "xp": 1530,
+          "level": 5,
+          "cs": 32
+        },
+        "7": {
+          "totalGold": 2230,
+          "xp": 1805,
+          "level": 5,
+          "cs": 25
+        },
+        "8": {
+          "totalGold": 2323,
+          "xp": 1815,
+          "level": 5,
+          "cs": 28
+        },
+        "9": {
+          "totalGold": 2470,
+          "xp": 1824,
+          "level": 5,
+          "cs": 31
+        },
+        "10": {
+          "totalGold": 1843,
+          "xp": 1833,
+          "level": 5,
+          "cs": 5
+        }
+      }
+    },
+    {
+      "timestampMs": 360000,
+      "participants": {
+        "1": {
+          "totalGold": 2400,
+          "xp": 2050,
+          "level": 6,
+          "cs": 42
+        },
+        "2": {
+          "totalGold": 2880,
+          "xp": 2388,
+          "level": 6,
+          "cs": 36
+        },
+        "3": {
+          "totalGold": 3000,
+          "xp": 2402,
+          "level": 6,
+          "cs": 38
+        },
+        "4": {
+          "totalGold": 3140,
+          "xp": 2416,
+          "level": 6,
+          "cs": 45
+        },
+        "5": {
+          "totalGold": 2340,
+          "xp": 2430,
+          "level": 6,
+          "cs": 6
+        },
+        "6": {
+          "totalGold": 2500,
+          "xp": 2080,
+          "level": 6,
+          "cs": 45
+        },
+        "7": {
+          "totalGold": 3020,
+          "xp": 2458,
+          "level": 6,
+          "cs": 37
+        },
+        "8": {
+          "totalGold": 3160,
+          "xp": 2472,
+          "level": 6,
+          "cs": 42
+        },
+        "9": {
+          "totalGold": 3380,
+          "xp": 2486,
+          "level": 6,
+          "cs": 47
+        },
+        "10": {
+          "totalGold": 2440,
+          "xp": 2500,
+          "level": 6,
+          "cs": 7
+        }
+      }
+    },
+    {
+      "timestampMs": 480000,
+      "participants": {
+        "1": {
+          "totalGold": 3000,
+          "xp": 2400,
+          "level": 8,
+          "cs": 51
+        },
+        "2": {
+          "totalGold": 3623,
+          "xp": 3017,
+          "level": 8,
+          "cs": 47
+        },
+        "3": {
+          "totalGold": 3783,
+          "xp": 3036,
+          "level": 8,
+          "cs": 50
+        },
+        "4": {
+          "totalGold": 3970,
+          "xp": 3055,
+          "level": 8,
+          "cs": 59
+        },
+        "5": {
+          "totalGold": 2903,
+          "xp": 3073,
+          "level": 8,
+          "cs": 8
+        },
+        "6": {
+          "totalGold": 3100,
+          "xp": 2420,
+          "level": 8,
+          "cs": 55
+        },
+        "7": {
+          "totalGold": 3810,
+          "xp": 3111,
+          "level": 8,
+          "cs": 49
+        },
+        "8": {
+          "totalGold": 3997,
+          "xp": 3129,
+          "level": 8,
+          "cs": 56
+        },
+        "9": {
+          "totalGold": 4290,
+          "xp": 3148,
+          "level": 8,
+          "cs": 62
+        },
+        "10": {
+          "totalGold": 3037,
+          "xp": 3167,
+          "level": 8,
+          "cs": 9
+        }
+      }
+    },
+    {
+      "timestampMs": 600000,
+      "participants": {
+        "1": {
+          "totalGold": 4200,
+          "xp": 3500,
+          "level": 9,
+          "cs": 65
+        },
+        "2": {
+          "totalGold": 4367,
+          "xp": 3647,
+          "level": 9,
+          "cs": 59
+        },
+        "3": {
+          "totalGold": 4567,
+          "xp": 3670,
+          "level": 9,
+          "cs": 63
+        },
+        "4": {
+          "totalGold": 4800,
+          "xp": 3693,
+          "level": 9,
+          "cs": 74
+        },
+        "5": {
+          "totalGold": 3467,
+          "xp": 3717,
+          "level": 9,
+          "cs": 10
+        },
+        "6": {
+          "totalGold": 4710,
+          "xp": 3720,
+          "level": 9,
+          "cs": 78
+        },
+        "7": {
+          "totalGold": 4600,
+          "xp": 3763,
+          "level": 9,
+          "cs": 61
+        },
+        "8": {
+          "totalGold": 4833,
+          "xp": 3787,
+          "level": 9,
+          "cs": 70
+        },
+        "9": {
+          "totalGold": 5200,
+          "xp": 3810,
+          "level": 9,
+          "cs": 78
+        },
+        "10": {
+          "totalGold": 3633,
+          "xp": 3833,
+          "level": 9,
+          "cs": 11
+        }
+      }
+    },
+    {
+      "timestampMs": 720000,
+      "participants": {
+        "1": {
+          "totalGold": 4900,
+          "xp": 4100,
+          "level": 10,
+          "cs": 79
+        },
+        "2": {
+          "totalGold": 5110,
+          "xp": 4276,
+          "level": 10,
+          "cs": 71
+        },
+        "3": {
+          "totalGold": 5350,
+          "xp": 4304,
+          "level": 10,
+          "cs": 76
+        },
+        "4": {
+          "totalGold": 5630,
+          "xp": 4332,
+          "level": 10,
+          "cs": 89
+        },
+        "5": {
+          "totalGold": 4030,
+          "xp": 4360,
+          "level": 10,
+          "cs": 12
+        },
+        "6": {
+          "totalGold": 5400,
+          "xp": 4350,
+          "level": 10,
+          "cs": 93
+        },
+        "7": {
+          "totalGold": 5390,
+          "xp": 4416,
+          "level": 10,
+          "cs": 74
+        },
+        "8": {
+          "totalGold": 5670,
+          "xp": 4444,
+          "level": 10,
+          "cs": 84
+        },
+        "9": {
+          "totalGold": 6110,
+          "xp": 4472,
+          "level": 10,
+          "cs": 94
+        },
+        "10": {
+          "totalGold": 4230,
+          "xp": 4500,
+          "level": 10,
+          "cs": 14
+        }
+      }
+    },
+    {
+      "timestampMs": 840000,
+      "participants": {
+        "1": {
+          "totalGold": 5600,
+          "xp": 4700,
+          "level": 11,
+          "cs": 92
+        },
+        "2": {
+          "totalGold": 5853,
+          "xp": 4905,
+          "level": 11,
+          "cs": 83
+        },
+        "3": {
+          "totalGold": 6133,
+          "xp": 4938,
+          "level": 11,
+          "cs": 88
+        },
+        "4": {
+          "totalGold": 6460,
+          "xp": 4971,
+          "level": 11,
+          "cs": 104
+        },
+        "5": {
+          "totalGold": 4593,
+          "xp": 5003,
+          "level": 11,
+          "cs": 14
+        },
+        "6": {
+          "totalGold": 6200,
+          "xp": 5000,
+          "level": 11,
+          "cs": 107
+        },
+        "7": {
+          "totalGold": 6180,
+          "xp": 5069,
+          "level": 11,
+          "cs": 86
+        },
+        "8": {
+          "totalGold": 6507,
+          "xp": 5101,
+          "level": 11,
+          "cs": 98
+        },
+        "9": {
+          "totalGold": 7020,
+          "xp": 5134,
+          "level": 11,
+          "cs": 109
+        },
+        "10": {
+          "totalGold": 4827,
+          "xp": 5167,
+          "level": 11,
+          "cs": 16
+        }
+      }
+    },
+    {
+      "timestampMs": 960000,
+      "participants": {
+        "1": {
+          "totalGold": 6400,
+          "xp": 5300,
+          "level": 12,
+          "cs": 106
+        },
+        "2": {
+          "totalGold": 6597,
+          "xp": 5535,
+          "level": 12,
+          "cs": 95
+        },
+        "3": {
+          "totalGold": 6917,
+          "xp": 5572,
+          "level": 12,
+          "cs": 101
+        },
+        "4": {
+          "totalGold": 7290,
+          "xp": 5609,
+          "level": 12,
+          "cs": 119
+        },
+        "5": {
+          "totalGold": 5157,
+          "xp": 5647,
+          "level": 12,
+          "cs": 17
+        },
+        "6": {
+          "totalGold": 7100,
+          "xp": 5650,
+          "level": 12,
+          "cs": 122
+        },
+        "7": {
+          "totalGold": 6970,
+          "xp": 5721,
+          "level": 12,
+          "cs": 98
+        },
+        "8": {
+          "totalGold": 7343,
+          "xp": 5759,
+          "level": 12,
+          "cs": 111
+        },
+        "9": {
+          "totalGold": 7930,
+          "xp": 5796,
+          "level": 12,
+          "cs": 125
+        },
+        "10": {
+          "totalGold": 5423,
+          "xp": 5833,
+          "level": 12,
+          "cs": 18
+        }
+      }
+    },
+    {
+      "timestampMs": 1080000,
+      "participants": {
+        "1": {
+          "totalGold": 7200,
+          "xp": 6000,
+          "level": 13,
+          "cs": 120
+        },
+        "2": {
+          "totalGold": 7340,
+          "xp": 6164,
+          "level": 13,
+          "cs": 107
+        },
+        "3": {
+          "totalGold": 7700,
+          "xp": 6206,
+          "level": 13,
+          "cs": 113
+        },
+        "4": {
+          "totalGold": 8120,
+          "xp": 6248,
+          "level": 13,
+          "cs": 134
+        },
+        "5": {
+          "totalGold": 5720,
+          "xp": 6290,
+          "level": 13,
+          "cs": 19
+        },
+        "6": {
+          "totalGold": 8000,
+          "xp": 6350,
+          "level": 13,
+          "cs": 137
+        },
+        "7": {
+          "totalGold": 7760,
+          "xp": 6374,
+          "level": 13,
+          "cs": 110
+        },
+        "8": {
+          "totalGold": 8180,
+          "xp": 6416,
+          "level": 13,
+          "cs": 125
+        },
+        "9": {
+          "totalGold": 8840,
+          "xp": 6458,
+          "level": 13,
+          "cs": 140
+        },
+        "10": {
+          "totalGold": 6020,
+          "xp": 6500,
+          "level": 13,
+          "cs": 20
+        }
+      }
+    },
+    {
+      "timestampMs": 1200000,
+      "participants": {
+        "1": {
+          "totalGold": 8000,
+          "xp": 6700,
+          "level": 14,
+          "cs": 134
+        },
+        "2": {
+          "totalGold": 8083,
+          "xp": 6793,
+          "level": 14,
+          "cs": 119
+        },
+        "3": {
+          "totalGold": 8483,
+          "xp": 6840,
+          "level": 14,
+          "cs": 126
+        },
+        "4": {
+          "totalGold": 8950,
+          "xp": 6887,
+          "level": 14,
+          "cs": 149
+        },
+        "5": {
+          "totalGold": 6283,
+          "xp": 6933,
+          "level": 14,
+          "cs": 21
+        },
+        "6": {
+          "totalGold": 9000,
+          "xp": 7050,
+          "level": 14,
+          "cs": 151
+        },
+        "7": {
+          "totalGold": 8550,
+          "xp": 7027,
+          "level": 14,
+          "cs": 123
+        },
+        "8": {
+          "totalGold": 9017,
+          "xp": 7073,
+          "level": 14,
+          "cs": 139
+        },
+        "9": {
+          "totalGold": 9750,
+          "xp": 7120,
+          "level": 14,
+          "cs": 156
+        },
+        "10": {
+          "totalGold": 6617,
+          "xp": 7167,
+          "level": 14,
+          "cs": 23
+        }
+      }
+    },
+    {
+      "timestampMs": 1320000,
+      "participants": {
+        "1": {
+          "totalGold": 8900,
+          "xp": 7400,
+          "level": 15,
+          "cs": 147
+        },
+        "2": {
+          "totalGold": 8827,
+          "xp": 7423,
+          "level": 15,
+          "cs": 131
+        },
+        "3": {
+          "totalGold": 9267,
+          "xp": 7474,
+          "level": 15,
+          "cs": 139
+        },
+        "4": {
+          "totalGold": 9780,
+          "xp": 7525,
+          "level": 15,
+          "cs": 164
+        },
+        "5": {
+          "totalGold": 6847,
+          "xp": 7577,
+          "level": 15,
+          "cs": 23
+        },
+        "6": {
+          "totalGold": 10000,
+          "xp": 7800,
+          "level": 15,
+          "cs": 166
+        },
+        "7": {
+          "totalGold": 9340,
+          "xp": 7679,
+          "level": 15,
+          "cs": 135
+        },
+        "8": {
+          "totalGold": 9853,
+          "xp": 7731,
+          "level": 15,
+          "cs": 153
+        },
+        "9": {
+          "totalGold": 10660,
+          "xp": 7782,
+          "level": 15,
+          "cs": 172
+        },
+        "10": {
+          "totalGold": 7213,
+          "xp": 7833,
+          "level": 15,
+          "cs": 25
+        }
+      }
+    },
+    {
+      "timestampMs": 1440000,
+      "participants": {
+        "1": {
+          "totalGold": 9800,
+          "xp": 8100,
+          "level": 16,
+          "cs": 160
+        },
+        "2": {
+          "totalGold": 9570,
+          "xp": 8052,
+          "level": 16,
+          "cs": 142
+        },
+        "3": {
+          "totalGold": 10050,
+          "xp": 8108,
+          "level": 16,
+          "cs": 151
+        },
+        "4": {
+          "totalGold": 10610,
+          "xp": 8164,
+          "level": 16,
+          "cs": 178
+        },
+        "5": {
+          "totalGold": 7410,
+          "xp": 8220,
+          "level": 16,
+          "cs": 25
+        },
+        "6": {
+          "totalGold": 11000,
+          "xp": 8550,
+          "level": 16,
+          "cs": 179
+        },
+        "7": {
+          "totalGold": 10130,
+          "xp": 8332,
+          "level": 16,
+          "cs": 147
+        },
+        "8": {
+          "totalGold": 10690,
+          "xp": 8388,
+          "level": 16,
+          "cs": 167
+        },
+        "9": {
+          "totalGold": 11570,
+          "xp": 8444,
+          "level": 16,
+          "cs": 187
+        },
+        "10": {
+          "totalGold": 7810,
+          "xp": 8500,
+          "level": 16,
+          "cs": 27
+        }
+      }
+    },
+    {
+      "timestampMs": 1560000,
+      "participants": {
+        "1": {
+          "totalGold": 10700,
+          "xp": 8800,
+          "level": 16,
+          "cs": 173
+        },
+        "2": {
+          "totalGold": 10313,
+          "xp": 8681,
+          "level": 16,
+          "cs": 154
+        },
+        "3": {
+          "totalGold": 10833,
+          "xp": 8742,
+          "level": 16,
+          "cs": 164
+        },
+        "4": {
+          "totalGold": 11440,
+          "xp": 8803,
+          "level": 16,
+          "cs": 193
+        },
+        "5": {
+          "totalGold": 7973,
+          "xp": 8863,
+          "level": 16,
+          "cs": 27
+        },
+        "6": {
+          "totalGold": 11900,
+          "xp": 9300,
+          "level": 16,
+          "cs": 192
+        },
+        "7": {
+          "totalGold": 10920,
+          "xp": 8985,
+          "level": 16,
+          "cs": 159
+        },
+        "8": {
+          "totalGold": 11527,
+          "xp": 9045,
+          "level": 16,
+          "cs": 181
+        },
+        "9": {
+          "totalGold": 12480,
+          "xp": 9106,
+          "level": 16,
+          "cs": 203
+        },
+        "10": {
+          "totalGold": 8407,
+          "xp": 9167,
+          "level": 16,
+          "cs": 29
+        }
+      }
+    },
+    {
+      "timestampMs": 1680000,
+      "participants": {
+        "1": {
+          "totalGold": 11600,
+          "xp": 9500,
+          "level": 17,
+          "cs": 186
+        },
+        "2": {
+          "totalGold": 11057,
+          "xp": 9311,
+          "level": 17,
+          "cs": 166
+        },
+        "3": {
+          "totalGold": 11617,
+          "xp": 9376,
+          "level": 17,
+          "cs": 176
+        },
+        "4": {
+          "totalGold": 12270,
+          "xp": 9441,
+          "level": 17,
+          "cs": 208
+        },
+        "5": {
+          "totalGold": 8537,
+          "xp": 9507,
+          "level": 17,
+          "cs": 29
+        },
+        "6": {
+          "totalGold": 12900,
+          "xp": 10000,
+          "level": 17,
+          "cs": 204
+        },
+        "7": {
+          "totalGold": 11710,
+          "xp": 9637,
+          "level": 17,
+          "cs": 172
+        },
+        "8": {
+          "totalGold": 12363,
+          "xp": 9703,
+          "level": 17,
+          "cs": 195
+        },
+        "9": {
+          "totalGold": 13390,
+          "xp": 9768,
+          "level": 17,
+          "cs": 218
+        },
+        "10": {
+          "totalGold": 9003,
+          "xp": 9833,
+          "level": 17,
+          "cs": 32
+        }
+      }
+    },
+    {
+      "timestampMs": 1800000,
+      "participants": {
+        "1": {
+          "totalGold": 12600,
+          "xp": 10200,
+          "level": 18,
+          "cs": 198
+        },
+        "2": {
+          "totalGold": 11800,
+          "xp": 9940,
+          "level": 18,
+          "cs": 178
+        },
+        "3": {
+          "totalGold": 12400,
+          "xp": 10010,
+          "level": 18,
+          "cs": 189
+        },
+        "4": {
+          "totalGold": 13100,
+          "xp": 10080,
+          "level": 18,
+          "cs": 223
+        },
+        "5": {
+          "totalGold": 9100,
+          "xp": 10150,
+          "level": 18,
+          "cs": 31
+        },
+        "6": {
+          "totalGold": 13800,
+          "xp": 10700,
+          "level": 18,
+          "cs": 214
+        },
+        "7": {
+          "totalGold": 12500,
+          "xp": 10290,
+          "level": 18,
+          "cs": 184
+        },
+        "8": {
+          "totalGold": 13200,
+          "xp": 10360,
+          "level": 18,
+          "cs": 209
+        },
+        "9": {
+          "totalGold": 14300,
+          "xp": 10430,
+          "level": 18,
+          "cs": 234
+        },
+        "10": {
+          "totalGold": 9600,
+          "xp": 10500,
+          "level": 18,
+          "cs": 34
+        }
+      }
+    }
+  ],
+  "events": [
+    {
+      "timestampMs": 505210,
+      "label": "Purchased item 3071",
+      "type": "ITEM_PURCHASED",
+      "participantIds": [
+        6
+      ],
+      "itemId": 3071,
+      "actorParticipantId": 6,
+      "targetParticipantId": null,
+      "assisterParticipantIds": [],
+      "assistersObserved": false,
+      "frameAtMs": 600000,
+      "frameEventIndex": 0,
+      "fields": {
+        "type": "ITEM_PURCHASED",
+        "timestamp": 505210,
+        "participantId": 6,
+        "itemId": 3071
+      },
+      "x": null,
+      "y": null
+    },
+    {
+      "timestampMs": 552430,
+      "label": "Champion kill",
+      "type": "CHAMPION_KILL",
+      "participantIds": [
+        1,
+        6,
+        7,
+        8
+      ],
+      "itemId": null,
+      "actorParticipantId": 6,
+      "targetParticipantId": 1,
+      "assisterParticipantIds": [
+        7,
+        8
+      ],
+      "assistersObserved": true,
+      "frameAtMs": 600000,
+      "frameEventIndex": 1,
+      "fields": {
+        "type": "CHAMPION_KILL",
+        "timestamp": 552430,
+        "killerId": 6,
+        "victimId": 1,
+        "killerTeamId": 200,
+        "assistingParticipantIds": [
+          7,
+          8
+        ],
+        "position": {
+          "x": 6420,
+          "y": 5810
+        }
+      },
+      "x": 6420,
+      "y": 5810
+    },
+    {
+      "timestampMs": 589775,
+      "label": "Dragon secured",
+      "type": "ELITE_MONSTER_KILL",
+      "participantIds": [
+        7
+      ],
+      "itemId": null,
+      "actorParticipantId": 7,
+      "targetParticipantId": null,
+      "assisterParticipantIds": [],
+      "assistersObserved": false,
+      "frameAtMs": 600000,
+      "frameEventIndex": 2,
+      "fields": {
+        "type": "ELITE_MONSTER_KILL",
+        "timestamp": 589775,
+        "killerId": 7,
+        "killerTeamId": 200,
+        "position": {
+          "x": 9866,
+          "y": 4414
+        },
+        "monsterType": "DRAGON",
+        "monsterSubType": "AIR_DRAGON"
+      },
+      "x": 9866,
+      "y": 4414
+    }
+  ]
+}

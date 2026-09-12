@@ -3,6 +3,7 @@ import "server-only";
 import { parseDemoMatch, parseMatchDevelopment } from "./response-guards";
 import type { DemoMatch, MatchDevelopment } from "./types";
 import { backendFetch } from "../backend-transport";
+import { isSamplePreview } from "../preview-mode";
 
 export class DevelopmentNotFoundError extends Error {
   constructor() {
@@ -41,6 +42,12 @@ export async function getMatchDevelopment(
   focus: number,
   compare?: number,
 ): Promise<MatchDevelopment> {
+  if (isSamplePreview()) {
+    const { sampleDevelopment } = await import("../../preview/sample");
+    const data = sampleDevelopment(matchId, focus, compare);
+    if (!data) throw new DevelopmentNotFoundError();
+    return data;
+  }
   if (developmentLabEnabled()) {
     const { resolveDevelopmentScenario } = await import("../../ui-lab/development-scenarios");
     const scenario = resolveDevelopmentScenario(matchId);
@@ -55,5 +62,9 @@ export async function getMatchDevelopment(
 }
 
 export async function getDemoMatch(): Promise<DemoMatch> {
+  if (isSamplePreview()) {
+    const { previewDemo } = await import("../../preview/sample");
+    return { ...previewDemo };
+  }
   return parseDemoMatch(await getJson("/api/v1/demo"));
 }

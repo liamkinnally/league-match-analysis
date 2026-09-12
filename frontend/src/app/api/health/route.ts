@@ -1,9 +1,11 @@
 import { backendFetch } from "../../../lib/backend-transport";
+import { isSamplePreview } from "../../../lib/preview-mode";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(): Promise<Response> {
   const headers = { "Cache-Control": "no-store" };
+  if (isSamplePreview()) return Response.json({ status: "UP", dataSource: "sample", backend: "NOT_USED" }, { headers });
   try {
     const upstream = await backendFetch("/actuator/health", {
       cache: "no-store",
