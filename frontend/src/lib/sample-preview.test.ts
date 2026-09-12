@@ -23,7 +23,8 @@ beforeEach(() => {
 it("provides a marked sample without backend configuration or requests", async () => {
   vi.stubEnv("BACKEND_URL", "");
   const demo = await getDemoMatch();
-  expect(demo).toEqual({ matchId: "__preview_sample", focusParticipantId: 6, compareParticipantId: 1, invented: true });
+  expect(demo).toEqual({ matchId: "NA1_7000000001", focusParticipantId: 6, compareParticipantId: 1, invented: true });
+  expect(demo.matchId).toBe(match.metadata.matchId);
   const data = await getMatchDevelopment(demo.matchId, 6, 1);
   expect(data.roster).toHaveLength(10);
   expect(data.samples).toHaveLength(timeline.info.frames.length);
@@ -34,7 +35,7 @@ it("provides a marked sample without backend configuration or requests", async (
 it.each([[6, 1], [1, 6], [7, 2], [2, 7], [6, 2]])(
   "projects the actual synthetic observations for focus %i versus %i",
   async (focus, compare) => {
-    const data = await getMatchDevelopment("__preview_sample", focus, compare);
+    const data = await getMatchDevelopment("NA1_7000000001", focus, compare);
     expect(data.summary).toMatchObject({ focusParticipantId: focus, compareParticipantId: compare });
     const player = match.info.participants.find((p: { participantId: number }) => p.participantId === focus);
     expect(data.summary).toMatchObject({ kills: player.kills, win: player.win, goldEarned: player.goldEarned });
@@ -63,17 +64,18 @@ it.each([[6, 1], [1, 6], [7, 2], [2, 7], [6, 2]])(
 
 it("does not invent unknown matches or participants or fall back to a backend", async () => {
   await expect(getMatchDevelopment("NA1_123", 6, 1)).rejects.toThrow("MATCH_DEVELOPMENT_NOT_FOUND");
-  await expect(getMatchDevelopment("__preview_sample", 99, 1)).rejects.toThrow("MATCH_DEVELOPMENT_NOT_FOUND");
+  await expect(getMatchDevelopment("__preview_sample", 6, 1)).rejects.toThrow("MATCH_DEVELOPMENT_NOT_FOUND");
+  await expect(getMatchDevelopment("NA1_7000000001", 99, 1)).rejects.toThrow("MATCH_DEVELOPMENT_NOT_FOUND");
   expect(fetch).not.toHaveBeenCalled();
 });
 
 it("preserves missing comparison data and rejects an unknown comparator", async () => {
-  const data = await getMatchDevelopment("__preview_sample", 6);
+  const data = await getMatchDevelopment("NA1_7000000001", 6);
   expect(data.summary.compareParticipantId).toBeNull();
   expect(data.samples.every((sample) => sample.goldDifference === null && sample.csDifference === null && sample.xpDifference === null)).toBe(true);
   expect(data.windows).toEqual([]);
   expect(data.suggestedWindows).toEqual([]);
-  await expect(getMatchDevelopment("__preview_sample", 6, 99)).rejects.toThrow("MATCH_DEVELOPMENT_NOT_FOUND");
+  await expect(getMatchDevelopment("NA1_7000000001", 6, 99)).rejects.toThrow("MATCH_DEVELOPMENT_NOT_FOUND");
   expect(fetch).not.toHaveBeenCalled();
 });
 
@@ -90,7 +92,7 @@ it("reports sample readiness and unavailable live APIs without contacting a back
   const lookup = await proxyLookup("", { gameName: "Invented", tagLine: "DEMO" });
   expect(lookup.status).toBe(503);
   expect(await lookup.text()).toContain("sample preview");
-  expect((await ranks(new Request("https://preview.example.test"), { params: Promise.resolve({ matchId: "__preview_sample" }) })).status).toBe(503);
+  expect((await ranks(new Request("https://preview.example.test"), { params: Promise.resolve({ matchId: "NA1_7000000001" }) })).status).toBe(503);
   expect(fetch).not.toHaveBeenCalled();
 });
 
@@ -111,6 +113,6 @@ it("supports an explicitly designated local verification runtime", async () => {
   vi.stubEnv("VERCEL", "");
   vi.stubEnv("VERCEL_ENV", "");
   vi.stubEnv("LEAGUE_ANALYSIS_RUNTIME", "verification");
-  expect((await getDemoMatch()).matchId).toBe("__preview_sample");
+  expect((await getDemoMatch()).matchId).toBe("NA1_7000000001");
   expect(fetch).not.toHaveBeenCalled();
 });

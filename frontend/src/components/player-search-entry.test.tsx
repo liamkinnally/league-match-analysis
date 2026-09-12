@@ -22,6 +22,6 @@ it("makes the sample reachable from entry pages while preventing live search and
   view.unmount();
   const search = await SearchPage({ searchParams: Promise.resolve({ runId: "00000000-0000-0000-0000-000000000001" }) });
   render(<>{search.props.children[1]}{await SampleMatchLink()}</>);
-  expect(screen.getByRole("link", { name: "Explore sample match" })).toHaveAttribute("href", "/matches/__preview_sample/development?focus=6&compare=1");
+  expect(screen.getByRole("link", { name: "Explore sample match" })).toHaveAttribute("href", "/matches/NA1_7000000001/development?focus=6&compare=1");
   expect(fetcher).not.toHaveBeenCalled();
 });

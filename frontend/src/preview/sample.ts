@@ -7,7 +7,7 @@ import type { DemoMatch, MatchDevelopment, MatchDevelopmentSample, MatchDevelopm
 // This adapter only projects the bundled invented match. Backend responses remain
 // authoritative for stored matches; no live match data is calculated here.
 export const previewDemo: DemoMatch = {
-  matchId: "__preview_sample", focusParticipantId: 6, compareParticipantId: 1, invented: true,
+  matchId: "NA1_7000000001", focusParticipantId: 6, compareParticipantId: 1, invented: true,
 };
 
 type Observation = { totalGold: number | null; cs: number | null; xp: number | null; level: number | null };
