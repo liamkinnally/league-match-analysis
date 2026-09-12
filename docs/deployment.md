@@ -42,6 +42,7 @@ Important runtime values include:
 | `BACKEND_URL` | Server-only backend origin used by Next.js |
 | `BACKEND_SERVICE_TOKEN` | Separate server-to-server credential |
 | `BACKEND_AUTH_REQUIRED` | Enables the backend authentication boundary |
+| `PREVIEW_DATA_SOURCE` | Selects `backend` or `sample` data for preview deployments |
 | `RIOT_API_KEY` | Server-only Riot API key |
 | `RIOT_PUBLIC_LOOKUP_ENABLED` | Enables or disables live player lookup |
 | `PROTOTYPE_CONTACT_EMAIL` | Contact shown on policy pages |
@@ -80,7 +81,11 @@ Restore tests should target a separate empty PostgreSQL database. A restored dat
 
 ## Deploying an update
 
-The frontend can be deployed through the existing Vercel project. The backend can be uploaded from the repository root with the Railway CLI, targeting the existing production service.
+GitHub `main` is the release source. Changes reach it through a pull request after the `backend`, `frontend`, `end-to-end` and `application-containers` checks pass. Branch protection also requires the branch to be current with `main`.
+
+The existing Vercel project builds `frontend` from `main`. Its required GitHub checks gate assignment to the production domain; a frontend build can start while those checks run. The existing Railway backend tracks `main` with **Wait for CI** enabled. It watches `backend/**` and `.dockerignore`, since both can affect its image.
+
+The Railway CLI and Vercel CLI remain manual recovery options. Explicitly verify the project, service, environment and source revision before using them. A successful CLI upload is not evidence that the same revision passed CI.
 
 After a deployment, verify:
 
@@ -91,6 +96,31 @@ After a deployment, verify:
 - A live lookup can move from `RUNNING` to a terminal status when Riot access is enabled.
 
 Provider deployment status alone is not enough; the application health endpoints confirm that the request path is actually serving.
+
+## Preview modes
+
+Preview deployments use the existing Vercel project. Choose the data source through the preview-scoped `PREVIEW_DATA_SOURCE` environment variable:
+
+| Value | Use | Data and dependencies |
+| --- | --- | --- |
+| `backend` | Check frontend behavior against a real backend | Shared staging backend and staging PostgreSQL; dedicated staging service token |
+| `sample` | Work on layout and supported match interactions | Synthetic sample data in the frontend; no backend requests or credential required |
+
+`backend` is the default preview configuration. To use `sample` for a particular branch, add a branch-specific Preview override for `PREVIEW_DATA_SOURCE` in Vercel's environment-variable settings and create a new preview deployment. Environment-variable changes do not alter an existing deployment. Remove the override and redeploy when that branch needs the staging backend again.
+
+Sample mode never uses the staging token. To also omit the credential from that deployment's environment, add an empty branch-specific Preview override for `BACKEND_SERVICE_TOKEN`. Remove both overrides when returning to backend mode; the inherited staging token will then apply again.
+
+Sample mode is a data-source choice, not a test of backend correctness. Live player lookup is unavailable in that mode. Production always uses the backend regardless of a preview-mode setting.
+
+Keep `BACKEND_URL` and `BACKEND_SERVICE_TOKEN` scoped to their matching environments: Production uses the production backend and token; Preview uses staging. A preview must never inherit the production service token. Preserve Vercel's viewer authentication and fork protection.
+
+### Shared staging backend
+
+The Railway `staging` environment has a separate backend instance, PostgreSQL database and persistent storage. It uses its own service credential and begins with only the synthetic seed match. Its Riot key is unset and live lookup is disabled, so backend previews can exercise stored-match behavior without using production's Riot quota. This does not verify live ingestion.
+
+Staging serves one backend revision at a time. A frontend preview does not automatically deploy the backend changes on its branch. For a backend change, first complete the applicable checks, then deliberately deploy the intended revision to the **staging** backend and verify its health, synthetic sample and authenticated request path. Record that backend revision alongside the frontend revision when reporting results. Coordinate incompatible backend changes before replacing the shared staging deployment.
+
+Use the documented seed command against staging only when sample data is needed. Do not copy the production database, credentials, removal ledger or backup job into staging. Production's independent backup schedule remains separate from preview and application deployments.
 
 ## Live lookup
 

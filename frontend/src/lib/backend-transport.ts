@@ -1,4 +1,5 @@
 import "server-only";
+import { isSamplePreview } from "./preview-mode";
 
 function serviceToken(): string | undefined {
   const token = process.env.BACKEND_SERVICE_TOKEN;
@@ -31,6 +32,7 @@ function backendUrl(path: string): URL {
 }
 
 export async function backendFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  if (isSamplePreview()) throw new Error("BACKEND_DISABLED_IN_SAMPLE_PREVIEW");
   const url = backendUrl(path);
   const headers = new Headers(init.headers);
   headers.delete("Authorization");

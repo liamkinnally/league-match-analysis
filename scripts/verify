@@ -17,6 +17,7 @@ Usage:
   ./scripts/verify task frontend
   ./scripts/verify task cross-layer
   ./scripts/verify ui behavior [native Playwright args...]
+  ./scripts/verify ui sample [native Playwright args...]
   ./scripts/verify ui visual [native Playwright args...]
   ./scripts/verify hygiene
   ./scripts/verify full
@@ -24,8 +25,8 @@ Usage:
 Compositions:
   task backend      Maven verify
   task frontend     lint, typecheck, Vitest, production build
-  task cross-layer  Compose validation, backend task, frontend task, behavior E2E
-  full              Compose validation, both tasks, behavior E2E, visual E2E, hygiene
+  task cross-layer  Compose validation, backend task, frontend task, behavior and sample E2E
+  full              Compose validation, both tasks, behavior, sample and visual E2E, hygiene
 
 Focused arguments are passed unchanged to Maven, Vitest, or Playwright.
 EOF
@@ -106,6 +107,10 @@ ui_behavior() {
   return "$result"
 }
 
+ui_sample() {
+  run_in "$frontend_dir" npx playwright test --config=playwright.sample.config.ts "$@"
+}
+
 ui_visual() {
   run_in "$repo_dir" docker build --platform linux/amd64 -f frontend/Dockerfile.visual -t "$visual_image" .
   run_in "$repo_dir" docker run --rm --platform linux/amd64 \
@@ -166,6 +171,7 @@ case "$1" in
         task_backend
         task_frontend
         ui_behavior
+        ui_sample
         ;;
       *) usage >&2; exit 2 ;;
     esac
@@ -176,6 +182,7 @@ case "$1" in
     shift 2
     case "$target" in
       behavior) ui_behavior "$@" ;;
+      sample) ui_sample "$@" ;;
       visual) ui_visual "$@" ;;
       *) usage >&2; exit 2 ;;
     esac
@@ -190,6 +197,7 @@ case "$1" in
     task_backend
     task_frontend
     ui_behavior
+    ui_sample
     ui_visual
     hygiene
     ;;

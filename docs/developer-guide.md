@@ -95,10 +95,15 @@ Useful focused commands:
 ./scripts/verify task backend
 ./scripts/verify task frontend
 ./scripts/verify ui behavior
+./scripts/verify ui sample
 ./scripts/verify ui visual
 ```
 
 Backend integration tests use disposable PostgreSQL containers, so Docker must be running. Frontend checks include ESLint, TypeScript, Vitest and the production Next.js build. Browser tests use Playwright.
+
+The sample browser check starts a separate frontend with synthetic preview data and no backend URL or service token. It verifies the sample entry and match controls without starting Spring or PostgreSQL. Run it for changes to sample preview behavior; it is also included in the full and cross-layer checks.
+
+The preview sample is derived from the backend's canonical synthetic seed inputs. After changing those inputs, run `node frontend/scripts/generate-preview-sample.mjs` and rerun the sample tests. This frontend projection is only for synthetic previews; normal match calculations remain in the backend.
 
 For a specific backend test:
 
