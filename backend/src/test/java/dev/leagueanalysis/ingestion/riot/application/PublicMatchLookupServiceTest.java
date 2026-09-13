@@ -23,6 +23,7 @@ class PublicMatchLookupServiceTest {
     final PublicMatchLookupService service = new PublicMatchLookupService(ingestion, store, clock, true, work::add);
 
     PublicMatchLookupServiceTest() {
+        when(ingestion.historyWork(any(), any(), any())).thenReturn(() -> true);
         when(store.latestCooldown()).thenReturn(Optional.empty());
         when(store.findFresh(any(), any())).thenReturn(Optional.empty());
         when(store.startPublicRun(any(), any())).thenAnswer(call -> {
@@ -40,9 +41,9 @@ class PublicMatchLookupServiceTest {
         assertThat(first.httpStatus()).isEqualTo(202);
         assertThat(second.lookup().runId()).isEqualTo(first.lookup().runId());
         assertThat(work).hasSize(1);
-        verifyNoInteractions(ingestion);
+        verify(ingestion, never()).executePublic(any(), any());
         work.remove().run();
-        verify(ingestion).executePublic(first.lookup().runId(), new RiotIngestionCommand("Invented", "NA1", 5));
+        verify(ingestion).historyWork(eq(first.lookup().runId()), argThat(c -> c.matchLimit() == 20 && c.queueId() == 0), eq(store));
     }
 
     @Test void allowsOnlyOneWorkerAndFourWaitingAndReleasesFinishedSlot() {
@@ -53,18 +54,17 @@ class PublicMatchLookupServiceTest {
         assertThat(service.submit("Sixth", "NA1", "sixth").httpStatus()).isEqualTo(202);
     }
 
-    @Test void usesFreshSuccessfulOrEmptyRunWithoutWorkButConsultsCooldownFirst() {
+    @Test void servesCachedHistoryDuringCooldownAndWhenLiveLookupIsDisabled() {
         UUID id = UUID.randomUUID();
         var empty = new PublicMatchLookup(id, "Nobody", "NA1", "EMPTY", null, null, List.of());
-        when(store.findFresh(any(), eq(clock.instant().minusSeconds(900)))).thenReturn(Optional.of(empty));
+        when(store.findFresh(any(), eq(Instant.EPOCH))).thenReturn(Optional.of(empty));
         assertThat(service.submit("Nobody", "NA1", "peer").httpStatus()).isEqualTo(200);
         assertThat(work).isEmpty();
         when(store.latestCooldown()).thenReturn(Optional.of(clock.instant().plusSeconds(120)));
-        assertThatThrownBy(() -> service.submit("Nobody", "NA1", "peer"))
-                .isInstanceOfSatisfying(PublicLookupException.class, e -> {
-                    assertThat(e.status()).isEqualTo(429);
-                    assertThat(e.retryNotBefore()).isEqualTo(clock.instant().plusSeconds(120));
-                });
+        assertThat(service.submit("Nobody", "NA1", "peer").httpStatus()).isEqualTo(200);
+        var disabled = new PublicMatchLookupService(ingestion, store, clock, false, work::add);
+        assertThat(disabled.submit("Nobody", "NA1", "peer").httpStatus()).isEqualTo(200);
+        disabled.close();
     }
 
     @Test void boundsNewSubmissionsPerSocketPeerAndDisabledLookupDoesNoWork() {
@@ -98,6 +98,46 @@ class PublicMatchLookupServiceTest {
 
         assertThat(gateway.detailCalls).isEqualTo(1);
         assertThat(cacheStore.materializeCalls).isEqualTo(1);
+    }
+
+    @Test void accountsInterleaveOneTurnAtATime() {
+        var turns = new ArrayList<String>();
+        when(ingestion.historyWork(any(), any(), any())).thenAnswer(call -> {
+            String name = ((RiotIngestionCommand) call.getArgument(1)).gameName();
+            var count = new java.util.concurrent.atomic.AtomicInteger();
+            return (PublicIngestionWork) () -> { turns.add(name); return count.incrementAndGet() == 3; };
+        });
+        service.submit("First", "NA1", "peer");
+        service.submit("Second", "NA1", "peer");
+        while (!work.isEmpty()) work.remove().run();
+        assertThat(turns).containsExactly("First", "Second", "First", "Second", "First", "Second");
+    }
+
+    @Test void rateLimitedTurnYieldsAndResumesAtRetryTimeWithoutBusyLoop() {
+        var now = new java.util.concurrent.atomic.AtomicReference<>(clock.instant());
+        var mutableClock = mock(Clock.class);
+        when(mutableClock.instant()).thenAnswer(call -> now.get());
+        var delayed = new ArrayList<Runnable>();
+        var delays = new ArrayList<Duration>();
+        var attempts = new java.util.concurrent.atomic.AtomicInteger();
+        when(ingestion.historyWork(any(), any(), any())).thenReturn(() -> {
+            if (attempts.incrementAndGet() == 1) throw new RiotGatewayException(RiotFailureCode.RATE_LIMITED,
+                    "sanitized", now.get().plusSeconds(120));
+            return true;
+        });
+        var paced = new PublicMatchLookupService(ingestion, store, mutableClock, true, work::add,
+                (task, delay) -> { delayed.add(task); delays.add(delay); });
+        var id = paced.submit("Limited", "NA1", "peer").lookup().runId();
+        work.remove().run();
+        assertThat(work).isEmpty();
+        assertThat(attempts).hasValue(1);
+        assertThat(delays).containsExactly(Duration.ofSeconds(120));
+        verify(ingestion).recordPublicCooldown(id, now.get().plusSeconds(120));
+        now.set(now.get().plusSeconds(120));
+        delayed.removeFirst().run();
+        assertThat(attempts).hasValue(2);
+        verify(store, never()).failPublicRun(eq(id), any());
+        paced.close();
     }
 
     @Test void startupFailsInterruptedPublicRunsAndRetainsRows() {

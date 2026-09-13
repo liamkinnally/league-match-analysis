@@ -39,7 +39,7 @@ test("tokenless sample supports match selection and URL restoration", async ({ p
 
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByText("Sample match — synthetic data")).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.goto("/search?runId=previous-backend-run");
   await expect(page.getByText(/Live player search is unavailable in this sample preview/)).toBeVisible();
   await expect(page.getByRole("link", { name: "Explore sample match" })).toBeVisible();

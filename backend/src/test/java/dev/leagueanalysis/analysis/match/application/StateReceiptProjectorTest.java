@@ -118,6 +118,21 @@ class StateReceiptProjectorTest {
         assertThat(receipt.hasUsableBrackets()).isFalse();
     }
 
+    @Test void aramNeverInfersAnSrLaneOpponentEvenWhenProviderRolesLookLikeSr() {
+        var sr = snapshotWithBothSamples();
+        for (int map : List.of(12, 14)) {
+            var h = sr.header();
+            var aram = new MatchEvidenceSnapshot(new MatchHeader(h.matchId(), 450, map, "ARAM", h.gameType(),
+                    h.gameVersion(), h.dataVersion(), h.gameCreationMs(), h.gameStartMs(), h.gameEndMs(), h.durationMs()),
+                    new MatchSourceRevision(h.matchId(), map, sr.sourceRevision().detailCaptureId(),
+                            sr.sourceRevision().timelineCaptureId(), sr.sourceRevision().materializationVersion()),
+                    sr.participants(), sr.observations(), sr.anchors(), sr.itemTransitions(), sr.observedEndItems(), sr.coverage());
+            var receipt = projector.project(aram, new TimeInterval(BEFORE_TIME, AFTER_TIME), 6);
+            assertThat(receipt.before()).hasValueSatisfying(sample -> assertThat(sample.laneOpponent()).isEmpty());
+            assertThat(receipt.after()).hasValueSatisfying(sample -> assertThat(sample.laneOpponent()).isEmpty());
+        }
+    }
+
     private MatchEvidenceSnapshot snapshotWithBothSamples() {
         return snapshot(List.of(
                 observationsAt(360_180L, BEFORE_GOLD, 10),

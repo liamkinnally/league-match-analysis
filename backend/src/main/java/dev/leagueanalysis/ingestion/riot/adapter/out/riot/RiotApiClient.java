@@ -96,11 +96,23 @@ public final class RiotApiClient implements RiotGateway {
 
     @Override
     public RiotMatchList listRankedMatchIds(String puuid, int count) {
-        if (puuid == null || puuid.isBlank() || count < 1 || count > 20) {
+        return list(puuid, properties.queueId(), 0, count, null, true);
+    }
+
+    @Override
+    public RiotMatchList listMatchIds(String puuid, int queueId, int start, int count, Long endTime) {
+        return list(puuid, queueId, start, count, endTime, false);
+    }
+
+    private RiotMatchList list(String puuid, int queueId, int start, int count, Long endTime, boolean rankedType) {
+        if (puuid == null || puuid.isBlank() || count < 1 || count > 20 || start < 0
+                || (endTime != null && endTime < 0)
+                || (queueId != 0 && !dev.leagueanalysis.ingestion.riot.application.RiotIngestionCommand.SUPPORTED_QUEUES.contains(queueId))) {
             throw failure(RiotFailureCode.INVALID_INPUT, "Match-list input is invalid");
         }
         var path = "/lol/match/v5/matches/by-puuid/" + encodeSegment(puuid) + "/ids";
-        var query = "queue=" + properties.queueId() + "&type=ranked&start=0&count=" + count;
+        var query = (queueId == 0 ? "" : "queue=" + queueId + "&") + (rankedType ? "type=ranked&" : "") + "start=" + start + "&count=" + count
+                + (endTime == null ? "" : "&endTime=" + endTime);
         var source = get(SourceKind.MATCH_LIST, puuid, path, query);
         var payload = source.payload();
         if (!payload.isArray()) {

@@ -87,7 +87,7 @@ test("player lookup", async ({ page }) => {
   const runId = "00000000-0000-0000-0000-000000000005";
   await page.route(`**/api/player-matches/${runId}`, (request) => request.fulfill({
     contentType: "application/json",
-    body: JSON.stringify({ runId, gameName: "AveryLongRecruiterLookupName", tagLine: "NA1", status: "COMPLETE", message: null, retryNotBefore: null, matches: [{ matchId: "NA1_7000000002", participantId: 6, championName: "Garen", championId: 86, gameVersion: "16.17.1", endItemIds: [6655, 3047, 3071, 3053, 0, 0, 3340], position: "TOP", win: true, startedAtMs: 1788890400000, durationSeconds: 1800, kills: 7, deaths: 2, assists: 9, cs: 180, gold: 12500, timelineAvailable: true }] }),
+    body: JSON.stringify({ runId, gameName: "AveryLongRecruiterLookupName", tagLine: "NA1", status: "COMPLETE", message: null, retryNotBefore: null, queueId: 0, lastUpdated: "2026-09-09T12:00:00Z", nextRefreshAt: null, previousRunId: null, hasMore: true, matches: [{ matchId: "NA1_7000000002", queueId: 420, participantId: 6, championName: "Garen", championId: 86, gameVersion: "16.17.1", endItemIds: [6655, 3047, 3071, 3053, 0, 0, 3340], position: "TOP", win: true, startedAtMs: 1788890400000, durationSeconds: 1800, kills: 7, deaths: 2, assists: 9, cs: 180, gold: 12500, timelineAvailable: true }, { matchId: "NA1_7000000003", queueId: 480, participantId: 6, championName: "Garen", championId: 86, gameVersion: "16.17.1", endItemIds: [3071, 3047, 0, 0, 0, 0, 3340], position: "TOP", win: false, startedAtMs: 1788888400000, durationSeconds: 1600, kills: 4, deaths: 5, assists: 3, cs: 150, gold: 10000, timelineAvailable: false }] }),
   }));
   const errors = await openStableDevelopment(page, `/search?runId=${runId}`);
   await expect(page.getByTitle("Luden's Companion — long item label")).toBeVisible();
@@ -101,19 +101,21 @@ test("failed lookup", async ({ page }) => {
   const runId = "00000000-0000-0000-0000-000000000006";
   await page.route(`**/api/player-matches/${runId}`, (request) => request.fulfill({
     contentType: "application/json",
-    body: JSON.stringify({ runId, gameName: "Unavailable", tagLine: "NA1", status: "FAILED", message: "Lookup could not finish. Search again or explore the sample match.", retryNotBefore: null, matches: [] }),
+    body: JSON.stringify({ runId, gameName: "Unavailable", tagLine: "NA1", status: "FAILED", message: "Lookup could not finish. Search again or explore the sample match.", retryNotBefore: null, queueId: 0, lastUpdated: null, nextRefreshAt: null, previousRunId: null, hasMore: true, matches: [] }),
   }));
   const errors = await openStableDevelopment(page, `/search?runId=${runId}`, false);
   await expect(page.getByText("Lookup could not finish. Search again or explore the sample match.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Find matches" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
-  const height = await page.evaluate(() => ({
-    document: document.documentElement.scrollHeight,
-    viewport: document.documentElement.clientHeight,
-    notice: document.querySelector(".prototype-notice")?.getBoundingClientRect().height ?? 0,
-  }));
-  // Policy notice length may grow independently of the compact failure content.
-  expect(height.document - height.notice).toBeLessThanOrEqual(height.viewport);
+  // Keep the failure explanation and search recovery action in the initial narrow viewport.
+  const viewportHeight = await page.evaluate(() => innerHeight);
+  for (const recovery of [page.getByText("Lookup could not finish. Search again or explore the sample match."),
+    page.getByRole("button", { name: "Find matches" })]) {
+    const bounds = await recovery.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds!.y).toBeGreaterThanOrEqual(0);
+    expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(viewportHeight);
+  }
   expect(errors).toEqual([]);
   await expect(page).toHaveScreenshot("failed-lookup-narrow.png", { animations: "disabled", fullPage: true });
 });
@@ -122,7 +124,7 @@ test("home narrow", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const errors = await openStableDevelopment(page, "/", false);
   await expect(page.getByRole("heading", { name: "Find a player" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "match-analysis-v1" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "League Match Analysis" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect(errors).toEqual([]);
   await expect(page).toHaveScreenshot("home-narrow.png", { animations: "disabled", fullPage: true });
@@ -132,10 +134,10 @@ test("history loading narrow", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const runId = "00000000-0000-0000-0000-000000000007";
   await page.route(`**/api/player-matches/${runId}`, route => route.fulfill({
-    contentType: "application/json", body: JSON.stringify({ runId, gameName: "Player", tagLine: "NA1", status: "RUNNING", message: null, retryNotBefore: null, matches: [] }),
+    contentType: "application/json", body: JSON.stringify({ runId, gameName: "Player", tagLine: "NA1", status: "RUNNING", message: null, retryNotBefore: null, queueId: 0, lastUpdated: null, nextRefreshAt: null, previousRunId: null, hasMore: true, matches: [] }),
   }));
   const errors = await openStableDevelopment(page, `/search?runId=${runId}`, false);
-  await expect(page.getByRole("region", { name: "Player lookup" }).getByRole("status")).toContainText("Fetching recent matches");
+  await expect(page.getByRole("region", { name: "Player lookup" }).getByRole("status")).toContainText("Loading match history");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect(errors).toEqual([]);
   await expect(page).toHaveScreenshot("history-loading-narrow.png", { animations: "disabled", fullPage: true });

@@ -2,25 +2,15 @@ package dev.leagueanalysis.ingestion.riot.application;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import java.time.Clock;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.time.*;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.function.BiConsumer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-/** Bounded work on one application instance. Restart requires an explicit retry. */
+/** Bounded, round-robin work on one backend instance; stored pages survive restart. */
 @Service
 public class PublicMatchLookupService {
     private final RiotIngestionService ingestion;
@@ -28,108 +18,185 @@ public class PublicMatchLookupService {
     private final Clock clock;
     private final boolean enabled;
     private final Executor worker;
+    private final ScheduledExecutorService timer;
+    private final BiConsumer<Runnable, Duration> later;
     private final Map<RequestKey, UUID> active = new HashMap<>();
-    // Unverified user input must not survive a crash/restart. It is used only to
-    // label active responses until the Account lookup verifies ownership.
     private final Map<UUID, RiotIngestionCommand> pendingIdentities = new HashMap<>();
     private final Map<String, List<Instant>> submissions = new HashMap<>();
 
     @Autowired
     public PublicMatchLookupService(RiotIngestionService ingestion, PublicMatchLookupStore store, Clock clock,
             @Value("${league-analysis.riot.public-lookup-enabled:false}") boolean enabled) {
-        this(ingestion, store, clock, enabled, new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS,
-                new ArrayBlockingQueue<>(4), runnable -> {
-                    var thread = new Thread(runnable, "public-match-lookup");
-                    thread.setDaemon(true);
-                    return thread;
-                }, new ThreadPoolExecutor.AbortPolicy()));
+        this(ingestion, store, clock, enabled, newScheduler());
     }
 
     PublicMatchLookupService(RiotIngestionService ingestion, PublicMatchLookupStore store, Clock clock,
             boolean enabled, Executor worker) {
-        this.ingestion = ingestion;
-        this.store = store;
-        this.clock = clock;
-        this.enabled = enabled;
-        this.worker = worker;
+        this(ingestion, store, clock, enabled, worker, null);
     }
 
-    @PostConstruct
-    public void interruptPreviousRuns() { store.failInterrupted(clock.instant()); }
+    PublicMatchLookupService(RiotIngestionService ingestion, PublicMatchLookupStore store, Clock clock,
+            boolean enabled, Executor worker, BiConsumer<Runnable, Duration> later) {
+        this.ingestion = ingestion; this.store = store; this.clock = clock; this.enabled = enabled; this.worker = worker;
+        this.timer = later == null ? worker instanceof ScheduledExecutorService scheduled ? scheduled : newScheduler() : null;
+        this.later = later == null ? (task, delay) -> timer.schedule(() -> worker.execute(task), delay.toMillis(), TimeUnit.MILLISECONDS) : later;
+    }
 
-    @PreDestroy
-    public void close() {
+    private static ScheduledExecutorService newScheduler() {
+        return Executors.newSingleThreadScheduledExecutor(runnable -> {
+            var thread = new Thread(runnable, "public-match-lookup");
+            thread.setDaemon(true);
+            return thread;
+        });
+    }
+
+    @PostConstruct public void interruptPreviousRuns() { store.failInterrupted(clock.instant()); }
+    @PreDestroy public void close() {
         if (worker instanceof ExecutorService executor) executor.shutdownNow();
+        if (timer != null && timer != worker) timer.shutdownNow();
     }
 
-    public synchronized Submission submit(String gameName, String tagLine, String socketPeer) {
-        var command = new RiotIngestionCommand(gameName, tagLine, 5);
+    public Submission submit(String gameName, String tagLine, String peer) { return submit(gameName, tagLine, 0, peer); }
+
+    public synchronized Submission submit(String gameName, String tagLine, int queueId, String peer) {
+        var command = firstPage(gameName, tagLine, queueId);
+        var running = active.get(key(command));
+        if (running != null) return new Submission(202, get(running));
+        var cached = store.findFresh(command, Instant.EPOCH);
+        if (cached.isPresent()) return new Submission(200, cached.get());
+        return start(command, peer);
+    }
+
+    public synchronized Submission refresh(UUID runId, String peer) {
+        var previous = pageCommand(runId);
+        var command = firstPage(previous.gameName(), previous.tagLine(), previous.queueId());
+        var running = active.get(key(command));
+        if (running != null) return new Submission(202, get(running));
+        var next = store.latestRefresh(command).map(time -> time.plusSeconds(900)).filter(time -> time.isAfter(clock.instant()));
+        if (next.isPresent()) throw new PublicLookupException(429, "This account was updated recently. Try again after the indicated time.", next.get());
+        return start(command, peer);
+    }
+
+    public synchronized Submission older(UUID runId, String peer) {
+        var previous = pageCommand(runId);
+        var cached = store.findOlder(runId);
+        if (cached.isPresent()) return new Submission(200, cached.get());
+        var page = get(runId);
+        if (page.status().equals("RUNNING")) return new Submission(202, page);
+        if (!page.hasMore()) return new Submission(200, page);
+        var command = new RiotIngestionCommand(previous.gameName(), previous.tagLine(), 20, previous.queueId(),
+                Math.addExact(previous.start(), previous.matchLimit()), previous.endTime(), runId);
+        var running = active.get(key(command));
+        return running == null ? start(command, peer) : new Submission(202, get(running));
+    }
+
+    private RiotIngestionCommand pageCommand(UUID runId) {
+        return store.readPageCommand(runId).orElseThrow(() -> new PublicLookupException(404, "History page not found. Search again.", null));
+    }
+
+    private RiotIngestionCommand firstPage(String name, String tag, int queue) {
+        var command = new RiotIngestionCommand(name, tag, 20, queue, 0, clock.instant().getEpochSecond(), null);
         if (command.gameName().codePoints().anyMatch(Character::isISOControl)
                 || command.tagLine().codePoints().anyMatch(Character::isISOControl))
             throw new IllegalArgumentException("INVALID_RIOT_ID");
+        return command;
+    }
+
+    private Submission start(RiotIngestionCommand command, String peer) {
+        checkAdmission(peer);
+        var now = clock.instant();
+        var id = store.startPublicRun(command, now);
+        var key = key(command);
+        active.put(key, id);
+        pendingIdentities.put(id, command);
+        enqueue(key, id, ingestion.historyWork(id, command, store), now.plusSeconds(900));
+        recordAdmission(peer, now);
+        return new Submission(202, get(id));
+    }
+
+    public synchronized TimelineLookup timeline(String matchId) {
+        validateMatchId(matchId);
+        return store.readTimeline(matchId).orElseThrow(() -> new PublicLookupException(404, "Match not found.", null));
+    }
+
+    public synchronized TimelineLookup requestTimeline(String matchId, String peer) {
+        var current = timeline(matchId);
+        if (current.status().equals("AVAILABLE") || current.status().equals("RUNNING") || current.status().equals("UNAVAILABLE")) return current;
+        if (current.retryNotBefore() != null && current.retryNotBefore().isAfter(clock.instant())) return current;
+        checkAdmission(peer);
+        var now = clock.instant();
+        var id = store.startTimelineRun(matchId, now);
+        var key = new RequestKey("TIMELINE", matchId, "", 0, null);
+        active.put(key, id);
+        enqueue(key, id, ingestion.timelineWork(id, matchId, store), now.plusSeconds(900));
+        recordAdmission(peer, now);
+        return timeline(matchId);
+    }
+
+    private void checkAdmission(String peer) {
         if (!enabled) throw new PublicLookupException(503, "Live lookup is unavailable. Explore the sample match.", null);
         var now = clock.instant();
-        var cooldown = store.latestCooldown().filter(time -> time.isAfter(now));
-        if (cooldown.isPresent()) throw new PublicLookupException(429, "Riot is cooling down. Try again after the indicated time.", cooldown.get());
-        var key = new RequestKey(command.gameName().toLowerCase(Locale.ROOT), command.tagLine().toLowerCase(Locale.ROOT));
-        if (active.containsKey(key)) return new Submission(202, get(active.get(key)));
-        var fresh = store.findFresh(command, now.minusSeconds(900));
-        if (fresh.isPresent()) return new Submission(200, fresh.get());
+        store.latestCooldown().filter(time -> time.isAfter(now)).ifPresent(time -> {
+            throw new PublicLookupException(429, "Riot is cooling down. Try again after the indicated time.", time);
+        });
         if (active.size() >= 5) throw busy(now.plusSeconds(2));
-        // Only the actual socket peer is used. All clients behind a proxy share its budget.
+        // The socket peer is trusted; forwarded browser headers are not used as identities.
         submissions.values().forEach(times -> times.removeIf(time -> !time.isAfter(now.minusSeconds(60))));
         submissions.entrySet().removeIf(entry -> entry.getValue().isEmpty());
-        if (!submissions.containsKey(socketPeer) && submissions.size() >= 4096) throw busy(now.plusSeconds(60));
-        var times = submissions.computeIfAbsent(socketPeer, ignored -> new ArrayList<>());
+        if (!submissions.containsKey(peer) && submissions.size() >= 4096) throw busy(now.plusSeconds(60));
+        var times = submissions.getOrDefault(peer, List.of());
         if (times.size() >= 6) throw new PublicLookupException(429, "Too many lookups from this connection. Try again shortly.", times.getFirst().plusSeconds(60));
-        UUID runId = store.startPublicRun(command, now);
-        active.put(key, runId);
-        pendingIdentities.put(runId, command);
-        try {
-            worker.execute(() -> execute(key, runId, command));
-        } catch (RejectedExecutionException exception) {
-            active.remove(key);
-            pendingIdentities.remove(runId);
-            store.failPublicRun(runId, now);
-            throw busy(now.plusSeconds(2));
-        }
-        times.add(now);
-        return new Submission(202, get(runId));
     }
 
-    private void execute(RequestKey key, UUID runId, RiotIngestionCommand command) {
-        try {
-            // Work already queued before a 429 must also respect the persisted cooldown.
-            var cooldown = store.latestCooldown().filter(time -> time.isAfter(clock.instant()));
-            if (cooldown.isPresent()) {
-                store.stopForCooldown(runId, cooldown.get(), clock.instant());
-            } else ingestion.executePublic(runId, command);
-        } catch (RuntimeException exception) {
-            store.failPublicRun(runId, clock.instant());
-        } finally {
-            synchronized (this) {
-                active.remove(key);
-                pendingIdentities.remove(runId);
-            }
-        }
+    private void recordAdmission(String peer, Instant now) { submissions.computeIfAbsent(peer, ignored -> new ArrayList<>()).add(now); }
+
+    private void enqueue(RequestKey key, UUID id, PublicIngestionWork work, Instant deadline) {
+        try { worker.execute(() -> turn(key, id, work, deadline)); }
+        catch (RejectedExecutionException failure) { fail(key, id); }
     }
+
+    private void turn(RequestKey key, UUID id, PublicIngestionWork work, Instant deadline) {
+        synchronized (this) { if (!id.equals(active.get(key))) return; }
+        try {
+            if (!clock.instant().isBefore(deadline)) { fail(key, id); return; }
+            var cooldown = store.latestCooldown().filter(time -> time.isAfter(clock.instant()));
+            if (cooldown.isPresent()) { defer(key, id, work, deadline, cooldown.get()); return; }
+            if (work.step()) release(key, id);
+            else enqueue(key, id, work, deadline);
+        } catch (RiotGatewayException failure) {
+            if (failure.code() == RiotFailureCode.RATE_LIMITED) {
+                var retry = failure.retryNotBefore() == null ? clock.instant().plusSeconds(60) : failure.retryNotBefore();
+                defer(key, id, work, deadline, retry);
+            } else fail(key, id);
+        } catch (RuntimeException failure) { fail(key, id); }
+    }
+
+    private void defer(RequestKey key, UUID id, PublicIngestionWork work, Instant deadline, Instant retry) {
+        var safeRetry = retry.isAfter(clock.instant()) ? retry : clock.instant().plusSeconds(1);
+        ingestion.recordPublicCooldown(id, safeRetry);
+        var wake = safeRetry.isBefore(deadline) ? safeRetry : deadline;
+        later.accept(() -> turn(key, id, work, deadline), Duration.between(clock.instant(), wake).isNegative()
+                ? Duration.ZERO : Duration.between(clock.instant(), wake));
+    }
+    private void fail(RequestKey key, UUID id) {
+        try { store.failPublicRun(id, clock.instant()); }
+        finally { release(key, id); }
+    }
+    private synchronized void release(RequestKey key, UUID id) { active.remove(key, id); pendingIdentities.remove(id); }
 
     public synchronized PublicMatchLookup get(UUID runId) {
-        var lookup = store.readPublicRun(runId)
-                .orElseThrow(() -> new PublicLookupException(404, "Lookup not found. Search again.", null));
+        var lookup = store.readPublicRun(runId).orElseThrow(() -> new PublicLookupException(404, "Lookup not found. Search again.", null));
         var pending = pendingIdentities.get(runId);
-        if (pending != null && lookup.gameName().isEmpty() && lookup.tagLine().isEmpty()) {
-            return new PublicMatchLookup(lookup.runId(), pending.gameName(), pending.tagLine(), lookup.status(),
-                    lookup.message(), lookup.retryNotBefore(), lookup.matches());
-        }
-        return lookup;
+        return pending != null && lookup.gameName().isEmpty() && lookup.tagLine().isEmpty()
+                ? lookup.withIdentity(pending.gameName(), pending.tagLine()) : lookup;
     }
-
-    private PublicLookupException busy(Instant retry) {
-        return new PublicLookupException(429, "Lookup is busy. Try again shortly.", retry);
+    private static void validateMatchId(String id) {
+        if (id == null || !id.matches("NA1_[0-9]{1,20}")) throw new IllegalArgumentException("INVALID_MATCH_ID");
     }
-
-    private record RequestKey(String gameName, String tagLine) {}
-
+    private PublicLookupException busy(Instant retry) { return new PublicLookupException(429, "Lookup is busy. Try again shortly.", retry); }
+    private RequestKey key(RiotIngestionCommand c) {
+        return new RequestKey("HISTORY", c.gameName().toLowerCase(Locale.ROOT), c.tagLine().toLowerCase(Locale.ROOT), c.queueId(), c.previousRunId());
+    }
+    private record RequestKey(String kind, String name, String tag, int queue, UUID previous) {}
     public record Submission(int httpStatus, PublicMatchLookup lookup) {}
 }

@@ -99,3 +99,14 @@ it("restores a suggested interval after an earlier bounded endpoint has only CS"
     "CS0+2Gold0+400XPUnavailableUnavailable",
   );
 });
+
+
+it.each([12, 14])("does not infer a lane opponent on ARAM map %i", async (mapId) => {
+  vi.stubEnv("BACKEND_URL", "http://127.0.0.1:8080");
+  const data = { ...developmentFixture, summary: { ...developmentFixture.summary, queueId: 450, mapId, compareParticipantId: null } };
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(Response.json(data))
+    .mockResolvedValueOnce(Response.json(demoFixture)).mockResolvedValue(Response.json({})));
+  render(await DevelopmentPage({ params: Promise.resolve({ matchId: data.matchId }), searchParams: Promise.resolve({ focus: "6" }) }));
+  expect(screen.getByRole("heading", { name: "Garen progression" })).toBeVisible();
+  expect(screen.getByRole("combobox", { name: "Compare with opponent" })).toHaveValue("");
+});

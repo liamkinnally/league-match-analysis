@@ -162,7 +162,7 @@ public class MatchV5Decoder {
                     requiredInt(node, "teamId"),
                     requiredInt(node, "championId"),
                     requiredText(node, "championName"),
-                    requiredText(node, "teamPosition"),
+                    teamPosition(node),
                     requiredInt(node, "kills"),
                     requiredInt(node, "deaths"),
                     requiredInt(node, "assists"),
@@ -356,6 +356,11 @@ public class MatchV5Decoder {
             throw invalidPayload();
         }
         return value.stringValue();
+    }
+
+    private String teamPosition(JsonNode node) {
+        var value = optionalText(node, "teamPosition");
+        return value == null || value.isBlank() ? "UNKNOWN" : value;
     }
 
     private String optionalText(JsonNode parent, String field) {

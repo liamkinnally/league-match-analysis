@@ -1,6 +1,6 @@
 # Deployment
 
-The hosted prototype uses Vercel for the Next.js frontend and Railway for the Spring Boot backend, PostgreSQL and the scheduled backup job.
+The hosted application uses Vercel for the Next.js frontend and Railway for the Spring Boot backend, PostgreSQL and the scheduled backup job.
 
 ```text
 Browser -> Vercel / Next.js -> Railway / Spring Boot -> PostgreSQL
@@ -124,6 +124,6 @@ Use the documented seed command against staging only when sample data is needed.
 
 ## Live lookup
 
-Leave `RIOT_API_KEY` blank and `RIOT_PUBLIC_LOOKUP_ENABLED=false` when only the synthetic sample is needed. Live lookup currently supports NA1 / AMERICAS, ranked Solo/Duo queue 420 and the latest five matches.
+Leave `RIOT_API_KEY` blank and `RIOT_PUBLIC_LOOKUP_ENABLED=false` when only the synthetic sample is needed. Live lookup supports NA1 / AMERICAS Summoner’s Rift and ARAM queues in pages of up to twenty matches. See [public match lookup](public-match-lookup.md) for queue IDs, refresh cooldowns, deferred timelines and the single-backend scheduling requirement.
 
-Riot API access does not imply Riot endorsement or production-key approval. The prototype keeps its Riot notice, privacy policy and terms visible in the hosted application.
+Riot API access does not imply Riot endorsement or production-key approval. The application keeps its Riot notice, privacy policy and terms visible in the hosted application.

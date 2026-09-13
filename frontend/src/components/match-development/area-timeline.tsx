@@ -185,7 +185,7 @@ export function AreaTimeline({
               </option>
               {opponents.map((p) => (
                 <option key={p.participantId} value={p.participantId}>
-                  {participantName(p, assets)} — {roleLabel(p.teamPosition)}
+                  {participantName(p, assets)}{data.summary.queueId !== 450 && ` — ${roleLabel(p.teamPosition)}`}
                 </option>
               ))}
             </select>

@@ -1,5 +1,6 @@
 package dev.leagueanalysis.ingestion.riot.config;
 
+import dev.leagueanalysis.ingestion.riot.adapter.out.riot.BudgetedRiotHttpTransport;
 import dev.leagueanalysis.ingestion.riot.adapter.out.riot.JdkRiotHttpTransport;
 import dev.leagueanalysis.ingestion.riot.adapter.out.riot.MatchV5Decoder;
 import dev.leagueanalysis.ingestion.riot.adapter.out.riot.RiotApiClient;
@@ -25,8 +26,8 @@ public class RiotClientConfiguration {
     }
 
     @Bean
-    RiotHttpTransport riotHttpTransport(RiotProperties properties) {
-        return new JdkRiotHttpTransport(properties.connectTimeout());
+    RiotHttpTransport riotHttpTransport(RiotProperties properties, Clock clock) {
+        return new BudgetedRiotHttpTransport(new JdkRiotHttpTransport(properties.connectTimeout()), clock);
     }
 
     @Bean

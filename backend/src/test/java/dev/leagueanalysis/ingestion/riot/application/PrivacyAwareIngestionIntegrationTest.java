@@ -179,7 +179,7 @@ class PrivacyAwareIngestionIntegrationTest {
 
     private PublicMatchLookup runLookup() {
         UUID id = service.submit("OtherPlayer", "NA1", "peer").lookup().runId();
-        work.remove().run();
+        while (!work.isEmpty()) work.remove().run();
         return service.get(id);
     }
 

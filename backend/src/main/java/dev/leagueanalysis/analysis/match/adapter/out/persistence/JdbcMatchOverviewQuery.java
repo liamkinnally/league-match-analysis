@@ -109,7 +109,7 @@ public class JdbcMatchOverviewQuery implements MatchOverviewQuery {
                         int season = season(match.gameVersion());
                         if (season >= 14) objectives.put("horde", objectiveCount(raw, "horde"));
                         if (season == 15) objectives.put("atakhan", objectiveCount(raw, "atakhan"));
-                    } else if (match.mapId() == 12) {
+                    } else if (match.mapId() == 12 || match.mapId() == 14) {
                         objectives.put("tower", objectiveCount(raw, "tower"));
                         objectives.put("inhibitor", objectiveCount(raw, "inhibitor"));
                     }

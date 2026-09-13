@@ -5,6 +5,7 @@ import {
   currentRankAverage,
   numberText,
   queueShort,
+  queueType,
   rankDisplay,
 } from "../../lib/development/results";
 import type { CurrentRanks, PlayerRank } from "../../lib/development/types";
@@ -25,6 +26,7 @@ export function RankBadge({
   record?: PlayerRank;
   queueId: number;
 }) {
+  if (!queueType(queueId)) return null;
   const rank = rankDisplay(record);
   const current = `Current ${queueShort(queueId)} rank: ${rank.label}`;
   return (
@@ -73,6 +75,7 @@ export function AverageRank({
   ranks: CurrentRanks;
   totalPlayers: number;
 }) {
+  if (!ranks.queueType) return null;
   const average = currentRankAverage(ranks.players, totalPlayers);
   const label =
     average.label ?? (ranks.refreshing ? "Loading…" : "Unavailable");
@@ -108,6 +111,7 @@ export function RankDetails({
   totalPlayers: number;
   queueId: number;
 }) {
+  if (!ranks.queueType) return null;
   const average = currentRankAverage(ranks.players, totalPlayers);
   const counts = (status: string) =>
     ranks.players.filter((p) => rankDisplay(p).status === status).length;

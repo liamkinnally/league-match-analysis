@@ -30,6 +30,18 @@ public class RiotIngestionService {
         this.clock = clock;
     }
 
+    public PublicIngestionWork historyWork(UUID runId, RiotIngestionCommand command, PublicMatchLookupStore pages) {
+        return new PublicHistoryWork(runId, command, gateway.forPublicLookup(), store, pages, decoder, clock);
+    }
+
+    public PublicIngestionWork timelineWork(UUID runId, String matchId, PublicMatchLookupStore pages) {
+        return new PublicTimelineWork(runId, matchId, gateway.forPublicLookup(), store, pages, decoder, clock);
+    }
+
+    public void recordPublicCooldown(UUID runId, java.time.Instant retry) {
+        store.recordRetryNotBefore(runId, retry);
+    }
+
     public RiotIngestionResult ingest(RiotIngestionCommand command) {
         var runId = store.startRun(command, clock.instant());
         return execute(runId, command, gateway, false);

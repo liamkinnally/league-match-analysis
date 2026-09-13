@@ -30,6 +30,9 @@ class JdbcIngestionLeaseGuardTest {
         assertThat(entryPoints).isNotEmpty();
         for (var method : entryPoints) {
             var arguments = new Object[method.getParameterCount()];
+            for (int index = 0; index < arguments.length; index++) {
+                if (method.getParameterTypes()[index] == int.class) arguments[index] = 0;
+            }
             assertThatThrownBy(() -> method.invoke(store, arguments)).as(method.getName())
                     .isInstanceOfSatisfying(InvocationTargetException.class, exception ->
                             assertThat(exception.getCause()).isInstanceOf(IllegalStateException.class)

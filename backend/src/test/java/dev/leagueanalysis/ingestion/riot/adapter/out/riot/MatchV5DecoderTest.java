@@ -68,6 +68,16 @@ class MatchV5DecoderTest {
     }
 
     @Test
+    void normalMatchesPreserveMissingRolesAsUnknown() throws IOException {
+        var detail = fixture("match-detail-minimal.json").deepCopy();
+        var participants = detail.path("info").path("participants");
+        ((ObjectNode) participants.get(0)).put("teamPosition", "");
+        ((ObjectNode) participants.get(1)).remove("teamPosition");
+        var result = decoder.decode(captured(SourceKind.MATCH_DETAIL, detail, DETAIL_CAPTURE_ID), Optional.empty());
+        assertThat(result.participants()).allSatisfy(p -> assertThat(p.teamPosition()).isEqualTo("UNKNOWN"));
+    }
+
+    @Test
     void rejectsMalformedRequiredMatchIdentityWithoutLeakingPayload() throws IOException {
         var malformed = fixture("match-detail-minimal.json").deepCopy();
         ((ObjectNode) malformed.path("metadata")).remove("matchId");

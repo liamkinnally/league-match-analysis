@@ -5,6 +5,7 @@ import { PRODUCT_NAME } from "../../lib/product";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { DevelopmentFooter } from "../development-footer";
+import { DeferredTimeline } from "./deferred-timeline";
 import { AreaTimeline } from "./area-timeline";
 import { TeamResults } from "./team-results";
 import { AverageRank } from "./ranks";
@@ -144,7 +145,7 @@ export function MatchDevelopmentView({
           </div>
           <div className="development-result__identity">
             <p className="development-kicker">
-              {roleLabel(focal.teamPosition)} — {data.matchId}
+              {data.summary.queueId !== 450 && <>{roleLabel(focal.teamPosition)} — </>}{data.matchId}
             </p>
             <h1>
               {participantName(focal, assets)}
@@ -184,13 +185,13 @@ export function MatchDevelopmentView({
           aria-labelledby="timeline-heading"
         >
           <div className="accepted-area-chart">
-            <AreaTimeline
+            {!data.timelineAvailable && !invented ? <DeferredTimeline key={data.matchId} matchId={data.matchId} /> : <AreaTimeline
               data={data}
               interval={interval}
               assets={assets}
               metric={metric}
               onMetric={setMetric}
-            />
+            />}
           </div>
           {data.timelineAvailable && data.samples.length ? (
             <>

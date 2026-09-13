@@ -29,7 +29,19 @@ public class PublicMatchLookupController {
 
     @PostMapping
     public ResponseEntity<PublicMatchLookup> submit(@RequestBody Request request, HttpServletRequest servlet) {
-        var result = service.submit(request.gameName(), request.tagLine(), servlet.getRemoteAddr());
+        var result = service.submit(request.gameName(), request.tagLine(), request.queueId() == null ? 0 : request.queueId(), servlet.getRemoteAddr());
+        return ResponseEntity.status(result.httpStatus()).header("Cache-Control", "no-store").body(result.lookup());
+    }
+
+    @PostMapping("/{runId}/older")
+    public ResponseEntity<PublicMatchLookup> older(@PathVariable UUID runId, HttpServletRequest servlet) {
+        var result = service.older(runId, servlet.getRemoteAddr());
+        return ResponseEntity.status(result.httpStatus()).header("Cache-Control", "no-store").body(result.lookup());
+    }
+
+    @PostMapping("/{runId}/refresh")
+    public ResponseEntity<PublicMatchLookup> refresh(@PathVariable UUID runId, HttpServletRequest servlet) {
+        var result = service.refresh(runId, servlet.getRemoteAddr());
         return ResponseEntity.status(result.httpStatus()).header("Cache-Control", "no-store").body(result.lookup());
     }
 
@@ -51,6 +63,8 @@ public class PublicMatchLookupController {
         return ResponseEntity.badRequest().body(new Error("Enter a Riot game name and tag line.", null));
     }
 
-    public record Request(String gameName, String tagLine) {}
+    public record Request(String gameName, String tagLine, Integer queueId) {
+        public Request(String gameName, String tagLine) { this(gameName, tagLine, null); }
+    }
     public record Error(String message, Instant retryNotBefore) {}
 }

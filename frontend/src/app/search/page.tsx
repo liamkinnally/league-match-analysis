@@ -11,9 +11,9 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
     <header className="entry-heading">
       <p className="development-kicker">Match history</p>
       <h1>Player search</h1>
-      <p>{isSamplePreview() ? "Explore the interface using an invented match." : "Find recent ranked matches by Riot ID."}</p>
+      <p>{isSamplePreview() ? "Explore the interface using an invented match." : "Find a player, then filter their match history by queue."}</p>
     </header>
-    <PlayerSearchEntry key={runId ?? "new"} initialRunId={runId} />
+    <PlayerSearchEntry initialRunId={runId} />
     <Suspense fallback={<SampleMatchPending />}><SampleMatchLink /></Suspense>
   </EntryShell>;
 }

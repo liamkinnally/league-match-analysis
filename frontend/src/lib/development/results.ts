@@ -18,12 +18,14 @@ export const roleLabel = (role: string) =>
   role === "UTILITY" ? "SUPPORT" : role;
 export const queueLabel = (queueId: number) =>
   ({
+    0: "All queues",
     420: "Ranked Solo/Duo",
     440: "Ranked Flex",
-    400: "Normal Draft",
-    430: "Normal Blind",
+    400: "Draft Pick",
+    430: "Blind Pick (historical)",
     450: "ARAM",
-    490: "Quickplay",
+    480: "Swiftplay",
+    490: "Quickplay (historical)",
   })[queueId] ?? `Queue ${queueId}`;
 export const queueType = (queueId: number) =>
   queueId === 420
@@ -47,7 +49,7 @@ export function finalItemSlotOrder(itemIds: readonly number[]): number[] {
   ];
 }
 export function objectiveColumns(version: string, mapId: number) {
-  if (![11, 12].includes(mapId)) return [];
+  if (![11, 12, 14].includes(mapId)) return [];
   const [major, minor] = version.split(".").map(Number);
   const columns = [
     { key: "tower", label: "Towers" },

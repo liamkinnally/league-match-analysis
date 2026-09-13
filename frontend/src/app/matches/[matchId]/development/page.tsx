@@ -53,7 +53,8 @@ export default async function DevelopmentPage({ params, searchParams }: Props) {
       participant.teamPosition === focal.teamPosition,
   );
   const automaticComparison =
-    sameRoleOpponents.length === 1 ? sameRoleOpponents[0] : undefined;
+    data.summary.mapId === 11 && focal.teamPosition !== "UNKNOWN" && sameRoleOpponents.length === 1
+      ? sameRoleOpponents[0] : undefined;
   const comparison = requestedOpponent ?? automaticComparison;
 
   const firstTime = data.samples[0]?.timestampMs ?? 0;

@@ -1,10 +1,10 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import PlayerSearch from "./player-search";
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 const runId = "00000000-0000-0000-0000-000000000001";
-const running = { runId, gameName: "Invented", tagLine: "NA1", status: "RUNNING", message: null, retryNotBefore: null, matches: [] };
+const running = { runId, gameName: "Invented", tagLine: "NA1", status: "RUNNING", message: null, retryNotBefore: null, queueId: 420, lastUpdated: null, nextRefreshAt: null, previousRunId: null, hasMore: true, matches: [] };
 const assets = {
   assetVersion: "16.17.1",
   champions: { "86": { name: "Garen", imageUrl: "https://assets.test/Garen.png" } },
@@ -28,18 +28,18 @@ it("ends a stalled history request and retries the same run without starting ano
   vi.useFakeTimers();
   const fetcher = vi.fn().mockImplementationOnce((_url, { signal }: RequestInit) => new Promise((_resolve, reject) => {
     signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
-  })).mockResolvedValue(Response.json({ ...running, status: "EMPTY" }));
+  })).mockResolvedValue(Response.json({ ...running, status: "EMPTY", hasMore: false }));
   vi.stubGlobal("fetch", fetcher);
   await act(async () => render(<PlayerSearch initialRunId={runId} />));
   await act(async () => vi.advanceTimersByTime(12000));
   expect(screen.getByRole("alert")).toHaveTextContent(/taking longer than expected/);
   await act(async () => fireEvent.click(screen.getByRole("button", { name: "Retry loading" })));
-  expect(screen.getByText(/No recent ranked Solo\/Duo matches/)).toBeVisible();
+  expect(screen.getByText(/No Ranked Solo\/Duo matches/)).toBeVisible();
   expect(fetcher.mock.calls.every(([url]) => url === `/api/player-matches/${runId}`)).toBe(true);
 });
 
 it("rejects history belonging to a different run", async () => {
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ ...running, runId: "00000000-0000-0000-0000-000000000002", status: "EMPTY" })));
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ ...running, runId: "00000000-0000-0000-0000-000000000002", status: "EMPTY", hasMore: false })));
   await act(async () => render(<PlayerSearch initialRunId={runId} />));
   expect(screen.getByRole("alert")).toBeVisible();
   expect(screen.queryByRole("heading", { name: /Invented/ })).not.toBeInTheDocument();
@@ -77,7 +77,7 @@ it("shows new submission progress after a history loading failure", async () => 
 });
 it("polls at two-second intervals and exposes completed rows while lookup continues", async () => {
   vi.useFakeTimers();
-  const fetcher = vi.fn().mockImplementation(async () => Response.json({ ...running, matches: [{ matchId: "NA1_7000000002", participantId: 6, championName: "Garen", championId: 86, gameVersion: "16.17.1", endItemIds: [3071, 3047, 3053, 6333, 3065, 0, 3364], position: "TOP", win: true, startedAtMs: 1788890400000, durationSeconds: 1800, kills: 7, deaths: 2, assists: 9, cs: 180, gold: 12500, timelineAvailable: true }] }));
+  const fetcher = vi.fn().mockImplementation(async () => Response.json({ ...running, matches: [{ matchId: "NA1_7000000002", queueId: 420, participantId: 6, championName: "Garen", championId: 86, gameVersion: "16.17.1", endItemIds: [3071, 3047, 3053, 6333, 3065, 0, 3364], position: "TOP", win: true, startedAtMs: 1788890400000, durationSeconds: 1800, kills: 7, deaths: 2, assists: 9, cs: 180, gold: 12500, timelineAvailable: true }] }));
   vi.stubGlobal("fetch", fetcher);
   await act(async () => render(<PlayerSearch initialRunId={runId} />));
   expect(screen.getByRole("link", { name: /Garen.*match development/ })).toHaveAttribute("href", "/matches/NA1_7000000002/development?focus=6");
@@ -87,7 +87,7 @@ it("polls at two-second intervals and exposes completed rows while lookup contin
   expect(fetcher.mock.calls.filter(([url]) => String(url).startsWith("/api/player-matches"))).toHaveLength(2);
 });
 it("submits a Riot ID and stores the run in navigation history", async () => {
-  vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => Response.json(running, { status: 202 })));
+  vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => Response.json({ ...running, queueId: 0 }, { status: 202 })));
   render(<PlayerSearch />);
   fireEvent.change(screen.getByLabelText("Game name"), { target: { value: "Invented" } });
   fireEvent.change(screen.getByLabelText("Tag line"), { target: { value: "NA1" } });
@@ -95,13 +95,13 @@ it("submits a Riot ID and stores the run in navigation history", async () => {
   expect(push).toHaveBeenCalledWith(`/search?runId=${runId}`);
 });
 it("shows the empty-result message", async () => {
-  vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => Response.json({ ...running, status: "EMPTY" })));
+  vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => Response.json({ ...running, status: "EMPTY", hasMore: false })));
   await act(async () => render(<PlayerSearch initialRunId={runId} />));
-  expect(screen.getByText(/No recent ranked Solo\/Duo matches/)).toBeInTheDocument();
+  expect(screen.getByText(/No Ranked Solo\/Duo matches/)).toBeInTheDocument();
 });
 
 it("renders patch-matched champion and final-item assets in a compact history row", async () => {
-  const match = { matchId: "NA1_7000000002", participantId: 6, championName: "Garen", championId: 86, gameVersion: "16.17.1", endItemIds: [3071, 3047, 0, 0, 0, 0, 3340], position: "TOP", win: true, startedAtMs: 1788890400000, durationSeconds: 1800, kills: 7, deaths: 2, assists: 9, cs: 180, gold: 12500, timelineAvailable: true };
+  const match = { matchId: "NA1_7000000002", queueId: 420, participantId: 6, championName: "Garen", championId: 86, gameVersion: "16.17.1", endItemIds: [3071, 3047, 0, 0, 0, 0, 3340], position: "TOP", win: true, startedAtMs: 1788890400000, durationSeconds: 1800, kills: 7, deaths: 2, assists: 9, cs: 180, gold: 12500, timelineAvailable: true };
   vi.stubGlobal("fetch", vi.fn().mockImplementation(async (input: string | URL | Request) => {
     const url = String(input);
     if (url.startsWith("/api/game-assets")) return Response.json({ "16.17.1": assets });
@@ -128,4 +128,72 @@ it.each(["RUNNING", "FAILED"])("labels an unresolved %s lookup without rendering
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   expect(screen.getByLabelText("Game name")).toHaveValue("");
   expect(screen.getByRole("button", { name: "Find matches" })).toBeEnabled();
+});
+
+it("labels normal queues accurately and unlocks explicit update after its countdown", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-09-12T00:00:00Z"));
+  const fetcher = vi.fn().mockImplementation(async () => Response.json({ ...running, queueId: 480, status: "EMPTY", hasMore: false, lastUpdated: "2026-09-12T00:00:00Z", nextRefreshAt: "2026-09-12T00:00:03Z" }));
+  vi.stubGlobal("fetch", fetcher);
+  await act(async () => render(<PlayerSearch initialRunId={runId} />));
+  expect(screen.getByLabelText("Queue Type")).toHaveValue("480");
+  expect(screen.getByText(/No Swiftplay matches/)).toBeVisible();
+  expect(screen.getByRole("button", { name: "Update" })).toBeDisabled();
+  expect(screen.getByText("Update in 0:03")).toBeVisible();
+  await act(async () => vi.advanceTimersByTime(3000));
+  expect(screen.getByRole("button", { name: "Update" })).toBeEnabled();
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Update" })));
+  expect(fetcher.mock.calls[1][0]).toBe(`/api/player-matches/${runId}/refresh`);
+});
+
+it.each(["RUNNING", "FAILED", "PARTIAL"])("does not claim the end of history when %s has no known next page", async (status) => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ ...running, status, hasMore: false })));
+  await act(async () => render(<PlayerSearch initialRunId={runId} />));
+  expect(screen.queryByText("End of match history for this queue.")).not.toBeInTheDocument();
+});
+
+
+it("searches all queues before exposing a result filter and labels each match by its own queue", async () => {
+  const match = { matchId: "NA1_21", queueId: 420, participantId: 6, championName: "Garen", championId: 86,
+    gameVersion: "16.17.1", endItemIds: [], position: "TOP", win: true, startedAtMs: 1788890400000,
+    durationSeconds: 1800, kills: 7, deaths: 2, assists: 9, cs: 180, gold: 12500, timelineAvailable: false };
+  const fetcher = vi.fn().mockImplementation(async (url: string, options: RequestInit) => {
+    if (url.startsWith("/api/game-assets")) return Response.json({});
+    const input = JSON.parse(String(options.body));
+    return Response.json({ ...running, runId: input.queueId === 0 ? runId : "00000000-0000-0000-0000-000000000002",
+      gameName: input.gameName, queueId: input.queueId, status: "COMPLETE",
+      matches: input.queueId === 0 ? [match, { ...match, matchId: "NA1_22", queueId: 480 }] : [{ ...match, matchId: "NA1_23", queueId: 480 }] });
+  });
+  vi.stubGlobal("fetch", fetcher);
+  render(<PlayerSearch />);
+  expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+  expect(screen.queryByText(/All supported queues/)).not.toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText("Game name"), { target: { value: "Invented" } });
+  fireEvent.change(screen.getByLabelText("Tag line"), { target: { value: "NA1" } });
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Find matches" })));
+  expect(JSON.parse(fetcher.mock.calls[0][1].body)).toEqual({ gameName: "Invented", tagLine: "NA1", queueId: 0 });
+  expect(screen.getByLabelText("Queue Type")).toHaveValue("0");
+  expect(within(screen.getByLabelText("Queue Type")).getAllByRole("option").map(option => option.textContent)).toEqual(["All queues", "Ranked Solo/Duo", "Ranked Flex", "Draft Pick", "Swiftplay", "ARAM"]);
+  const rows = within(screen.getByRole("list", { name: "Recent match history" }));
+  expect(rows.getByText("Ranked Solo/Duo")).toBeVisible();
+  expect(rows.getByText("Swiftplay")).toBeVisible();
+  // Editing a new search must not change whose history the result filter queries.
+  fireEvent.change(screen.getByLabelText("Game name"), { target: { value: "Another" } });
+  await act(async () => fireEvent.change(screen.getByLabelText("Queue Type"), { target: { value: "480" } }));
+  const posts = fetcher.mock.calls.filter(([url]) => url === "/api/player-matches");
+  expect(JSON.parse(posts[1][1].body)).toEqual({ gameName: "Invented", tagLine: "NA1", queueId: 480 });
+  expect(screen.getByLabelText("Queue Type")).toHaveValue("480");
+  expect(within(screen.getByRole("list", { name: "Recent match history" })).queryByText("Ranked Solo/Duo")).not.toBeInTheDocument();
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Find matches" })));
+  expect(screen.getByLabelText("Queue Type")).toHaveValue("0");
+});
+
+it("keeps an empty raw page scoped to that page when older supported matches may exist", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ ...running, queueId: 0, status: "EMPTY", hasMore: true })));
+  await act(async () => render(<PlayerSearch initialRunId={runId} />));
+  expect(screen.getByText("No supported matches on this page")).toBeVisible();
+  expect(screen.getByText("Load older matches to continue through this player's history.")).toBeVisible();
+  expect(screen.getByRole("button", { name: "Load older matches" })).toBeEnabled();
+  expect(screen.queryByText("No supported matches found on NA1.")).not.toBeInTheDocument();
 });

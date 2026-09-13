@@ -85,6 +85,26 @@ class RiotApiClientTest {
     }
 
     @Test
+    void requestsOlderNormalHistoryWithFixedCutoffWithoutRankedTypeFilter() {
+        var transport = new FakeTransport(ok("[\"NA1_123\"]"));
+        client(properties(TEST_SECRET), transport, ignored -> {})
+                .listMatchIds("invented", 400, 20, 20, 1780000000L);
+        assertThat(transport.requests.getFirst().uri().getRawQuery())
+                .isEqualTo("queue=400&start=20&count=20&endTime=1780000000");
+        assertCode(() -> client(properties(TEST_SECRET), transport, ignored -> {})
+                .listMatchIds("invented", 1700, 0, 20, null), RiotFailureCode.INVALID_INPUT);
+    }
+
+    @Test
+    void allQueueLookupOmitsQueueAndKeepsRawOffsetCountAndCutoff() {
+        var transport = new FakeTransport(ok("[\"NA1_123\"]"));
+        client(properties(TEST_SECRET), transport, ignored -> {})
+                .listMatchIds("invented", 0, 20, 20, 1780000000L);
+        assertThat(transport.requests.getFirst().uri().getRawQuery())
+                .isEqualTo("start=20&count=20&endTime=1780000000");
+    }
+
+    @Test
     void rejectsInvalidIdentifiersAndCountBeforeTransport() {
         var transport = new FakeTransport();
         var client = client(properties(TEST_SECRET), transport, ignored -> {});

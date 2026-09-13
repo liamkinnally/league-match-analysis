@@ -10,6 +10,10 @@ public interface RiotGateway {
 
     RiotMatchList listRankedMatchIds(String puuid, int count);
 
+    default RiotMatchList listMatchIds(String puuid, int queueId, int start, int count, Long endTime) {
+        return listRankedMatchIds(puuid, count);
+    }
+
     ProviderDocument fetchMatchDetail(String matchId);
 
     ProviderDocument fetchMatchTimeline(String matchId);
