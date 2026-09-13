@@ -5,7 +5,7 @@ test("packaged application serves the persisted sample through the browser", asy
   await installDeterministicGameAssets(page);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
-  await expect(page.getByRole("link", { name: "match-analysis-v1" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "League Match Analysis" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Find matches" })).toBeEnabled();
 
   await page.getByRole("link", { name: "Explore sample match" }).click();

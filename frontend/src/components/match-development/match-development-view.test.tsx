@@ -471,3 +471,31 @@ it("keeps captured events accessible when usable participant samples are absent"
       .querySelectorAll("li"),
   ).toHaveLength(3);
 });
+
+it("omits rank presentation for a normal queue and never loads a synthetic timeline", () => {
+  const fetcher = vi.fn(); vi.stubGlobal("fetch", fetcher);
+  render(<MatchDevelopmentView data={{ ...developmentFixture, summary: { ...developmentFixture.summary, queueId: 480 }, timelineAvailable: false, samples: [], windows: [], suggestedWindows: [], events: [] }} interval={{ from: 0, to: 1800000 }} invented assets={null} />);
+  expect(screen.getByText("Swiftplay", { exact: true })).toBeVisible();
+  expect(screen.queryByText("Current avg. tier")).not.toBeInTheDocument();
+  expect(screen.queryByText("Rank details")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /Current.*rank/ })).not.toBeInTheDocument();
+  expect(fetcher).not.toHaveBeenCalled();
+});
+
+
+it.each([12, 14])("shows ARAM map %i without Summoner's Rift roles, ranks, or jungle objectives", (mapId) => {
+  const data = structuredClone(developmentFixture);
+  data.summary.queueId = 450;
+  data.summary.mapId = mapId;
+  data.roster.forEach(person => { person.teamPosition = "UNKNOWN"; });
+  render(<MatchDevelopmentView data={data} interval={{ from: 780275, to: 900291 }} invented={false} assets={null} />);
+  expect(screen.getByRole("heading", { name: "Scoreboard" })).toBeVisible();
+  expect(screen.queryByRole("columnheader", { name: "Role" })).not.toBeInTheDocument();
+  expect(screen.queryByText("UNKNOWN")).not.toBeInTheDocument();
+  expect(screen.queryByText("Dragons")).not.toBeInTheDocument();
+  expect(screen.queryByText("Barons")).not.toBeInTheDocument();
+  expect(screen.queryByText("Current avg. tier")).not.toBeInTheDocument();
+  expect(screen.getAllByText("Towers").length).toBeGreaterThan(0);
+  const options = within(screen.getByRole("combobox", { name: "Compare with opponent" })).getAllByRole("option");
+  expect(options.some(option => option.textContent?.includes("UNKNOWN"))).toBe(false);
+});

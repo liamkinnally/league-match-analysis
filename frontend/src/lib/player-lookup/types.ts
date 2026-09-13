@@ -1,13 +1,18 @@
 export type MatchSummary = {
-  matchId: string; participantId: number; championName: string; championId: number;
+  matchId: string; queueId: number; participantId: number; championName: string; championId: number;
   gameVersion: string; endItemIds: number[]; position: string; win: boolean; startedAtMs: number; durationSeconds: number;
   kills: number; deaths: number; assists: number; cs: number; gold: number; timelineAvailable: boolean;
 };
 export type PlayerLookup = {
-  runId: string; gameName: string; tagLine: string;
+  runId: string; gameName: string; tagLine: string; queueId: number;
+  lastUpdated: string | null; nextRefreshAt: string | null; previousRunId: string | null; hasMore: boolean;
   status: "RUNNING" | "COMPLETE" | "EMPTY" | "PARTIAL" | "FAILED";
   message: string | null; retryNotBefore: string | null; matches: MatchSummary[];
 };
+export const historyQueues = [420, 440, 400, 480, 450] as const;
+const storedHistoryQueues = [...historyQueues, 430, 490] as const;
+export const isHistoryQueue = (value: unknown): value is number => typeof value === "number" && storedHistoryQueues.some(id => id === value);
+export const isHistoryFilter = (value: unknown): value is number => value === 0 || isHistoryQueue(value);
 export const runIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const messages = new Set([
   "Live lookup is unavailable. Explore the sample match.",
@@ -36,24 +41,34 @@ const boolean = (value: unknown): boolean => {
 export function retryDate(value: unknown): string | null {
   return typeof value === "string" && value.length <= 40 && Number.isFinite(Date.parse(value)) ? value : null;
 }
+function nullableDate(value: unknown): string | null {
+  if (value === null) return null;
+  const date = retryDate(value);
+  if (!date) throw new Error("INVALID_LOOKUP");
+  return date;
+}
 export function parseLookup(value: unknown): PlayerLookup {
   const r = record(value);
   const runId = text(r.runId);
   if (!runIdPattern.test(runId) || !["RUNNING", "COMPLETE", "EMPTY", "PARTIAL", "FAILED"].includes(String(r.status))
-      || !Array.isArray(r.matches) || r.matches.length > 5) throw new Error("INVALID_LOOKUP");
+      || !Array.isArray(r.matches) || r.matches.length > 20 || !isHistoryFilter(r.queueId)
+      || (r.previousRunId !== null && (typeof r.previousRunId !== "string" || !runIdPattern.test(r.previousRunId)))) throw new Error("INVALID_LOOKUP");
   const unresolved = (r.status === "RUNNING" || r.status === "FAILED")
     && r.gameName === "" && r.tagLine === "";
   return {
     runId, gameName: unresolved ? "" : text(r.gameName), tagLine: unresolved ? "" : text(r.tagLine, 16), status: r.status as PlayerLookup["status"],
     message: typeof r.message === "string" && messages.has(r.message) ? r.message : null,
-    retryNotBefore: retryDate(r.retryNotBefore),
+    retryNotBefore: retryDate(r.retryNotBefore), queueId: r.queueId,
+    lastUpdated: nullableDate(r.lastUpdated), nextRefreshAt: nullableDate(r.nextRefreshAt),
+    previousRunId: r.previousRunId as string | null, hasMore: boolean(r.hasMore),
     matches: r.matches.map((value) => {
       const m = record(value);
       const matchId = text(m.matchId);
       const participantId = number(m.participantId, 10);
+      if (!isHistoryQueue(m.queueId) || (r.queueId !== 0 && m.queueId !== r.queueId)) throw new Error("INVALID_LOOKUP");
       if (!/^NA1_\d+$/.test(matchId) || participantId < 1) throw new Error("INVALID_LOOKUP");
       if (!Array.isArray(m.endItemIds) || m.endItemIds.length > 7) throw new Error("INVALID_LOOKUP");
-      return { matchId, participantId, championName: text(m.championName), championId: number(m.championId),
+      return { matchId, queueId: m.queueId, participantId, championName: text(m.championName), championId: number(m.championId),
         gameVersion: text(m.gameVersion), endItemIds: m.endItemIds.map((id) => number(id, 100000)),
         position: text(m.position || "UNKNOWN"), win: boolean(m.win), startedAtMs: number(m.startedAtMs),
         durationSeconds: number(m.durationSeconds), kills: number(m.kills), deaths: number(m.deaths),

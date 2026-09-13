@@ -6,14 +6,14 @@ import "./reviewed-match.css";
 import "./entry-pages.css";
 import "./prototype.css";
 import { PRODUCT_NAME } from "../lib/product";
-import { PrototypeNotice } from "../components/prototype-notice";
+import { SiteBanner } from "../components/site-banner";
 
 export const metadata: Metadata = {
   title: PRODUCT_NAME,
-  description: "Pre-release League of Legends match-analysis prototype for testing and Riot review.",
+  description: "Explore League of Legends match history, timelines, and player comparisons.",
   robots: { index: false, follow: false },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
-  return <html lang="en"><body className="prototype-shell"><PrototypeNotice />{children}</body></html>;
+  return <html lang="en"><body className="site-shell"><SiteBanner />{children}</body></html>;
 }

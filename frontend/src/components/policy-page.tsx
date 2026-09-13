@@ -6,7 +6,7 @@ export function PolicyPage({ title, children }: { title: string; children: React
   return <EntryShell>
     <article className="policy-page">
       <h1>{title}</h1>
-      <p className="policy-date">Updated September 10, 2026</p>
+      <p className="policy-date">Updated September 12, 2026</p>
       {children}
       <h2>Contact</h2>
       <PolicyContact />

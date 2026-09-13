@@ -2,13 +2,13 @@
 
 A League of Legends match-history and timeline application built with Java, Spring Boot, Next.js, TypeScript and PostgreSQL. Look up a player, open a recent match, and compare how two champions' gold, CS and experience changed over time alongside recorded events.
 
-[Open the live demo](https://lolmatchanalysis.app) · [Architecture](docs/architecture.md) · [Development guide](docs/developer-guide.md)
+[Open the site](https://lolmatchanalysis.app) · [Architecture](docs/architecture.md) · [Development guide](docs/developer-guide.md)
 
-The hosted site is a portfolio prototype with limited live lookup availability. The included synthetic match can be explored without a Riot API key.
+Live lookup is subject to Riot API availability and request limits. The included synthetic match can be explored without a Riot API key.
 
 ## Match review
 
-- Look up an NA1 ranked Solo/Duo player and load their five most recent matches.
+- Look up an NA1 player across Summoner’s Rift and ARAM queues, filter by Queue Type, and load older history in pages of up to twenty matches.
 - Review team results, objectives, builds, KDA, CS, gold and current queue-specific ranks when available.
 - Compare gold, CS or XP differences over time with player, opponent and interval selections preserved in the URL.
 - Inspect timestamped kills, objectives, item changes and ward events alongside sampled values.
@@ -79,7 +79,7 @@ CI runs backend tests, frontend lint/type checks and tests, production builds, b
 
 ## Limits and data handling
 
-- Live lookup currently supports NA1 / AMERICAS, ranked Solo/Duo (queue 420), and five recent matches.
+- Live lookup supports NA1 / AMERICAS Summoner’s Rift queues with pages of up to twenty matches, explicit refresh cooldowns, and timelines loaded when a match is opened. Arena and other regions remain unsupported.
 - Current ranks are current queue-specific snapshots, not historical ranks or MMR.
 - Timeline samples describe recorded points in time rather than continuous game state. Missing source data remains unavailable instead of being inferred.
 - Suggested intervals highlight recorded changes in gold difference; they do not claim why a change happened.

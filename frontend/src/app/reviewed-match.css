@@ -765,7 +765,7 @@ html:has(.development-app) #scoreboard .development-team__heading > span {
 
 /* Keep keyboard location visible without the inherited bright, 3px frames. */
 html:has(.development-app) .development-app {
-  --preview-focus-color: #858b86;
+  --preview-focus-color: var(--brand-accent);
 }
 html:has(.development-app) .development-app :focus-visible,
 html:has(.development-app) .refined-opponent:has(select:focus-visible) {

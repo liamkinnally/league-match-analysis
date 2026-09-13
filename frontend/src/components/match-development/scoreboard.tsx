@@ -12,6 +12,7 @@ import {
   roleLabel,
   numberText,
   rankDisplay,
+  queueType,
 } from "../../lib/development/results";
 import { matchResult } from "../../lib/match-result";
 import type {
@@ -110,7 +111,7 @@ export function Scoreboard({
               <thead>
                 <tr>
                   <th>Player</th>
-                  <th className="development-hide-narrow">Role</th>
+                  {data.summary.queueId !== 450 && <th className="development-hide-narrow">Role</th>}
                   <th>KDA</th>
                   <th>CS</th>
                   <th>Gold</th>
@@ -134,7 +135,7 @@ export function Scoreboard({
                     interval,
                     metric,
                   );
-                  const label = `Select ${riotId(person)}, playing ${name}, ${roleLabel(person.teamPosition)}. Current rank: ${rankDisplay(rank).label}`;
+                  const label = `Select ${riotId(person)}, playing ${name}${data.summary.queueId === 450 ? "" : `, ${roleLabel(person.teamPosition)}`}.${queueType(data.summary.queueId) ? ` Current rank: ${rankDisplay(rank).label}` : ""}`;
                   const selected =
                     person.participantId === data.summary.focusParticipantId;
                   return (
@@ -219,9 +220,9 @@ export function Scoreboard({
                           />
                         </div>
                       </th>
-                      <td className="development-hide-narrow">
+                      {data.summary.queueId !== 450 && <td className="development-hide-narrow">
                         {roleLabel(person.teamPosition)}
-                      </td>
+                      </td>}
                       <td className="development-number">
                         {person.kills} / {person.deaths} / {person.assists}
                       </td>

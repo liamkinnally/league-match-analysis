@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import dev.leagueanalysis.ingestion.riot.application.PublicMatchLookup;
+import dev.leagueanalysis.ingestion.riot.application.TimelineLookup;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -28,6 +29,35 @@ import tools.jackson.databind.ObjectMapper;
 @Repository
 @org.springframework.context.annotation.DependsOn("privacyRuntimeGuard")
 public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueanalysis.ingestion.riot.application.PublicMatchLookupStore {
+    // Keep cache ownership and account refreshes on the same verified identity
+    // snapshot. Failed match imports still contribute successful account evidence.
+    private static final String LATEST_VERIFIED_IDENTITY = """
+                with identity_evidence as (
+                    select r.resolved_puuid puuid, c.captured_at observed_at, r.started_at, 1 priority
+                    from league_analysis.ingestion_run r
+                    join league_analysis.source_capture c on c.ingestion_run_id = r.id and c.source_kind = 'ACCOUNT'
+                    where r.resolved_puuid is not null
+                        and lower(r.requested_game_name) = lower(?) and lower(r.requested_tag_line) = lower(?)
+                    union all
+                    select r.resolved_puuid, c.captured_at, r.started_at, 1
+                    from league_analysis.ingestion_run r
+                    join league_analysis.source_capture c on c.ingestion_run_id = r.id and c.source_kind = 'ACCOUNT'
+                    join league_analysis.source_payload p on p.id = c.source_payload_id and p.source_kind = 'ACCOUNT'
+                    where r.resolved_puuid = p.payload_json->>'puuid'
+                        and lower(p.payload_json->>'gameName') = lower(?)
+                        and lower(p.payload_json->>'tagLine') = lower(?)
+                    union all
+                    select i.puuid, c.captured_at, r.started_at, 0
+                    from league_analysis.riot_identity i
+                    join league_analysis.source_capture c on c.id = i.last_source_capture_id and c.source_kind = 'ACCOUNT'
+                    join league_analysis.ingestion_run r on r.id = c.ingestion_run_id and r.resolved_puuid = i.puuid
+                    where lower(i.game_name) = lower(?) and lower(i.tag_line) = lower(?)
+                ), latest_identity as (
+                    select puuid from identity_evidence
+                    order by observed_at desc, started_at desc, priority desc, puuid limit 1
+                )
+            """;
+
     private final JdbcTemplate jdbc;
     private final TransactionTemplate transactions;
     private final ObjectMapper json;
@@ -132,9 +162,10 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
         jdbc.update("""
                 insert into league_analysis.ingestion_run
                     (id, requested_game_name, requested_tag_line, platform_route,
-                     regional_route, queue_id, match_limit, status, started_at)
-                values (?, '', '', 'NA1', 'AMERICAS', 420, ?, 'RUNNING', ?)
-                """, runId, command.matchLimit(), timestamp(startedAt));
+                     regional_route, queue_id, match_limit, status, started_at, page_start, page_end_time, previous_run_id)
+                values (?, '', '', 'NA1', 'AMERICAS', ?, ?, 'RUNNING', ?, ?, ?, ?)
+                """, runId, command.queueId(), command.matchLimit(), timestamp(startedAt),
+                command.start(), command.endTime(), command.previousRunId());
         return runId;
     }
 
@@ -153,7 +184,8 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
         requireHealthy();
         return Boolean.TRUE.equals(jdbc.queryForObject("""
                 select exists(select 1 from league_analysis.riot_match
-                where match_id = ? and queue_id = 420 and timeline_source_capture_id is not null)
+                where match_id = ? and ((queue_id in (400, 420, 430, 440, 480, 490) and map_id = 11)
+                    or (queue_id = 450 and map_id in (12, 14))) and timeline_source_capture_id is not null)
                 """, Boolean.class, matchId));
     }
 
@@ -165,7 +197,8 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
                     select 1
                     from league_analysis.riot_match m
                     join league_analysis.riot_participant p on p.match_id = m.match_id
-                    where m.match_id = ? and m.queue_id = 420
+                    where m.match_id = ? and ((m.queue_id in (400, 420, 430, 440, 480, 490) and m.map_id = 11)
+                        or (m.queue_id = 450 and m.map_id in (12, 14)))
                         and m.timeline_source_capture_id is not null
                         and p.puuid = ?
                 )
@@ -193,12 +226,17 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
     @Override
     public Optional<PublicMatchLookup> findFresh(RiotIngestionCommand command, Instant since) {
         requireHealthy();
-        return jdbc.query("""
+        return jdbc.query(LATEST_VERIFIED_IDENTITY + """
                 select id from league_analysis.ingestion_run
-                where public_request and status = 'COMPLETE' and completed_at > ?
+                where public_request and lookup_kind = 'HISTORY' and page_start = 0 and queue_id = ?
+                    and status = 'COMPLETE' and completed_at > ?
+                    and resolved_puuid is not null and not league_analysis.privacy_blocked('puuid', resolved_puuid)
                     and lower(requested_game_name) = lower(?) and lower(requested_tag_line) = lower(?)
+                    and resolved_puuid = coalesce((select puuid from latest_identity), resolved_puuid)
                 order by completed_at desc limit 1
-                """, (rs, row) -> rs.getObject("id", UUID.class), timestamp(since),
+                """, (rs, row) -> rs.getObject("id", UUID.class),
+                command.gameName(), command.tagLine(), command.gameName(), command.tagLine(),
+                command.gameName(), command.tagLine(), command.queueId(), timestamp(since),
                 command.gameName(), command.tagLine()).stream().findFirst().flatMap(this::readPublicRun);
     }
 
@@ -206,38 +244,204 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
     public Optional<PublicMatchLookup> readPublicRun(UUID runId) {
         requireHealthy();
         return jdbc.query("""
-                select id, requested_game_name, requested_tag_line, status, failure_code, retry_not_before
-                from league_analysis.ingestion_run r where id = ? and public_request
+                select id, requested_game_name, requested_tag_line, status, failure_code, retry_not_before,
+                    queue_id, completed_at, previous_run_id, has_more
+                from league_analysis.ingestion_run r where id = ? and public_request and lookup_kind = 'HISTORY'
+                    and not league_analysis.privacy_blocked('puuid', resolved_puuid)
                 """, (rs, row) -> {
                     String status = rs.getString("status");
                     var matches = publicMatches(runId);
                     if ("COMPLETE".equals(status) && matches.isEmpty()) status = "EMPTY";
                     var retry = rs.getObject("retry_not_before", OffsetDateTime.class);
+                    var completed = rs.getObject("completed_at", OffsetDateTime.class);
+                    var nextRefresh = readPageCommand(runId).flatMap(this::latestRefresh).map(time -> time.plusSeconds(900)).orElse(null);
                     return new PublicMatchLookup(runId, rs.getString("requested_game_name"),
                             rs.getString("requested_tag_line"), status, publicMessage(rs.getString("failure_code")),
-                            retry == null ? null : retry.toInstant(), matches);
+                            retry == null ? null : retry.toInstant(), matches, rs.getInt("queue_id"),
+                            "RUNNING".equals(status) || completed == null ? null : completed.toInstant(), nextRefresh,
+                            rs.getObject("previous_run_id", UUID.class), rs.getBoolean("has_more"));
                 }, runId).stream().findFirst();
+    }
+
+    @Override
+    public Optional<RiotIngestionCommand> readPageCommand(UUID runId) {
+        requireHealthy();
+        return jdbc.query("""
+                select requested_game_name, requested_tag_line, match_limit, queue_id,
+                    page_start, page_end_time, previous_run_id
+                from league_analysis.ingestion_run r
+                where id = ? and public_request and lookup_kind = 'HISTORY'
+                    and resolved_puuid is not null and requested_game_name <> '' and requested_tag_line <> ''
+                    and not league_analysis.privacy_blocked('puuid', resolved_puuid)
+                    and exists(select 1 from league_analysis.riot_identity p where p.puuid = r.resolved_puuid)
+                    and exists(select 1 from league_analysis.source_capture c
+                        where c.ingestion_run_id = r.id and c.source_kind = 'ACCOUNT')
+                """, (rs, row) -> new RiotIngestionCommand(rs.getString("requested_game_name"),
+                rs.getString("requested_tag_line"), rs.getInt("match_limit"), rs.getInt("queue_id"),
+                rs.getInt("page_start"), rs.getObject("page_end_time", Long.class),
+                rs.getObject("previous_run_id", UUID.class)), runId).stream().findFirst();
+    }
+
+    @Override
+    public boolean matchesPageIdentity(UUID previousRunId, String puuid) {
+        requireHealthy();
+        return readPageCommand(previousRunId).isPresent() && Boolean.TRUE.equals(jdbc.queryForObject("""
+                select exists(select 1 from league_analysis.ingestion_run where id = ? and resolved_puuid = ?)
+                """, Boolean.class, previousRunId, puuid));
+    }
+
+    @Override
+    public Optional<PublicMatchLookup> findOlder(UUID previousRunId) {
+        requireHealthy();
+        if (readPageCommand(previousRunId).isEmpty()) return Optional.empty();
+        return jdbc.query("""
+                select r.id from league_analysis.ingestion_run r
+                join league_analysis.ingestion_run p on p.id = r.previous_run_id
+                where r.previous_run_id = ? and r.public_request and r.lookup_kind = 'HISTORY'
+                    and r.status = 'COMPLETE' and r.queue_id = p.queue_id
+                    and r.resolved_puuid = p.resolved_puuid
+                    and r.page_start = p.page_start + p.match_limit
+                    and r.page_end_time is not distinct from p.page_end_time
+                order by r.completed_at desc, r.id desc limit 1
+                """, (rs, row) -> rs.getObject("id", UUID.class), previousRunId)
+                .stream().findFirst().flatMap(this::readPublicRun);
+    }
+
+    @Override
+    public Optional<Instant> latestRefresh(RiotIngestionCommand command) {
+        requireHealthy();
+        var value = jdbc.queryForObject(LATEST_VERIFIED_IDENTITY + """
+                select max(r.started_at) from league_analysis.ingestion_run r, latest_identity t
+                where r.public_request and r.lookup_kind = 'HISTORY' and r.page_start = 0
+                    and r.status in ('RUNNING', 'COMPLETE') and r.resolved_puuid = t.puuid
+                    and not league_analysis.privacy_blocked('puuid', r.resolved_puuid)
+                    and exists(select 1 from league_analysis.riot_identity p where p.puuid = r.resolved_puuid)
+                    and exists(select 1 from league_analysis.source_capture c
+                        where c.ingestion_run_id = r.id and c.source_kind = 'ACCOUNT')
+                """, OffsetDateTime.class, command.gameName(), command.tagLine(), command.gameName(), command.tagLine(),
+                command.gameName(), command.tagLine());
+        return Optional.ofNullable(value).map(OffsetDateTime::toInstant);
+    }
+
+    @Override
+    public void recordPageSize(UUID runId, int providerCount) {
+        requireHealthy();
+        if (providerCount < 0) throw new IllegalArgumentException("INVALID_PAGE_SIZE");
+        jdbc.update("update league_analysis.ingestion_run set has_more = (? = match_limit) where id = ? and lookup_kind = 'HISTORY'",
+                providerCount, runId);
+    }
+
+    @Override
+    public boolean hasSummary(String matchId, String puuid, int queueId) {
+        requireHealthy();
+        return Boolean.TRUE.equals(jdbc.queryForObject("""
+                select exists(select 1 from league_analysis.riot_match m
+                    join league_analysis.riot_participant p on p.match_id = m.match_id
+                    where m.match_id = ? and (? = 0 or m.queue_id = ?) and p.puuid = ?
+                        and ((m.queue_id in (400, 420, 430, 440, 480, 490) and m.map_id = 11)
+                        or (m.queue_id = 450 and m.map_id in (12, 14)))
+                        and not league_analysis.privacy_blocked('match', m.match_id)
+                        and not league_analysis.privacy_blocked('puuid', p.puuid))
+                """, Boolean.class, matchId, queueId, queueId, puuid));
+    }
+
+    @Override
+    public Optional<ProviderDocument> storedDetail(String matchId) {
+        requireHealthy();
+        return jdbc.query("""
+                select c.resource_key, c.captured_at, c.http_status, c.regional_route, c.platform_route,
+                    c.provider_game_version, p.body_sha256, p.body_size_bytes, p.payload_json::text,
+                    c.response_metadata::text, c.parser_version, c.attempt
+                from league_analysis.riot_match m
+                join league_analysis.source_capture c on c.id = m.detail_source_capture_id
+                join league_analysis.source_payload p on p.id = c.source_payload_id
+                where m.match_id = ? and ((m.queue_id in (400, 420, 430, 440, 480, 490) and m.map_id = 11)
+                        or (m.queue_id = 450 and m.map_id in (12, 14)))
+                    and c.source_kind = 'MATCH_DETAIL' and p.source_kind = 'MATCH_DETAIL'
+                    and c.resource_key = m.match_id
+                    and not league_analysis.privacy_blocked('match', m.match_id)
+                """, (rs, row) -> new ProviderDocument(SourceKind.MATCH_DETAIL, rs.getString("resource_key"),
+                rs.getObject("captured_at", OffsetDateTime.class).toInstant(), rs.getInt("http_status"),
+                rs.getString("regional_route"), rs.getString("platform_route"), rs.getString("provider_game_version"),
+                rs.getString("body_sha256"), rs.getInt("body_size_bytes"), json.readTree(rs.getString("payload_json")),
+                json.readTree(rs.getString("response_metadata")), rs.getString("parser_version"), rs.getInt("attempt")),
+                matchId).stream().findFirst().filter(document -> !isExcludedDocument(document));
+    }
+
+    @Override
+    public UUID startTimelineRun(String matchId, Instant now) {
+        requireHealthy();
+        return Objects.requireNonNull(transactions.execute(status -> {
+            lockMaterialization(matchId);
+            if (storedDetail(matchId).isEmpty()) throw new IllegalArgumentException("MATCH_NOT_AVAILABLE");
+            var id = UUID.randomUUID();
+            jdbc.update("""
+                    insert into league_analysis.ingestion_run
+                        (id, requested_game_name, requested_tag_line, platform_route, regional_route,
+                         queue_id, match_limit, status, started_at, public_request, lookup_kind)
+                    select ?, '', '', 'NA1', 'AMERICAS', queue_id, 1, 'RUNNING', ?, true, 'TIMELINE'
+                    from league_analysis.riot_match where match_id = ?
+                    """, id, timestamp(now), matchId);
+            addItems(id, List.of(matchId));
+            return id;
+        }));
+    }
+
+    @Override
+    public Optional<TimelineLookup> readTimeline(String matchId) {
+        requireHealthy();
+        if (storedDetail(matchId).isEmpty()) return Optional.empty();
+        if (isCompleteMatch(matchId)) {
+            return Optional.of(new TimelineLookup(
+                    matchId, null, "AVAILABLE", null, null));
+        }
+        var runs = jdbc.query("""
+                select r.id, r.status, r.failure_code, r.retry_not_before
+                from league_analysis.ingestion_run r
+                join league_analysis.ingestion_item i on i.ingestion_run_id = r.id
+                where r.public_request and r.lookup_kind = 'TIMELINE' and i.match_id = ?
+                order by (r.status = 'RUNNING') desc, r.started_at desc, r.id desc limit 1
+                """, (rs, row) -> {
+                    var code = rs.getString("failure_code");
+                    var state = rs.getString("status");
+                    if (!"RUNNING".equals(state)) state = "PARTIAL".equals(state) || "NOT_FOUND".equals(code)
+                            ? "UNAVAILABLE" : "FAILED";
+                    var retry = rs.getObject("retry_not_before", OffsetDateTime.class);
+                    String message = "RUNNING".equals(state) ? null : "UNAVAILABLE".equals(state)
+                            ? "Timeline data is unavailable for this match."
+                            : "RATE_LIMITED".equals(code) ? "Riot is cooling down. Try again after the indicated time."
+                            : "Timeline could not be loaded. Try again.";
+                    return new TimelineLookup(matchId,
+                            rs.getObject("id", UUID.class), state, message, retry == null ? null : retry.toInstant());
+                }, matchId);
+        return runs.stream().findFirst().or(() -> Optional.of(new TimelineLookup(
+                matchId, null, "NOT_REQUESTED", null, null)));
     }
 
     private List<PublicMatchLookup.MatchSummary> publicMatches(UUID runId) {
         return jdbc.query("""
-                select m.match_id, p.participant_id, p.champion_name, p.champion_id, m.game_version, p.end_item_ids::text, p.team_position,
+                select m.match_id, m.queue_id, p.participant_id, p.champion_name, p.champion_id, m.game_version, p.end_item_ids::text, p.team_position,
                     p.win, coalesce(m.game_start_ms, m.game_creation_ms) started_at_ms, m.game_duration_seconds,
                     p.kills, p.deaths, p.assists, p.total_minions_killed + p.neutral_minions_killed cs,
                     p.gold_earned, m.timeline_source_capture_id is not null timeline_available
                 from league_analysis.ingestion_run r
                 join league_analysis.ingestion_item i on i.ingestion_run_id = r.id
-                join league_analysis.riot_match m on m.match_id = i.match_id and m.queue_id = 420
+                join league_analysis.riot_match m on m.match_id = i.match_id
+                    and (r.queue_id = 0 or m.queue_id = r.queue_id)
+                    and ((m.queue_id in (400, 420, 430, 440, 480, 490) and m.map_id = 11)
+                        or (m.queue_id = 450 and m.map_id in (12, 14)))
                 join league_analysis.riot_participant p on p.match_id = m.match_id and p.puuid = r.resolved_puuid
-                where r.id = ? and r.public_request and i.status in ('COMPLETE', 'PARTIAL')
-                order by i.ordinal limit 5
+                where r.id = ? and r.public_request and r.lookup_kind = 'HISTORY' and i.status in ('COMPLETE', 'PARTIAL')
+                    and not league_analysis.privacy_blocked('puuid', p.puuid)
+                    and not league_analysis.privacy_blocked('match', m.match_id)
+                order by i.ordinal limit 20
                 """, (rs, row) -> new PublicMatchLookup.MatchSummary(rs.getString("match_id"),
                 rs.getInt("participant_id"), rs.getString("champion_name"), rs.getInt("champion_id"),
                 rs.getString("game_version"), itemIds(rs.getString("end_item_ids")),
                 rs.getString("team_position"), rs.getBoolean("win"), rs.getLong("started_at_ms"),
                 rs.getLong("game_duration_seconds"), rs.getInt("kills"), rs.getInt("deaths"),
                 rs.getInt("assists"), rs.getInt("cs"), rs.getInt("gold_earned"),
-                rs.getBoolean("timeline_available")), runId);
+                rs.getBoolean("timeline_available"), rs.getInt("queue_id")), runId);
     }
 
     private List<Integer> itemIds(String encoded) {
@@ -429,6 +633,9 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
             lockMaterialization(matchId);
             var itemCaptures = lockRunItem(runId, matchId);
             validateMaterialization(runId, matchId, materialization, itemCaptures);
+            // Summary refreshes can race an optional timeline import. Validate their
+            // own evidence first, then preserve the already complete materialization.
+            if (materialization.match().timelineSourceCaptureId() == null && isCompleteMatch(matchId)) return;
             deleteCurrentChildren(matchId);
             upsertParticipantIdentities(materialization);
             upsertMatch(materialization);

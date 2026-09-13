@@ -70,7 +70,7 @@ curl --fail-with-body \
   http://127.0.0.1:8080/api/local/riot/ingestions
 ```
 
-The backend fixes the platform/region to NA1 / AMERICAS for this prototype and imports ranked Solo/Duo matches.
+The local full-ingestion command fixes the platform/region to NA1 / AMERICAS and imports ranked Solo/Duo matches. The separate [public history flow](public-match-lookup.md) supports additional Summoner’s Rift queues and ARAM and paginated summary imports.
 
 ## Match data
 

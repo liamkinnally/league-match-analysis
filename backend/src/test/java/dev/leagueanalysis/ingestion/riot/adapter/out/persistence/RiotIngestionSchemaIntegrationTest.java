@@ -156,7 +156,7 @@ class RiotIngestionSchemaIntegrationTest {
 
     @Test
     void rejectsInvalidQueue() {
-        assertInvalidRun("NA1", "AMERICAS", 430, "RUNNING");
+        assertInvalidRun("NA1", "AMERICAS", 1700, "RUNNING");
     }
 
     @Test

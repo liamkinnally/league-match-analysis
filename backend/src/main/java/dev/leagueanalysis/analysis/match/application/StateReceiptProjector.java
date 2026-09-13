@@ -29,7 +29,8 @@ public final class StateReceiptProjector {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException(
                         "FOCAL_PARTICIPANT_NOT_FOUND"));
-        var laneOpponentId = laneOpponentId(snapshot.participants(), focal);
+        var laneOpponentId = snapshot.header().mapId() == 11
+                ? laneOpponentId(snapshot.participants(), focal) : Optional.<Integer>empty();
         var limitations = new TreeSet<String>();
         var claims = new ArrayList<EvidenceClaim>();
 
