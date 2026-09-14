@@ -1,9 +1,10 @@
-import type { GameAsset, GameAssetCatalog } from "../game-assets/types";
+import type { AbilitySlot, GameAsset, GameAssetCatalog } from "../game-assets/types";
 import type {
   MatchDevelopmentEvent,
   MatchDevelopmentParticipant,
 } from "./types";
 import { participantName } from "./results";
+import { eventAssetCatalog } from "../game-assets/event-assets";
 
 const WARDS: Record<string, string> = {
   SIGHT_WARD: "Sight ward",
@@ -31,6 +32,15 @@ const LANES: Record<string, string> = {
   MID_LANE: "Middle lane",
   BOT_LANE: "Bottom lane",
 };
+const TOWERS: Record<string, string> = {
+  OUTER_TURRET: "Outer turret", INNER_TURRET: "Inner turret",
+  BASE_TURRET: "Inhibitor turret", NEXUS_TURRET: "Nexus turret",
+};
+export type EventRelation = "ally" | "enemy" | "unknown";
+export function eventRelation(teamId: number | undefined | null, focalTeamId: number | undefined): EventRelation {
+  if (teamId == null || focalTeamId === undefined) return "unknown";
+  return teamId === focalTeamId ? "ally" : "enemy";
+}
 export const eventKey = (event: MatchDevelopmentEvent) =>
   `${event.timestampMs}:${event.frameAtMs ?? "unknown"}:${event.frameEventIndex ?? "unknown"}:${event.type ?? event.label}`;
 
@@ -58,16 +68,26 @@ export type DisplayEvent = {
   note?: string;
   records: MatchDevelopmentEvent[];
   relatedKillRecords: MatchDevelopmentEvent[];
+  actorRelation: EventRelation;
+  objectRelation: EventRelation;
+  objectAssetKey?: string;
+  abilitySlot?: AbilitySlot;
 };
 
 export function eventDisplayRows(
   events: MatchDevelopmentEvent[],
   roster: MatchDevelopmentParticipant[],
   assets: GameAssetCatalog | null,
+  focusParticipantId?: number,
 ): DisplayEvent[] {
+  // Preserve exact chronology, using source order only to break equal timestamps.
+  events = events.toSorted((a, b) => a.timestampMs - b.timestampMs ||
+    (a.frameAtMs ?? 0) - (b.frameAtMs ?? 0) ||
+    (a.frameEventIndex ?? 0) - (b.frameEventIndex ?? 0));
   const people = new Map(
     roster.map((person) => [person.participantId, person]),
   );
+  const focalTeamId = people.get(focusParticipantId ?? -1)?.teamId;
   const itemName = (id: number | null) =>
     id === null
       ? "Item unavailable"
@@ -82,6 +102,11 @@ export function eventDisplayRows(
     let action = "Recorded event",
       subject: string | null = null,
       note: string | undefined;
+    let objectAssetKey: string | undefined, abilitySlot: AbilitySlot | undefined;
+    const actorTeam = event.presentation?.actorTeam;
+    let actorRelation = actorTeam ? eventRelation(actorTeam.basis === "known" ? actorTeam.teamId : null, focalTeamId) : eventRelation(identity?.teamId, focalTeamId);
+    const objectTeam = event.presentation?.objectTeam;
+    const objectRelation = eventRelation(objectTeam?.basis === "known" ? objectTeam.teamId : null, focalTeamId);
     let victims = type === "CHAMPION_KILL" && target ? [target] : [];
     let relatedKillRecords: MatchDevelopmentEvent[] = [];
     if (type === "CHAMPION_KILL") {
@@ -134,6 +159,8 @@ export function eventDisplayRows(
     } else if (type === "WARD_PLACED" || type === "WARD_KILL") {
       action = type === "WARD_PLACED" ? "Placed" : "Destroyed";
       subject = WARDS[String(fields.wardType)] ?? "Ward (type unavailable)";
+      objectAssetKey = ({ SIGHT_WARD: "WARD_SIGHT", YELLOW_TRINKET: "WARD_YELLOW", CONTROL_WARD: "WARD_CONTROL", BLUE_TRINKET: "WARD_BLUE" } as Record<string, string>)[String(fields.wardType)];
+      if (type === "WARD_KILL") note = objectRelation === "unknown" ? "Ward owner not recorded." : `${objectRelation === "ally" ? "Allied" : "Enemy"} ward.`;
       itemId =
         (
           {
@@ -167,26 +194,17 @@ export function eventDisplayRows(
           ? fields.afterId
           : null;
       itemId = before ?? after;
-      if (before && fields.afterId === 0) {
-        action = "Undid purchase";
-        subject = itemName(before);
-      } else if (fields.beforeId === 0 && after) {
-        action = "Undid sale";
-        subject = itemName(after);
-      } else {
-        action = "Undid item change";
-        subject = `${before ? itemName(before) : fields.beforeId === 0 ? "No item" : "Before item unavailable"} → ${after ? itemName(after) : fields.afterId === 0 ? "No item" : "After item unavailable"}`;
-      }
+      action = "Undid item change";
+      subject = `${before ? itemName(before) : fields.beforeId === 0 ? "No item" : "Before item unavailable"} → ${after ? itemName(after) : fields.afterId === 0 ? "No item" : "After item unavailable"}`;
+      note = "Recorded before → after items; purchase or sale direction unverified.";
     } else if (type === "LEVEL_UP") {
-      action = "Reached";
-      subject = Number.isInteger(fields.level)
-        ? `level ${fields.level}`
-        : "Level unavailable";
+      action = "Level event recorded";
+      note = "Level-up details unverified; see the recorded fields.";
     } else if (type === "SKILL_LEVEL_UP") {
-      action = "Upgraded";
-      subject =
-        { 1: "Q", 2: "W", 3: "E", 4: "R" }[Number(fields.skillSlot)] ??
-        "Ability unavailable";
+      action = "Ability rank-up";
+      abilitySlot = typeof fields.skillSlot === "number" ?
+        ({ 1: "Q", 2: "W", 3: "E", 4: "R" } as Record<number, AbilitySlot>)[fields.skillSlot] : undefined;
+      subject = abilitySlot ?? "Ability slot unavailable";
     } else if (type === "ELITE_MONSTER_KILL") {
       action = "Secured";
       subject =
@@ -195,25 +213,40 @@ export function eventDisplayRows(
             "Dragon (type unavailable)")
           : (MONSTERS[String(fields.monsterType)] ??
             "Monster (type unavailable)");
+      objectAssetKey = fields.monsterType === "DRAGON" ? String(fields.monsterSubType) : String(fields.monsterType);
+      const recordedTeam = fields.killerTeamId;
+      if (!actorTeam && typeof recordedTeam === "number" && [100, 200].includes(recordedTeam)) {
+        actorRelation = identity && identity.teamId !== recordedTeam ? "unknown" : eventRelation(recordedTeam, focalTeamId);
+        if (identity && identity.teamId !== recordedTeam) note = "Destroying team records conflict.";
+      }
     } else if (type === "TURRET_PLATE_DESTROYED") {
-      action = "Turret plate destroyed";
+      action = "Destroyed turret plate";
       subject = LANES[String(fields.laneType)] ?? "Lane unavailable";
+      objectAssetKey = "TURRET_PLATE";
+      note = objectRelation === "unknown" ? "Structure owner unverified." : `${objectRelation === "ally" ? "Allied" : "Enemy"} structure.`;
     } else if (type === "BUILDING_KILL") {
       action = "Destroyed";
       subject =
-        ({
+        (fields.buildingType === "TOWER_BUILDING" ? TOWERS[String(fields.towerType)] : undefined) ?? ({
           TOWER_BUILDING: "Tower",
           INHIBITOR_BUILDING: "Inhibitor",
           NEXUS_BUILDING: "Nexus",
-        }[String(fields.buildingType)] ?? "Structure") +
+        }[String(fields.buildingType)] ?? "Structure");
+      subject +=
         (LANES[String(fields.laneType)]
           ? ` — ${LANES[String(fields.laneType)]}`
           : "");
+      objectAssetKey = String(fields.buildingType);
+      note = objectRelation === "unknown" ? "Structure owner unverified." : `${objectRelation === "ally" ? "Allied" : "Enemy"} structure.`;
     } else if (type === "GAME_END") action = "Match ended";
     else if (type === "PAUSE_END") action = "Play resumed";
     else if (type === "DRAGON_SOUL_GIVEN") {
       action = "Dragon soul awarded";
-      subject = typeof fields.name === "string" ? fields.name : null;
+      note = "Soul type and recipient unverified.";
+    } else if (type === "OBJECTIVE_BOUNTY_PRESTART") {
+      action = "Objective bounty announcement";
+    } else if (type === "OBJECTIVE_BOUNTY_FINISH") {
+      action = "Objective bounty period ended";
     } else if (type === "UNKNOWN" && event.label !== "Match event")
       action = event.label;
     else if (type !== "UNKNOWN")
@@ -228,9 +261,10 @@ export function eventDisplayRows(
       identity,
       identityText: identity
         ? participantName(identity, assets)
-        : event.actorParticipantId === 0
-          ? "System"
-          : "Actor unavailable",
+        : ["BUILDING_KILL", "TURRET_PLATE_DESTROYED", "WARD_KILL"].includes(type)
+          ? "Unknown destroyer"
+          : type === "CHAMPION_KILL" ? "Unknown killer"
+          : ["GAME_END", "PAUSE_END", "DRAGON_SOUL_GIVEN", "OBJECTIVE_BOUNTY_PRESTART", "OBJECTIVE_BOUNTY_FINISH"].includes(type) ? "Match event" : "Actor unavailable",
       action,
       subject,
       itemId,
@@ -244,6 +278,10 @@ export function eventDisplayRows(
       note,
       records: [event],
       relatedKillRecords,
+      actorRelation,
+      objectRelation,
+      objectAssetKey,
+      abilitySlot,
     };
   });
   const candidates = new Map<
@@ -294,7 +332,7 @@ export function dragonAcquisitions(
   roster: MatchDevelopmentParticipant[],
   gameVersion: string,
 ) {
-  const patch = gameVersion.split(".").slice(0, 2).join(".");
+  const eventAssets = eventAssetCatalog(gameVersion);
   return events
     .filter(
       (event) =>
@@ -321,10 +359,7 @@ export function dragonAcquisitions(
         timestampMs: event.timestampMs,
         teamId,
         name: dragon?.name ?? "Dragon type unavailable",
-        imageUrl:
-          dragon && /^\d+\.\d+$/.test(patch)
-            ? `https://raw.communitydragon.org/${patch}/game/assets/ux/minimap/icons/${dragon.file}.png`
-            : null,
+        imageUrl: eventAssets[String(event.fields?.monsterSubType)]?.imageUrl ?? null,
       };
     });
 }

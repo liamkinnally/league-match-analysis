@@ -72,6 +72,24 @@ class MatchDevelopmentIntegrationTest {
     }
 
     @Test
+    void directLegacyMatchAccessEnrichesRunesWithoutChangingTimelineEvidence() throws Exception {
+        seedCommand.seed();
+        var timelineCapture = jdbc.queryForObject("select timeline_source_capture_id from league_analysis.riot_match where match_id=?", java.util.UUID.class, DemoSeedCommand.MATCH_ID);
+        var eventCount = jdbc.queryForObject("select count(*) from league_analysis.match_event where match_id=?", Integer.class, DemoSeedCommand.MATCH_ID);
+        jdbc.update("update league_analysis.riot_participant set rune_snapshot=null, participant_totals=null, detail_extension_version=null where match_id=?", DemoSeedCommand.MATCH_ID);
+        var response = mockMvc.perform(get("/api/v1/matches/{matchId}/development", DemoSeedCommand.MATCH_ID).param("focus", "6").param("compare", "1"))
+            .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        var focal = json.readTree(response).path("roster").get(5);
+        assertThat(focal.path("runes").path("availability").stringValue()).isEqualTo("available");
+        assertThat(focal.path("runes").path("styles").get(0).path("selections").get(0).path("counters").path("var1").intValue()).isEqualTo(576);
+        assertThat(focal.path("runes").path("styles").get(0).path("selections").get(0).path("counters").path("var2").intValue()).isEqualTo(454);
+        assertThat(focal.path("participantTotals").path("totalHeal").intValue()).isEqualTo(2000);
+        assertThat(jdbc.queryForObject("select timeline_source_capture_id from league_analysis.riot_match where match_id=?", java.util.UUID.class, DemoSeedCommand.MATCH_ID)).isEqualTo(timelineCapture);
+        assertThat(jdbc.queryForObject("select count(*) from league_analysis.match_event where match_id=?", Integer.class, DemoSeedCommand.MATCH_ID)).isEqualTo(eventCount);
+        assertThat(response).doesNotContain("puuid", "sourceCaptureId");
+    }
+
+    @Test
     void malformedAssisterArraysRemainUnavailableWithoutInventingParticipantIds() throws Exception {
         seedCommand.seed();
         for (var malformed : java.util.List.of("[2,null]", "[4294967298]", "[11]", "[0]", "[\"2\"]", "{}")) {
@@ -103,7 +121,7 @@ class MatchDevelopmentIntegrationTest {
     }
 
     @Test
-    void preservesSourceOrderFiltersOldCaptureAndKeepsMissingTotalsNull() throws Exception {
+    void ordersByExactTimeWithSourceTiesFiltersOldCaptureAndKeepsMissingTotalsNull() throws Exception {
         seedCommand.seed();
         jdbc.update("""
                 update league_analysis.riot_team set objectives='{"dragon":{"kills":2},"atakhan":{"kills":0}}'::jsonb
@@ -136,10 +154,10 @@ class MatchDevelopmentIntegrationTest {
         var response=mockMvc.perform(get("/api/v1/matches/{matchId}/development", DemoSeedCommand.MATCH_ID)
                         .param("focus", "6").param("compare", "1"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.events.length()").value(5))
-                .andExpect(jsonPath("$.events[3].type").value("CHAMPION_SPECIAL_KILL"))
-                .andExpect(jsonPath("$.events[4].type").value("WARD_PLACED"))
-                .andExpect(jsonPath("$.events[3].frameEventIndex").value(99))
-                .andExpect(jsonPath("$.events[3].fields.multiKillLength").value(2))
+                .andExpect(jsonPath("$.events[4].type").value("CHAMPION_SPECIAL_KILL"))
+                .andExpect(jsonPath("$.events[3].type").value("WARD_PLACED"))
+                .andExpect(jsonPath("$.events[4].frameEventIndex").value(99))
+                .andExpect(jsonPath("$.events[4].fields.multiKillLength").value(2))
                 .andReturn().getResponse().getContentAsString();
         assertThat(response).doesNotContain("never-public", "puuid", "token");
         var result=json.readTree(response);

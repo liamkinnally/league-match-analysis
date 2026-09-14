@@ -68,6 +68,37 @@ class MatchV5DecoderTest {
     }
 
     @Test
+    void retainsCompleteRuneChoicesNullableCountersAndSeparateParticipantTotals() throws IOException {
+        var detail = fixture("match-detail-minimal.json").deepCopy();
+        var player = (ObjectNode) detail.path("info").path("participants").get(0);
+        player.set("perks", JSON.readTree("""
+                {"statPerks":{"offense":5008,"flex":5002},"styles":[
+                  {"description":"primaryStyle","style":8400,"selections":[
+                    {"perk":8437,"var1":120,"var2":0}, {"perk":99999,"var1":7}]},
+                  {"description":"subStyle","style":8000,"selections":[{"perk":9111,"var1":22}]}]}
+                """));
+        player.put("totalDamageDealtToChampions", 21000);
+        player.put("totalHeal", 0);
+        player.put("gameEndedInSurrender", false);
+        var result = decoder.decode(captured(SourceKind.MATCH_DETAIL, detail, DETAIL_CAPTURE_ID), Optional.empty());
+        var decoded = JSON.valueToTree(result.participants().getFirst()).path("details");
+        assertThat(decoded.path("runes").path("styles").size()).isEqualTo(2);
+        var grasp = decoded.path("runes").path("styles").get(0).path("selections").get(0);
+        assertThat(grasp.path("runeId").intValue()).isEqualTo(8437);
+        assertThat(grasp.path("var1").intValue()).isEqualTo(120);
+        assertThat(grasp.path("var2").isNumber()).isTrue();
+        assertThat(grasp.path("var2").intValue()).isZero();
+        assertThat(grasp.path("var3").isNull()).isTrue();
+        assertThat(decoded.path("runes").path("shards").path("defense").isNull()).isTrue();
+        assertThat(decoded.path("totals").path("totalDamageDealtToChampions").longValue()).isEqualTo(21000);
+        assertThat(decoded.path("totals").path("totalHeal").longValue()).isZero();
+        assertThat(decoded.path("totals").path("totalHealsOnTeammates").isNull()).isTrue();
+        assertThat(decoded.path("gameEndedInSurrender").booleanValue()).isFalse();
+        assertThat(decoded.path("gameEndedInEarlySurrender").isNull()).isTrue();
+        assertThat(JSON.valueToTree(result.participants().get(1)).path("details").path("runes").isNull()).isTrue();
+    }
+
+    @Test
     void normalMatchesPreserveMissingRolesAsUnknown() throws IOException {
         var detail = fixture("match-detail-minimal.json").deepCopy();
         var participants = detail.path("info").path("participants");

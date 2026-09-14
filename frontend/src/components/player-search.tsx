@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { PlayerProfilePanel } from "./player-profile";
+import { usePlayerProfile } from "../lib/player-lookup/use-player-profile";
 import { useEffect, useState } from "react";
 import { GameAssetIcon } from "./game-asset-icon";
 import { FinalItemSlots } from "./final-item-slots";
@@ -34,37 +36,10 @@ export default function PlayerSearch({ initialRunId }: { initialRunId?: string }
   const count = lookup?.matches.length ?? 0;
   const busy = Boolean(operation) || submitting || loading || running;
   const identityKnown = Boolean(lookup?.gameName && lookup?.tagLine);
+  const profileState = usePlayerProfile(identityKnown && lookup ? { runId: lookup.runId, gameName: lookup.gameName, tagLine: lookup.tagLine, updatedAt: lookup.lastUpdated, historyStatus: lookup.status } : null);
   const failed = !issue && lookup?.status === "FAILED";
 
-  return <section className="player-lookup" aria-label="Player lookup">
-    <form className="player-search" onSubmit={(event) => {
-      event.preventDefault(); void submit({ gameName: gameName.trim(), tagLine: tagLine.trim(), queueId: 0 });
-    }}>
-      <label>Game name<input name="gameName" placeholder="Game name" maxLength={64} required autoComplete="off"
-        autoCapitalize="none" spellCheck={false} value={gameName} onChange={event => setEditedName(event.target.value)} /></label>
-      <label className="player-search__tag">Tag line<input name="tagLine" placeholder="NA1" maxLength={16} required autoComplete="off"
-        autoCapitalize="none" spellCheck={false} value={tagLine} onChange={event => setEditedTag(event.target.value)} /></label>
-      <button type="submit" disabled={submitting}>{submitting ? "Finding matches…" : "Find matches"}<span aria-hidden="true">→</span></button>
-    </form>
-
-    {(lookup || busy || issue) && <div className="player-lookup__results">
-      {lookup && <div className="player-lookup__identity">
-        <h2 title={identityKnown ? `${lookup.gameName}#${lookup.tagLine}` : undefined}>{identityKnown
-          ? <>{lookup.gameName}<span>#{lookup.tagLine}</span></> : "Player lookup"}</h2>
-        <span>{queueLabel(lookup.queueId)} · Match history</span>
-      </div>}
-      {lookup && <div className="player-history__controls">
-        <label className="player-history__filter">Queue Type<select name="queueId" value={lookup.queueId}
-          disabled={busy || !identityKnown} onChange={event => filter(Number(event.target.value))}>
-          <option value={0}>All queues</option>
-          {historyQueues.map(id => <option key={id} value={id}>{queueLabel(id)}</option>)}
-          {[430, 490].includes(lookup.queueId) && <option value={lookup.queueId}>{queueLabel(lookup.queueId)}</option>}
-        </select></label>
-        <p>Last updated: {lookup.lastUpdated ? <time dateTime={lookup.lastUpdated}>{new Date(lookup.lastUpdated).toLocaleString("en-US")}</time> : "Not yet completed"}</p>
-        <button className="entry-button" type="button" disabled={busy || remaining > 0} onClick={refresh}>{operation === "refresh" ? "Updating…" : "Update"}</button>
-        {remaining > 0 && <span>Update in {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}</span>}
-      </div>}
-      <div className="player-lookup__status">
+  const historyStatus = (<div className="player-lookup__status">
         {issue ? <div className="entry-notice"><p role="alert">{issue.message}</p>
           {issue.retryable && <button className="entry-button" type="button" onClick={retry}>Retry loading</button>}
           {count > 0 && <p>Previously loaded matches are still available below.</p>}
@@ -82,7 +57,34 @@ export default function PlayerSearch({ initialRunId }: { initialRunId?: string }
             <p>{lookup?.message ?? (failed ? "Search again or explore the sample match." : "Completed matches are ready to open below.")}</p>
           </div> : lookup ? <p role="status">{count} recent {count === 1 ? "match" : "matches"} — Ready to review</p> : null}
         {retryNotBefore && <p>Try again after <time dateTime={retryNotBefore}>{new Date(retryNotBefore).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" })}</time>.</p>}
-      </div>
+      </div>);
+
+  return <section className="player-lookup" aria-label="Player lookup">
+    <form className="player-search" onSubmit={(event) => {
+      event.preventDefault(); void submit({ gameName: gameName.trim(), tagLine: tagLine.trim(), queueId: 0 });
+    }}>
+      <label>Game name<input name="gameName" placeholder="ex. Doublelift" maxLength={64} required autoComplete="off"
+        autoCapitalize="none" spellCheck={false} value={gameName} onChange={event => setEditedName(event.target.value)} /></label>
+      <label className="player-search__tag">Tag line<input name="tagLine" placeholder="NA01" maxLength={16} required autoComplete="off"
+        autoCapitalize="none" spellCheck={false} value={tagLine} onChange={event => setEditedTag(event.target.value)} /></label>
+      <button type="submit" disabled={submitting}>{submitting ? "Finding matches…" : "Find matches"}<span aria-hidden="true">→</span></button>
+    </form>
+
+    {(lookup || busy || issue) && <div className="player-lookup__results">
+      {(issue || failed) && historyStatus}
+      {lookup && (identityKnown ? <PlayerProfilePanel identity={{ gameName: lookup.gameName, tagLine: lookup.tagLine }} {...profileState} now={now} /> : <div className="player-lookup__identity"><h2>Player lookup</h2></div>)}
+      {lookup && <div className="player-history__controls">
+        <label className="player-history__filter">Queue Type<select name="queueId" value={lookup.queueId}
+          disabled={busy || !identityKnown} onChange={event => filter(Number(event.target.value))}>
+          <option value={0}>All queues</option>
+          {historyQueues.map(id => <option key={id} value={id}>{queueLabel(id)}</option>)}
+          {[430, 490].includes(lookup.queueId) && <option value={lookup.queueId}>{queueLabel(lookup.queueId)}</option>}
+        </select></label>
+        <p>Match history last updated: {lookup.lastUpdated ? <time dateTime={lookup.lastUpdated}>{new Date(lookup.lastUpdated).toLocaleString("en-US")}</time> : "Not yet completed"}</p>
+        <button className="entry-button" type="button" disabled={busy || profileState.loadingRecent || remaining > 0} onClick={refresh}>{operation === "refresh" ? "Updating…" : "Update"}</button>
+        {remaining > 0 && <span>Update in {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}</span>}
+      </div>}
+      {!issue && !failed && historyStatus}
       {busy && count === 0 && <HistorySkeleton />}
     </div>}
 
@@ -92,7 +94,7 @@ export default function PlayerSearch({ initialRunId }: { initialRunId?: string }
         const champion = assets?.champions[String(match.championId)];
         const result = matchResult(match.win);
         return <li key={match.matchId}><Link className={`player-history__row match-result ${result.className}`}
-          href={developmentHref(match.matchId, match.participantId)} aria-label={`${match.championName} ${result.label.toLowerCase()} match development`}>
+          href={developmentHref(match.matchId, match.participantId, undefined, undefined, undefined, { historyRunId: lookup.runId })} aria-label={`${match.championName} ${result.label.toLowerCase()} match development`}>
           <div className="player-history__result"><small>{queueLabel(match.queueId)}</small><strong>{result.label}</strong>
             <time dateTime={new Date(match.startedAtMs).toISOString()}>{new Date(match.startedAtMs).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}</time>
             <span>{Math.floor(match.durationSeconds / 60)}:{String(match.durationSeconds % 60).padStart(2, "0")}</span></div>

@@ -116,3 +116,12 @@ it("supports an explicitly designated local verification runtime", async () => {
   expect((await getDemoMatch()).matchId).toBe("NA1_7000000001");
   expect(fetch).not.toHaveBeenCalled();
 });
+
+
+it("preserves individual rune counters and distinct participant totals from the seed", async () => {
+  const data = await getMatchDevelopment("NA1_7000000001", 6, 1);
+  const player = data.roster.find(player => player.participantId === 6)!;
+  expect(player.runes?.styles[0].selections[0]).toMatchObject({ runeId: 8437, counters: { var1: 576, var2: 454, var3: 0 } });
+  expect(player.runes?.styles[0].selections[1]).toMatchObject({ counters: { var1: null, var2: null, var3: null } });
+  expect(player.participantTotals?.totalHeal).toBe(2000);
+});

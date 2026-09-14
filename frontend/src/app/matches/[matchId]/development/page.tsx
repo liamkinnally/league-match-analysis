@@ -93,6 +93,7 @@ export default async function DevelopmentPage({ params, searchParams }: Props) {
           ? requestedInterval
           : undefined,
         selection.metric,
+        { historyRunId: selection.historyRunId, finalView: selection.finalView, runeParticipant: Array.isArray(rawSearch.runeParticipant) ? rawSearch.runeParticipant[0] : rawSearch.runeParticipant },
       ),
     );
   }

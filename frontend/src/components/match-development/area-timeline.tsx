@@ -23,7 +23,7 @@ import {
   timeTicks,
 } from "../../lib/development/chart-model";
 import { participantName, roleLabel } from "../../lib/development/results";
-import { developmentHref } from "../../lib/development/route";
+import { developmentHref, type FinalStateSelection } from "../../lib/development/route";
 import type {
   DevelopmentInterval,
   MatchDevelopment,
@@ -59,12 +59,14 @@ export function AreaTimeline({
   assets,
   metric,
   onMetric,
+  finalState,
 }: {
   data: MatchDevelopment;
   interval: DevelopmentInterval;
   assets: GameAssetCatalog | null;
   metric: Metric;
   onMetric: (metric: Metric) => void;
+  finalState?: FinalStateSelection;
 }) {
   const router = useRouter();
   const focal = data.roster.find(
@@ -175,6 +177,7 @@ export function AreaTimeline({
                     Number(event.target.value),
                     interval,
                     metric,
+                    finalState,
                   ),
                   { scroll: false },
                 )

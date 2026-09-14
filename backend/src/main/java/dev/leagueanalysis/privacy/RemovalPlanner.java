@@ -18,7 +18,8 @@ import tools.jackson.databind.ObjectMapper;
 public final class RemovalPlanner {
     private static final List<String> TABLES = List.of("ingestion_run", "source_payload", "source_capture",
             "ingestion_item", "riot_identity", "riot_match", "riot_team", "riot_participant",
-            "participant_state_observation", "match_event", "evidence_coverage");
+            "participant_state_observation", "match_event", "evidence_coverage",
+            "player_profile_current", "rank_refresh_state", "rank_observation");
     private final JdbcTemplate jdbc;
     private final ObjectMapper json;
 
@@ -190,6 +191,11 @@ public final class RemovalPlanner {
             long count = 0;
             for (String match : matches) count += jdbc.queryForObject("select count(*) from league_analysis." + table + " where match_id=?", Long.class, match);
             counts.put(table, count);
+        }
+        for(String table:List.of("player_profile_current","rank_refresh_state","rank_observation")) {
+            long count=0;
+            for(String identity:identities) count+=jdbc.queryForObject("select count(*) from league_analysis."+table+" where puuid=?",Long.class,identity);
+            counts.put(table,count);
         }
         var changes = new Changes(runs, captures, payloads, identities, items, reanchors);
         String fingerprint = fingerprint(puuidHashes, aliases, matchHashes, data.rows);

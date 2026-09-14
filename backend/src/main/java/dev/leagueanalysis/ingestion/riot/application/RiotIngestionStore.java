@@ -27,6 +27,9 @@ public interface RiotIngestionStore {
 
     boolean isCompleteMatch(String matchId);
 
+    /** Enrich existing extension columns from the current retained detail, without provider calls. */
+    default boolean enrichParticipantDetails(String matchId) { return false; }
+
     default boolean isCompleteMatch(String matchId, String puuid) {
         return isCompleteMatch(matchId);
     }

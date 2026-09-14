@@ -101,3 +101,26 @@ test("development retains useful event IDs when the optional asset catalog is un
   await expect(page.getByText("Killed Darius", { exact: true })).toBeVisible();
   await expect(page.locator('[data-event-type="ELITE_MONSTER_KILL"]').filter({ hasText: "Vi" })).toBeVisible();
 });
+
+test("stored rune counters reach the page and unavailable labels leave the match usable", async ({ page, request }) => {
+  await installDeterministicGameAssets(page);
+  const errors: string[] = [];
+  page.on("pageerror", error => errors.push(error.message));
+  page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
+  const response = await request.get(`http://127.0.0.1:${process.env.E2E_BACKEND_PORT ?? "8080"}/api/v1${sampleRoute}`);
+  const stored = await response.json();
+  expect(stored.roster.find((player: { participantId: number }) => player.participantId === 6).runes.styles[0].selections[0].counters).toEqual({ var1: 576, var2: 454, var3: 0 });
+  await page.goto(`${sampleRoute}&finalView=runes&runeParticipant=6`);
+  const panel = page.getByRole("tabpanel", { name: "Runes", exact: true });
+  await expect(panel.getByText("576", { exact: true })).toBeVisible();
+  await expect(panel.getByText("454", { exact: true })).toBeVisible();
+  await expect(panel.getByRole("group", { name: "Inspect participant runes" }).getByRole("button")).toHaveCount(10);
+  await expect(panel.locator(".rune-description").first()).toBeVisible();
+  await installUnavailableGameAssets(page);
+  await page.reload();
+  await expect(panel.getByText("Patch-matched rune descriptions unavailable. Performance values cannot be labeled yet.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Garen vs Darius" })).toBeVisible();
+  await page.getByRole("tab", { name: "Scoreboard", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Scoreboard" })).toBeVisible();
+  expect(errors).toEqual([]);
+});

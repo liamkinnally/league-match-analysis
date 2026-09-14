@@ -33,6 +33,15 @@ class BudgetedRiotHttpTransportTest {
         return next;
     }, clock);
 
+    @Test void summonerHasExplicitMethodBudgetSharedAcrossIdentitiesButSeparateFromRanks() throws Exception {
+        next=response(200,Map.of("X-Method-Rate-Limit","1:10","X-Method-Rate-Limit-Count","1:10"));
+        assertThat(send("/lol/summoner/v4/summoners/by-puuid/invented-one").statusCode()).isEqualTo(200);
+        next=response(200,Map.of());
+        assertThat(send("/lol/summoner/v4/summoners/by-puuid/invented-two").statusCode()).isEqualTo(429);
+        assertThat(send(RANK).statusCode()).isEqualTo(200);
+        assertThat(send("/unknown-endpoint").statusCode()).isEqualTo(200);
+    }
+
     @Test
     void mixedCallsShareConservativeHostLimitsAndLocalResponsesAreSafe() throws Exception {
         for (int i = 0; i < 20; i++) {

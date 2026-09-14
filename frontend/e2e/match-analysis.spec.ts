@@ -192,8 +192,11 @@ test("supports the full flow with keyboard focus at a narrow viewport", async ({
 
 test("shows the truthful empty state when stored evidence has no eligible transitions", async ({ page }) => {
   // One worker is required: other cases must never observe this temporary fixture state.
+  const jdbcUrl = process.env.SPRING_DATASOURCE_URL;
+  const database = jdbcUrl ? new URL(jdbcUrl.replace(/^jdbc:/, "")).pathname.slice(1) : null;
+  if (database && !/^[a-zA-Z_][a-zA-Z0-9_]{0,62}$/.test(database)) throw new Error("Invalid isolated test database name");
   const sql = (input: string) => execFileSync("docker", [
-    "compose", "exec", "-T", "postgres", "sh", "-c",
+    "compose", "exec", "-T", ...(database ? ["-e", `POSTGRES_DB=${database}`] : []), "postgres", "sh", "-c",
     'psql -X -q -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At',
   ], { cwd: "..", input, encoding: "utf8" }).trim();
   const snapshot = "select json_agg(row_to_json(events) order by id) from (select id, represented_at_ms from league_analysis.match_event where match_id = 'NA1_9000000001') events;";

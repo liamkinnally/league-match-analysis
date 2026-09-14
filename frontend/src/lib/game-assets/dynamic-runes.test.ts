@@ -1,0 +1,93 @@
+import { beforeEach, expect, it, vi } from "vitest";
+vi.mock("server-only", () => ({}));
+let resolveGameAssetCatalog: typeof import("./catalog").resolveGameAssetCatalog;
+beforeEach(async () => { vi.restoreAllMocks(); vi.resetModules(); ({ resolveGameAssetCatalog } = await import("./catalog")); });
+const perks = [{ id: 8437, name: "Grasp of the Undying", iconPath: "/lol-game-data/assets/v1/perk-images/Styles/Resolve/GraspOfTheUndying/GraspOfTheUndying.png", longDesc: "Recorded patch description", endOfGameStatDescs: ["Total damage: @eogvar1@", "Total Healing: @eogvar2@"] }];
+const trees = [{ id: 8400, name: "Resolve", icon: "perk-images/Styles/7204_Resolve.png", slots: [{ runes: [{ id: 8437, name: "Grasp of the Undying", icon: "perk-images/Styles/Resolve/GraspOfTheUndying/GraspOfTheUndying.png", longDesc: "Recorded patch description" }] }] }];
+const fetchData = (url: string) => url.endsWith("versions.json") ? ["16.19.1", "16.18.1", "16.17.1"] : url.endsWith("runesReforged.json") ? trees : url.endsWith("perkstyles.json") ? { styles: [] } : url.endsWith("perks.json") ? perks : { data: {} };
+it.each(["16.17.1", "16.18.1", "16.19.810.4348"])("automatically resolves direct performance templates for exact match patch %s", async version => {
+  const fetcher = vi.fn(async (url: string) => Response.json(fetchData(url))); vi.stubGlobal("fetch", fetcher);
+  const catalog = await resolveGameAssetCatalog(version, { includeRunes: true });
+  expect(catalog.runePerformance?.["8437"].metrics[0]).toMatchObject({ label: "Total damage", variable: 1, availability: "available", unit: "" });
+  expect(catalog.runePerformanceState?.patch).toBe(version.split(".").slice(0, 2).join("."));
+  expect(catalog.runePerformanceState?.sourceUrl).not.toContain("latest");
+  expect(catalog.runeTrees?.["8400"].slots[0]).toEqual([8437]);
+});
+it("coalesces and caches a future patch after its first successful fetch", async () => {
+  const fetcher = vi.fn(async (url: string) => Response.json(fetchData(url))); vi.stubGlobal("fetch", fetcher);
+  const [first, second] = await Promise.all([resolveGameAssetCatalog("16.19.1", { includeRunes: true }), resolveGameAssetCatalog("16.19.810.4348", { includeRunes: true })]);
+  const third = await resolveGameAssetCatalog("16.19.1", { includeRunes: true });
+  expect(first.runePerformanceState?.sha256).toBe(second.runePerformanceState?.sha256);
+  expect(third.runePerformanceState?.status).toBe("available");
+  expect(fetcher.mock.calls.filter(([url]) => url.endsWith("/perks.json"))).toHaveLength(1);
+});
+it("retries unavailable future-patch metadata after the short failure delay", async () => {
+  const now = vi.spyOn(Date, "now").mockReturnValue(100000);
+  let unavailable = true;
+  const fetcher = vi.fn(async (url: string) => url.endsWith("/perks.json") && unavailable ? new Response("missing", { status: 404 }) : Response.json(fetchData(url))); vi.stubGlobal("fetch", fetcher);
+  expect((await resolveGameAssetCatalog("16.19.1", { includeRunes: true })).runePerformanceState?.status).toBe("unavailable");
+  await resolveGameAssetCatalog("16.19.1", { includeRunes: true });
+  expect(fetcher.mock.calls.filter(([url]) => url.endsWith("/perks.json"))).toHaveLength(1);
+  unavailable = false; now.mockReturnValue(161000);
+  const recovered = await resolveGameAssetCatalog("16.19.1", { includeRunes: true });
+  expect(recovered.runePerformanceState?.status).toBe("available");
+  expect(recovered.runePerformance?.["8437"].metrics[1].variable).toBe(2);
+  expect(fetcher.mock.calls.filter(([url]) => url.endsWith("/perks.json"))).toHaveLength(2);
+});
+it("revalidates successful metadata and labels the same-patch cached source stale on failure", async () => {
+  const now = vi.spyOn(Date, "now").mockReturnValue(100000);
+  let unavailable = false;
+  vi.stubGlobal("fetch", vi.fn(async (url: string) => url.endsWith("/perks.json") && unavailable ? new Response("down", { status: 503 }) : Response.json(fetchData(url))));
+  const initial = await resolveGameAssetCatalog("16.19.1", { includeRunes: true });
+  unavailable = true; now.mockReturnValue(86_501_000);
+  const stale = await resolveGameAssetCatalog("16.19.1", { includeRunes: true });
+  expect(stale.runePerformanceState?.status).toBe("stale");
+  expect(stale.runePerformanceState?.sha256).toBe(initial.runePerformanceState?.sha256);
+  expect(stale.runePerformanceState?.retrievedAt).toBe(initial.runePerformanceState?.retrievedAt);
+  expect(stale.runePerformanceState?.patch).toBe("16.19");
+  unavailable = false; now.mockReturnValue(86_562_000);
+  expect((await resolveGameAssetCatalog("16.19.1", { includeRunes: true })).runePerformanceState?.status).toBe("available");
+});
+it("keeps performance identities available when no matching Data Dragon build or layout exists", async () => {
+  vi.stubGlobal("fetch", vi.fn(async (url: string) => url.endsWith("versions.json") ? Response.json(["16.18.1"]) : url.endsWith("/perks.json") ? Response.json(perks) : new Response("missing", { status: 404 })));
+  const catalog = await resolveGameAssetCatalog("16.19.1", { includeRunes: true });
+  expect(catalog.assetVersion).toBe("");
+  expect(catalog.runePerformanceState?.status).toBe("available");
+  expect(catalog.runes?.["8437"]).toMatchObject({ name: "Grasp of the Undying", treeId: null, slot: null });
+  expect(catalog.runeTrees).toBeUndefined();
+  expect(catalog.manifest?.fallbackReason).toContain("Data Dragon artwork is unavailable");
+});
+it("does not retain malformed metadata as a successful daily cache entry", async () => {
+  const now = vi.spyOn(Date, "now").mockReturnValue(100000); let malformed = true;
+  vi.stubGlobal("fetch", vi.fn(async (url: string) => url.endsWith("/perks.json") && malformed ? Response.json({ unexpected: [] }) : Response.json(fetchData(url))));
+  const first = await resolveGameAssetCatalog("16.19.1", { includeRunes: true });
+  expect(first.runePerformance).toEqual({});
+  expect(first.runePerformanceState?.status).toBe("unavailable");
+  malformed = false; now.mockReturnValue(161000);
+  expect((await resolveGameAssetCatalog("16.19.1", { includeRunes: true })).runePerformanceState?.status).toBe("available");
+});
+it("replaces labels, variable bindings and exact source hashes when the same patch is revalidated", async () => {
+  const now = vi.spyOn(Date, "now").mockReturnValue(100000);
+  let current = perks;
+  vi.stubGlobal("fetch", vi.fn(async (url: string) => Response.json(url.endsWith("/perks.json") ? current : fetchData(url))));
+  const first = await resolveGameAssetCatalog("16.19.1", { includeRunes: true });
+  expect(first.runePerformance?.["8437"].metrics[0]).toMatchObject({ label: "Total damage", variable: 1 });
+  current = [{ ...perks[0], endOfGameStatDescs: ["Patch-adjusted damage: @eogvar3@"] }];
+  now.mockReturnValue(86_501_000);
+  const updated = await resolveGameAssetCatalog("16.19.1", { includeRunes: true });
+  expect(updated.runePerformance?.["8437"].metrics).toEqual([{ id: "descriptor-1", label: "Patch-adjusted damage", variable: 3, unit: "", availability: "available" }]);
+  expect(updated.runePerformanceState?.sha256).not.toBe(first.runePerformanceState?.sha256);
+  expect(updated.runePerformanceState?.status).toBe("available");
+  expect(updated.manifest?.semanticDatasets.find(source => source.sourceUrl.endsWith("/perks.json"))?.sha256).toBe(updated.runePerformanceState?.sha256);
+});
+it("keeps the previous source hash and descriptors explicitly stale when refreshed JSON changes to an invalid schema", async () => {
+  const now = vi.spyOn(Date, "now").mockReturnValue(100000); let invalid = false;
+  vi.stubGlobal("fetch", vi.fn(async (url: string) => Response.json(url.endsWith("/perks.json") && invalid ? { wrongSchema: true } : fetchData(url))));
+  const first = await resolveGameAssetCatalog("16.19.1", { includeRunes: true });
+  invalid = true; now.mockReturnValue(86_501_000);
+  const stale = await resolveGameAssetCatalog("16.19.1", { includeRunes: true });
+  expect(stale.runePerformanceState?.status).toBe("stale");
+  expect(stale.runePerformanceState?.sha256).toBe(first.runePerformanceState?.sha256);
+  expect(stale.runePerformance?.["8437"].metrics).toEqual(first.runePerformance?.["8437"].metrics);
+  expect(stale.runePerformanceState?.retryAt).toBe(new Date(86_561_000).toISOString());
+});

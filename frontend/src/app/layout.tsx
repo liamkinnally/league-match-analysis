@@ -3,8 +3,11 @@ import type { ReactNode } from "react";
 import "@fontsource-variable/instrument-sans";
 import "./globals.css";
 import "./reviewed-match.css";
+import "../components/match-development/event-feed.css";
 import "./entry-pages.css";
 import "./prototype.css";
+import "../components/match-development/rune-view.css";
+import "../components/player-profile.css";
 import { PRODUCT_NAME } from "../lib/product";
 import { SiteBanner } from "../components/site-banner";
 

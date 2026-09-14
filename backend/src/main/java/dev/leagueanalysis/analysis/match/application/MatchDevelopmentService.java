@@ -18,10 +18,18 @@ import org.springframework.stereotype.Service;
 public final class MatchDevelopmentService {
     private final HistoricalMatchQuery historicalMatches;
     private final MatchOverviewQuery overviews;
+    private final dev.leagueanalysis.ingestion.riot.application.RiotIngestionStore ingestionStore;
 
     public MatchDevelopmentService(
             HistoricalMatchQuery historicalMatches,
             MatchOverviewQuery overviews) {
+        this(historicalMatches, overviews, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public MatchDevelopmentService(HistoricalMatchQuery historicalMatches, MatchOverviewQuery overviews,
+            dev.leagueanalysis.ingestion.riot.application.RiotIngestionStore ingestionStore) {
+        this.ingestionStore = ingestionStore;
         this.historicalMatches = historicalMatches;
         this.overviews = overviews;
     }
@@ -34,6 +42,7 @@ public final class MatchDevelopmentService {
                 throw new IllegalArgumentException("MATCHED_COMPARISON_PARTICIPANT");
             }
         }
+        if (ingestionStore != null) ingestionStore.enrichParticipantDetails(matchId);
         return historicalMatches.inReadSnapshot(() -> {
             var snapshot = historicalMatches.load(matchId);
             var overview = overviews.load(matchId);
@@ -67,7 +76,7 @@ public final class MatchDevelopmentService {
                 overview.queueId(), overview.mapId(), overview.gameMode(), overview.gameVersion(),
                 overview.gameCreationMs(), overview.durationMs(), focus, compare, focal.win(),
                 focal.kills(), focal.deaths(), focal.assists(), focal.totalCs(), focal.goldEarned());
-        var roster = overview.participants().stream().map(this::participant).toList();
+        var roster = overview.participants().stream().map(p -> participant(p, overview.gameVersion())).toList();
         var timelineAvailable = snapshot.sourceRevision().timelineCaptureId() != null;
         var samples = timelineAvailable ? samples(snapshot, focus, compare) : List.<MatchDevelopment.Sample>of();
         var windows = selectableWindows(samples, focal.championName());
@@ -258,7 +267,7 @@ public final class MatchDevelopmentService {
         return left.startMs() < right.endMs() && right.startMs() < left.endMs();
     }
 
-    private MatchDevelopment.Participant participant(MatchOverviewQuery.Participant participant) {
+    private MatchDevelopment.Participant participant(MatchOverviewQuery.Participant participant, String gameVersion) {
         return new MatchDevelopment.Participant(
                 participant.participantId(), participant.teamId(), participant.championId(),
                 participant.championName(), participant.teamPosition(), participant.win(),
@@ -266,7 +275,8 @@ public final class MatchDevelopmentService {
                 participant.laneCs(), participant.jungleCs(), participant.totalCs(),
                 participant.goldEarned(), participant.goldSpent(), participant.visionScore(),
                 participant.summonerSpellOneId(), participant.summonerSpellTwoId(),
-                participant.endItemIds(), participant.gameName(), participant.tagLine(), participant.summonerName());
+                participant.endItemIds(), participant.gameName(), participant.tagLine(), participant.summonerName(),
+                RunePerformanceMapper.project(participant.runeSnapshot(), gameVersion), participant.participantTotals());
     }
 
     private List<MatchDevelopment.Sample> samples(

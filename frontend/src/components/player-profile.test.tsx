@@ -1,0 +1,76 @@
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import { expect, it, vi } from "vitest";
+import { PlayerProfilePanel } from "./player-profile";
+import { parsePlayerProfile } from "../lib/player-lookup/profile";
+import { profileFixture } from "../lib/player-lookup/profile.test-fixture";
+vi.mock("../lib/game-assets/use-game-assets", () => ({ useCurrentProfileAssets: () => ({ assetVersion: "16.18.1", champions: {}, items: {}, spells: {}, profileIcons: { "29": { name: "Profile icon 29", imageUrl: "/__e2e-assets/profile-29.png" } }, ranks: {} }) }));
+const profile = () => parsePlayerProfile(profileFixture);
+const props = () => ({ identity: profileFixture.identity, profile: profile(), loading: false, loadingRecent: false, loadingOlder: false, busy: false, issue: null, now: Date.parse("2026-09-14T11:00:00Z"), loadRecent: vi.fn(), loadOlder: vi.fn(), reload: vi.fn() });
+it("separates current ranked record from the unverified Solo sample and preserves provider profile art", () => {
+  render(<PlayerProfilePanel {...props()} />);
+  expect(screen.getByRole("heading")).toHaveTextContent("Invented Player#DEMO");
+  expect(screen.getByText("Level 123")).toBeVisible();
+  expect(screen.getByText("57.1% · 80W–60L")).toBeVisible();
+  expect(screen.getByText("8 games with recorded outcomes loaded · 5W–3L · eligibility unverified")).toBeVisible();
+  expect(screen.queryByText(/62.5%/)).not.toBeInTheDocument();
+  expect(screen.getByText(/Remake eligibility is not verified/)).toBeVisible();
+  const icon = screen.getByRole("img", { name: "Profile icon 29" });
+  fireEvent.error(icon);
+  expect(screen.getByRole("img", { name: "Profile icon 29" })).toHaveTextContent("In");
+});
+it("distinguishes failed rank from successful unranked and zero-game states", () => {
+  const initial = props();
+  initial.profile.soloRank = { ...initial.profile.soloRank, status: "unavailable", tier: null, division: null, leaguePoints: null, wins: null, losses: null, fetchedAt: null };
+  const view = render(<PlayerProfilePanel {...initial} />);
+  expect(screen.getByText("Rank unavailable")).toBeVisible();
+  expect(screen.queryByText("Unranked")).not.toBeInTheDocument();
+  initial.profile.soloRank.status = "unranked";
+  view.rerender(<PlayerProfilePanel {...initial} />);
+  expect(screen.getAllByText("Unranked")).toHaveLength(2);
+  initial.profile.soloRank = { ...profile().soloRank, wins: 0, losses: 0, winRate: null };
+  view.rerender(<PlayerProfilePanel {...initial} />);
+  expect(screen.getByText("No ranked games recorded")).toBeVisible();
+});
+it("retains stale values with independent fetch times and never computes LP deltas", () => {
+  const input = props();
+  const history = input.profile.rankHistory;
+  history.observations.push({ ...history.observations[0], id: "00000000-0000-0000-0000-000000000011", observedAt: "2026-09-13T10:00:00Z", tier: "PLATINUM", division: "I", leaguePoints: 80 });
+  render(<PlayerProfilePanel {...input} issue={{ message: "Profile details unavailable", retryNotBefore: null }} />);
+  expect(screen.getAllByText(/May be out of date/)).toHaveLength(2);
+  fireEvent.click(screen.getByText("View rank observations"));
+  const list = screen.getByRole("list", { name: "Observed Solo/Duo ranks" });
+  expect(within(list).getByText("Platinum I · 80 LP")).toBeVisible();
+  expect(within(list).getByText("Emerald II · 42 LP")).toBeVisible();
+  expect(within(list).queryByText(/-38|\+62/)).not.toBeInTheDocument();
+});
+it("allows recent data collection only as an explicit admitted action and shows cooldown", () => {
+  const input = props();
+  const view = render(<PlayerProfilePanel {...input} />);
+  expect(input.loadRecent).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Load recent Solo/Duo record" }));
+  expect(input.loadRecent).toHaveBeenCalledOnce();
+  input.profile.recentSolo.retryNotBefore = "2026-09-14T12:00:00Z";
+  input.profile.recentSolo.canLoad = false;
+  view.rerender(<PlayerProfilePanel {...input} />);
+  expect(screen.getByRole("button", { name: "Load recent Solo/Duo record" })).toBeDisabled();
+  expect(screen.getByText(/Available after/)).toBeVisible();
+});
+it("rechecks an expired admission snapshot explicitly rather than silently starting collection", () => {
+  const input = props();
+  input.profile.recentSolo.canLoad = false;
+  input.profile.recentSolo.retryNotBefore = "2026-09-14T10:59:00Z";
+  render(<PlayerProfilePanel {...input} />);
+  fireEvent.click(screen.getByRole("button", { name: "Check recent record availability" }));
+  expect(input.reload).toHaveBeenCalledOnce();
+  expect(input.loadRecent).not.toHaveBeenCalled();
+});
+it("keeps successful unranked observations visible as a discrete gap", () => {
+  const input = props();
+  input.profile.rankHistory.observations.push({ id: "00000000-0000-0000-0000-000000000011", observedAt: "2026-09-13T10:00:00Z", status: "unranked", tier: null, division: null, leaguePoints: null, wins: null, losses: null, period: null });
+  input.profile.rankHistory.nextCursor = "YWJj";
+  render(<PlayerProfilePanel {...input} />);
+  fireEvent.click(screen.getByText("View rank observations"));
+  expect(within(screen.getByRole("list", { name: "Observed Solo/Duo ranks" })).getByText("Unranked")).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Load older observations" }));
+  expect(input.loadOlder).toHaveBeenCalledOnce();
+});

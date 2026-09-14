@@ -1,0 +1,115 @@
+.chronological-events > ol {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+.chronological-events > ol > li {
+  grid-template-columns: 5.1rem 6.8rem minmax(0, 1fr);
+  gap: 0.7rem;
+  border-inline-start: 0;
+  padding: 0.75rem;
+}
+.chronological-events .refined-event-copy {
+  display: grid;
+  grid-template-columns: minmax(7rem, 10rem) 3rem minmax(0, 1fr);
+  grid-column: auto;
+  align-items: baseline;
+  gap: 0.25rem 0.6rem;
+}
+.chronological-events .refined-event-copy > strong {
+  grid-column: 1;
+  grid-row: 1;
+  overflow-wrap: anywhere;
+  font-size: 0.8rem;
+}
+.chronological-events .event-relation {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: 0.72rem;
+}
+.event-relation[data-relation="ally"] { color: #79b5ef; }
+.event-relation[data-relation="enemy"] { color: #e29191; }
+.chronological-events .refined-event-action {
+  grid-column: 3;
+  grid-row: 1;
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+.chronological-events .refined-event-note,
+.chronological-events .development-event-assists,
+.chronological-events .refined-event-record {
+  grid-column: 3;
+  font-size: 0.72rem;
+}
+.chronological-events .event-action-symbol {
+  filter: none;
+}
+.event-ward-glyph {
+  display: block;
+  inline-size: 18px;
+  block-size: 18px;
+  mask-size: contain;
+  mask-position: center;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  -webkit-mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+}
+.event-mask-probe {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.chronological-events .development-event-visuals {
+  flex-wrap: wrap;
+}
+.chronological-events .development-event-champion,
+.chronological-events .development-event-icon {
+  inline-size: 28px;
+  block-size: 28px;
+  flex: 0 0 28px;
+  object-fit: contain;
+}
+.chronological-events .refined-event-record > summary {
+  min-block-size: 30px;
+  padding-block: 6px;
+  font-size: 0.7rem;
+  white-space: normal;
+}
+.chronological-events .refined-event-record pre {
+  font-size: 0.7rem;
+}
+@container event-feed (max-width: 800px) {
+  .chronological-events .refined-event-copy {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .chronological-events .refined-event-action {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .chronological-events .refined-event-note,
+  .chronological-events .development-event-assists,
+  .chronological-events .refined-event-record {
+    grid-column: 1 / -1;
+  }
+}
+@container event-feed (max-width: 480px) {
+  .chronological-events > ol > li {
+    grid-template-columns: 5.1rem minmax(0, 1fr);
+    gap: 0.4rem 0.6rem;
+  }
+  .chronological-events .refined-event-copy {
+    grid-column: 2;
+  }
+  .chronological-events li > .development-event-visuals {
+    grid-column: 2;
+    flex-wrap: wrap;
+  }
+  .chronological-events .refined-event-record > summary {
+    min-block-size: 36px;
+    padding-block: 9px;
+  }
+}
+
+.refined-events.chronological-events > ol > li:nth-child(even) { border-inline-start: 0; }

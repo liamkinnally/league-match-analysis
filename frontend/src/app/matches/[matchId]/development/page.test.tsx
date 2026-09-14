@@ -82,6 +82,14 @@ it("keeps exact endpoints when a focal change automatically selects the lane opp
   );
 });
 
+it("preserves rune inspection through automatic comparison redirects", async () => {
+  vi.stubEnv("BACKEND_URL", "http://127.0.0.1:8080");
+  const data = { ...developmentFixture, summary: { ...developmentFixture.summary, focusParticipantId: 7, compareParticipantId: null } };
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(Response.json(data)).mockResolvedValueOnce(Response.json(demoFixture)));
+  await expect(DevelopmentPage({ params: Promise.resolve({ matchId: data.matchId }), searchParams: Promise.resolve({ focus: "7", from: "480000", to: "600000", metric: "xp", finalView: "runes", runeParticipant: "6", historyRunId: "00000000-0000-0000-0000-000000000001" }) })).rejects.toThrow("NEXT_REDIRECT");
+  expect(redirectMock).toHaveBeenLastCalledWith("/matches/NA1_7000000001/development?focus=7&compare=2&from=480000&to=600000&metric=xp&finalView=runes&runeParticipant=6&historyRunId=00000000-0000-0000-0000-000000000001");
+});
+
 it("restores a suggested interval after an earlier bounded endpoint has only CS", async () => {
   vi.stubEnv("BACKEND_URL", "http://127.0.0.1:8080");
   vi.stubGlobal("fetch", vi.fn()

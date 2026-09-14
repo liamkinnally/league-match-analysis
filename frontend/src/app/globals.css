@@ -1923,3 +1923,25 @@ img.development-champion-mark {
   font-size: 0.66rem;
   line-height: 1.45;
 }
+
+
+@media (max-width: 30rem) {
+  .development-nav {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.25rem;
+    padding-block: 0.5rem;
+  }
+
+  .development-nav nav {
+    justify-self: start;
+    margin-inline-start: 0;
+    flex-wrap: wrap;
+  }
+
+  .development-nav nav > * {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: 2rem;
+    white-space: nowrap;
+  }
+}

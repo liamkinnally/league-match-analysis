@@ -1,8 +1,8 @@
 import { beforeEach, expect, it, vi } from "vitest";
-import { resolveGameAssetCatalog } from "../../../lib/game-assets/catalog";
+import { resolveGameAssetCatalog, resolveCurrentProfileAssetCatalog } from "../../../lib/game-assets/catalog";
 import { GET } from "./route";
 
-vi.mock("../../../lib/game-assets/catalog", () => ({ resolveGameAssetCatalog: vi.fn() }));
+vi.mock("../../../lib/game-assets/catalog", () => ({ resolveGameAssetCatalog: vi.fn(), resolveCurrentProfileAssetCatalog: vi.fn() }));
 
 const catalog = {
   assetVersion: "16.17.2",
@@ -59,4 +59,26 @@ it("rejects missing, malformed, or excessive version lists", async () => {
 
   expect([missing.status, malformed.status, excessive.status]).toEqual([400, 400, 400]);
   expect(resolveGameAssetCatalog).not.toHaveBeenCalled();
+});
+
+it("accepts bounded rune/ability enrichment and rejects arbitrary source inputs", async () => {
+  vi.mocked(resolveGameAssetCatalog).mockResolvedValue(catalog);
+  const good = await GET(new Request("http://localhost/api/game-assets?versions=16.17.1&runes=1&champions=86,103"));
+  expect(good.status).toBe(200);
+  expect(resolveGameAssetCatalog).toHaveBeenCalledWith("16.17.1", { includeRunes: true, championIds: [86, 103] });
+  expect((await GET(new Request("http://localhost/api/game-assets?versions=16.17.1&champions=https://evil.test"))).status).toBe(400);
+  expect((await GET(new Request("http://localhost/api/game-assets?versions=16.17.1&champions=1,2,3,4,5,6,7,8,9,10,11"))).status).toBe(400);
+});
+
+it("loads current profile artwork independently of match versions", async () => {
+  vi.mocked(resolveCurrentProfileAssetCatalog).mockResolvedValue({ ...catalog, assetVersion: "16.18.1", profileIcons: { "29": { name: "Profile icon 29", imageUrl: "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/profileicon/29.png" } } });
+  const response = await GET(new Request("http://localhost/api/game-assets?scope=current-profile"));
+  expect((await response.json()).assetVersion).toBe("16.18.1");
+  expect(resolveGameAssetCatalog).not.toHaveBeenCalled();
+  expect((await GET(new Request("http://localhost/api/game-assets?scope=current-profile&versions=16.17.1"))).status).toBe(400);
+});
+it("does not let browser response caching postpone unavailable rune metadata retries", async () => {
+  vi.mocked(resolveGameAssetCatalog).mockResolvedValue(catalog);
+  const response = await GET(new Request("http://localhost/api/game-assets?versions=16.19.1&runes=1"));
+  expect(response.headers.get("Cache-Control")).toBe("no-store");
 });

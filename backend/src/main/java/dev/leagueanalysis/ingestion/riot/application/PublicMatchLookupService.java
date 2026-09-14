@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class PublicMatchLookupService {
     private final RiotIngestionService ingestion;
+    private dev.leagueanalysis.analysis.profile.PlayerProfileService profiles;
+    @Autowired void profileService(dev.leagueanalysis.analysis.profile.PlayerProfileService profiles) { this.profiles=profiles; }
     private final PublicMatchLookupStore store;
     private final Clock clock;
     private final boolean enabled;
@@ -90,6 +92,22 @@ public class PublicMatchLookupService {
         return running == null ? start(command, peer) : new Submission(202, get(running));
     }
 
+    /** Bounded recent work shares history admission, identity verification, cooldown and round-robin turns. */
+    public synchronized Submission recentRecord(UUID runId,String peer) {
+        var previous=pageCommand(runId);
+        var command=new RiotIngestionCommand(previous.gameName(),previous.tagLine(),20,420,0,clock.instant().getEpochSecond(),runId);
+        var requestKey=new RequestKey("RECENT",profiles==null?previous.gameName().toLowerCase(Locale.ROOT):profiles.identityKey(runId),"",420,null);
+        var running=active.get(requestKey);
+        if(running!=null)return new Submission(202,get(running));
+        var next=store.latestRefresh(command).map(time->time.plusSeconds(900)).filter(time->time.isAfter(clock.instant()));
+        if(next.isPresent())throw new PublicLookupException(429,"This account was updated recently. Try again after the indicated time.",next.get());
+        checkAdmission(peer);
+        if(profiles!=null)profiles.claimRecent(runId);
+        var result=start(command,peer,requestKey);
+        if(profiles!=null)profiles.bindRecent(runId,result.lookup().runId());
+        return result;
+    }
+
     private RiotIngestionCommand pageCommand(UUID runId) {
         return store.readPageCommand(runId).orElseThrow(() -> new PublicLookupException(404, "History page not found. Search again.", null));
     }
@@ -102,16 +120,47 @@ public class PublicMatchLookupService {
         return command;
     }
 
-    private Submission start(RiotIngestionCommand command, String peer) {
+    private Submission start(RiotIngestionCommand command, String peer) {return start(command,peer,key(command));}
+    private Submission start(RiotIngestionCommand command,String peer,RequestKey key) {
         checkAdmission(peer);
         var now = clock.instant();
         var id = store.startPublicRun(command, now);
-        var key = key(command);
         active.put(key, id);
         pendingIdentities.put(id, command);
-        enqueue(key, id, ingestion.historyWork(id, command, store), now.plusSeconds(900));
+        var history=ingestion.historyWork(id, command, store);
+        PublicIngestionWork work=profiles==null?history:new HistoryWithProfile(id,history,now.plusSeconds(900));
+        enqueue(key, id, work, now.plusSeconds(900));
         recordAdmission(peer, now);
         return new Submission(202, get(id));
+    }
+
+    private final class HistoryWithProfile implements PublicIngestionWork {
+        private final UUID id;
+        private final PublicIngestionWork history;
+        private final Instant deadline;
+        private boolean historyComplete;
+        private boolean pendingRegistered;
+        private PublicIngestionWork profile;
+        private HistoryWithProfile(UUID id,PublicIngestionWork history,Instant deadline) {
+            this.id=id;this.history=history;this.deadline=deadline;
+        }
+        public boolean step() {
+            if(!historyComplete) {
+                historyComplete=history.step();
+                if(!pendingRegistered)pendingRegistered=profiles.markPending(id,deadline);
+                return false;
+            }
+            if(profile==null)profile=profiles.refreshWork(id);
+            boolean complete;
+            try {complete=profile.step();}
+            catch(RiotGatewayException failure) {
+                if(failure.code()==RiotFailureCode.RATE_LIMITED)throw failure;
+                complete=true;
+            }
+            catch(RuntimeException unavailable) {complete=true;}
+            if(complete)profiles.finishWork(id);
+            return complete;
+        }
     }
 
     public synchronized TimelineLookup timeline(String matchId) {
@@ -152,13 +201,13 @@ public class PublicMatchLookupService {
 
     private void enqueue(RequestKey key, UUID id, PublicIngestionWork work, Instant deadline) {
         try { worker.execute(() -> turn(key, id, work, deadline)); }
-        catch (RejectedExecutionException failure) { fail(key, id); }
+        catch (RejectedExecutionException failure) { fail(key, id, work); }
     }
 
     private void turn(RequestKey key, UUID id, PublicIngestionWork work, Instant deadline) {
         synchronized (this) { if (!id.equals(active.get(key))) return; }
         try {
-            if (!clock.instant().isBefore(deadline)) { fail(key, id); return; }
+            if (!clock.instant().isBefore(deadline)) { fail(key, id, work); return; }
             var cooldown = store.latestCooldown().filter(time -> time.isAfter(clock.instant()));
             if (cooldown.isPresent()) { defer(key, id, work, deadline, cooldown.get()); return; }
             if (work.step()) release(key, id);
@@ -167,8 +216,8 @@ public class PublicMatchLookupService {
             if (failure.code() == RiotFailureCode.RATE_LIMITED) {
                 var retry = failure.retryNotBefore() == null ? clock.instant().plusSeconds(60) : failure.retryNotBefore();
                 defer(key, id, work, deadline, retry);
-            } else fail(key, id);
-        } catch (RuntimeException failure) { fail(key, id); }
+            } else fail(key, id, work);
+        } catch (RuntimeException failure) { fail(key, id, work); }
     }
 
     private void defer(RequestKey key, UUID id, PublicIngestionWork work, Instant deadline, Instant retry) {
@@ -178,9 +227,15 @@ public class PublicMatchLookupService {
         later.accept(() -> turn(key, id, work, deadline), Duration.between(clock.instant(), wake).isNegative()
                 ? Duration.ZERO : Duration.between(clock.instant(), wake));
     }
-    private void fail(RequestKey key, UUID id) {
-        try { store.failPublicRun(id, clock.instant()); }
-        finally { release(key, id); }
+    private void fail(RequestKey key, UUID id, PublicIngestionWork work) {
+        try {
+            // Profile work cannot change a history result which already finished.
+            if(!(work instanceof HistoryWithProfile continuation)||!continuation.historyComplete)
+                store.failPublicRun(id, clock.instant());
+        } finally {
+            try {if(work instanceof HistoryWithProfile)profiles.finishWork(id);}
+            finally {release(key, id);}
+        }
     }
     private synchronized void release(RequestKey key, UUID id) { active.remove(key, id); pendingIdentities.remove(id); }
 
