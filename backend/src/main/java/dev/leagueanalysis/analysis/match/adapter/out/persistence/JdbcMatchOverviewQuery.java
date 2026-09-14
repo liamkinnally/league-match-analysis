@@ -53,7 +53,8 @@ public class JdbcMatchOverviewQuery implements MatchOverviewQuery {
                 select participant_id, team_id, champion_id, champion_name, team_position,
                        win, kills, deaths, assists, total_minions_killed,
                        neutral_minions_killed, gold_earned, gold_spent, vision_score,
-                       summoner_spell_one_id, summoner_spell_two_id, end_item_ids::text
+                       summoner_spell_one_id, summoner_spell_two_id, end_item_ids::text,
+                       rune_snapshot::text, participant_totals::text
                 from league_analysis.riot_participant
                 where match_id = ?
                 order by team_id, participant_id
@@ -77,11 +78,17 @@ public class JdbcMatchOverviewQuery implements MatchOverviewQuery {
                         itemIds(resultSet.getString("end_item_ids")),
                         name(recordedNames, resultSet.getInt("participant_id"), "riotIdGameName"),
                         name(recordedNames, resultSet.getInt("participant_id"), "riotIdTagline"),
-                        name(recordedNames, resultSet.getInt("participant_id"), "summonerName")),
+                        name(recordedNames, resultSet.getInt("participant_id"), "summonerName"),
+                        optionalJson(resultSet.getString("rune_snapshot"), dev.leagueanalysis.ingestion.riot.domain.ParticipantDetails.Runes.class),
+                        optionalJson(resultSet.getString("participant_totals"), dev.leagueanalysis.ingestion.riot.domain.ParticipantDetails.Totals.class)),
                 matchId);
         return Optional.of(new Overview(
                 match.matchId(), match.queueId(), match.mapId(), match.gameMode(), match.gameVersion(),
-                match.gameCreationMs(), match.durationMs(), participants, teams(match, participants), events(matchId)));
+                match.gameCreationMs(), match.durationMs(), participants, teams(match, participants), events(matchId, participants)));
+    }
+
+    private <T> T optionalJson(String value, Class<T> type) {
+        return value == null ? null : json.readValue(value, type);
     }
 
     private String name(JsonNode players, int id, String field) {
@@ -132,11 +139,11 @@ public class JdbcMatchOverviewQuery implements MatchOverviewQuery {
         return value.isIntegralNumber() && value.canConvertToInt() && value.intValue() >= 0 ? value.intValue() : null;
     }
 
-    private List<MatchDevelopment.Event> events(String matchId) {
+    private List<MatchDevelopment.Event> events(String matchId, List<Participant> roster) {
         return jdbc.query("""
                 select e.* from league_analysis.match_event e join league_analysis.riot_match m
                   on m.match_id=e.match_id and m.timeline_source_capture_id=e.source_capture_id
-                where m.match_id=? order by e.frame_at_ms, e.frame_event_index
+                where m.match_id=? order by e.represented_at_ms, e.frame_at_ms, e.frame_event_index
                 """, (rs, index) -> {
                     var raw = json.readTree(rs.getString("event_payload"));
                     var type = rs.getString("provider_event_type");
@@ -163,7 +170,8 @@ public class JdbcMatchOverviewQuery implements MatchOverviewQuery {
                             ids.stream().sorted().toList(), item, actor, target, assisters,
                             assistersObserved, type, rs.getLong("frame_at_ms"),
                             rs.getInt("frame_event_index"), sanitizedFields(raw),
-                            rs.getObject("position_x", Integer.class), rs.getObject("position_y", Integer.class));
+                            rs.getObject("position_x", Integer.class), rs.getObject("position_y", Integer.class),
+                            dev.leagueanalysis.analysis.match.application.EventPresentationMapper.project(type, actor, raw, roster));
                 }, matchId);
     }
 

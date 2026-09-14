@@ -79,7 +79,30 @@ public record MatchDevelopment(
             int summonerSpellOneId,
             int summonerSpellTwoId,
             List<Integer> endItemIds,
+            String gameName, String tagLine, String summonerName, ParticipantRunes runes, dev.leagueanalysis.ingestion.riot.domain.ParticipantDetails.Totals participantTotals) {
+        public Participant(
+            int participantId,
+            int teamId,
+            int championId,
+            String championName,
+            String teamPosition,
+            boolean win,
+            int kills,
+            int deaths,
+            int assists,
+            int laneCs,
+            int jungleCs,
+            int totalCs,
+            int goldEarned,
+            int goldSpent,
+            int visionScore,
+            int summonerSpellOneId,
+            int summonerSpellTwoId,
+            List<Integer> endItemIds,
             String gameName, String tagLine, String summonerName) {
+            this(participantId, teamId, championId, championName, teamPosition, win, kills, deaths, assists, laneCs, jungleCs, totalCs, goldEarned, goldSpent, visionScore, summonerSpellOneId, summonerSpellTwoId, endItemIds, gameName, tagLine, summonerName, null, null);
+        }
+
         public Participant(
             int participantId,
             int teamId,
@@ -135,6 +158,9 @@ public record MatchDevelopment(
         }
     }
 
+    public record EventTeam(Integer teamId, String basis) {}
+    public record EventPresentation(EventTeam actorTeam, EventTeam objectTeam) {}
+
     public record Event(
             long timestampMs,
             String label,
@@ -145,7 +171,14 @@ public record MatchDevelopment(
             List<Integer> assisterParticipantIds,
             boolean assistersObserved,
             String type, Long frameAtMs, Integer frameEventIndex,
-            java.util.Map<String, Object> fields, Integer x, Integer y) {
+            java.util.Map<String, Object> fields, Integer x, Integer y, EventPresentation presentation) {
+        public Event(long timestampMs, String label, List<Integer> participantIds, Integer itemId,
+                Integer actorParticipantId, Integer targetParticipantId, List<Integer> assisterParticipantIds,
+                boolean assistersObserved, String type, Long frameAtMs, Integer frameEventIndex,
+                java.util.Map<String,Object> fields, Integer x, Integer y) {
+            this(timestampMs,label,participantIds,itemId,actorParticipantId,targetParticipantId,assisterParticipantIds,
+                    assistersObserved,type,frameAtMs,frameEventIndex,fields,x,y,null);
+        }
         public Event(
             long timestampMs,
             String label,

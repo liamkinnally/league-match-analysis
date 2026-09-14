@@ -4,7 +4,7 @@ import { AssetTooltip } from "../asset-tooltip";
 import { FinalItemSlots } from "../final-item-slots";
 import { GameAssetIcon } from "../game-asset-icon";
 import { RankBadge, RankDetails } from "./ranks";
-import { developmentHref } from "../../lib/development/route";
+import { developmentHref, type FinalStateSelection } from "../../lib/development/route";
 import {
   participantName,
   playerName,
@@ -60,12 +60,14 @@ export function Scoreboard({
   assets,
   ranks,
   metric,
+  finalState,
 }: {
   data: MatchDevelopment;
   interval: DevelopmentInterval;
   assets: GameAssetCatalog | null;
   ranks: CurrentRanks;
   metric: Metric;
+  finalState?: FinalStateSelection;
 }) {
   const router = useRouter();
   const teamIds = [...new Set(data.roster.map((p) => p.teamId))];
@@ -134,6 +136,7 @@ export function Scoreboard({
                     compare,
                     interval,
                     metric,
+                    finalState,
                   );
                   const label = `Select ${riotId(person)}, playing ${name}${data.summary.queueId === 450 ? "" : `, ${roleLabel(person.teamPosition)}`}.${queueType(data.summary.queueId) ? ` Current rank: ${rankDisplay(rank).label}` : ""}`;
                   const selected =

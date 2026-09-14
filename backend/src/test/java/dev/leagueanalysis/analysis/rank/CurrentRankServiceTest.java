@@ -32,6 +32,17 @@ class CurrentRankServiceTest {
                 new ObjectMapper(),now::get,pending::add);
     }
     void drain() { while (!pending.isEmpty()) pending.remove().run(); }
+    @Test void soloAndFlexShareOneProviderResponseAndRefresh() {
+        query=id -> Optional.of(new RankRosterQuery.Roster(id,id.equals("NA1_flex") ? 440 : 420,
+                List.of(new RankRosterQuery.Player(1,"private-test-puuid"))));
+        body="[{\"queueType\":\"RANKED_SOLO_5x5\",\"tier\":\"GOLD\",\"rank\":\"II\",\"leaguePoints\":42,\"wins\":12,\"losses\":8},{\"queueType\":\"RANKED_FLEX_SR\",\"tier\":\"SILVER\",\"rank\":\"I\",\"leaguePoints\":19,\"wins\":3,\"losses\":2}]";
+        var service=service();
+        service.load("NA1_solo"); service.load("NA1_flex");
+        assertThat(pending).hasSize(1); drain();
+        assertThat(requests).hasSize(1);
+        assertThat(service.load("NA1_solo").orElseThrow().players().getFirst().tier()).isEqualTo("GOLD");
+        assertThat(service.load("NA1_flex").orElseThrow().players().getFirst().tier()).isEqualTo("SILVER");
+    }
     @Test void queuedPlayersShareAuthenticationFailureAndItsExactBackoff() {
         var roster = java.util.stream.IntStream.rangeClosed(1, 10)
                 .mapToObj(id -> new RankRosterQuery.Player(id, "private-test-" + id)).toList();

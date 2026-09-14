@@ -1,0 +1,242 @@
+{
+  "sources": [
+    {
+      "patch": "16.17",
+      "url": "https://raw.communitydragon.org/16.17/plugins/rcp-be-lol-game-data/global/default/v1/perks.json",
+      "sha256": "dd0948288ac0293caf71675cabbd138a7ad512b7a7cbb15c084fa9662233c13a"
+    },
+    {
+      "patch": "16.18",
+      "url": "https://raw.communitydragon.org/16.18/plugins/rcp-be-lol-game-data/global/default/v1/perks.json",
+      "sha256": "dd0948288ac0293caf71675cabbd138a7ad512b7a7cbb15c084fa9662233c13a"
+    }
+  ],
+  "entries": [
+    {
+      "id": 8446,
+      "name": "Demolish",
+      "endOfGameStatDescs": [
+        "Total Bonus Damage: @eogvar1@"
+      ]
+    },
+    {
+      "id": 8126,
+      "name": "Cheap Shot",
+      "endOfGameStatDescs": [
+        "Total damage: @eogvar1@"
+      ]
+    },
+    {
+      "id": 8299,
+      "name": "Last Stand",
+      "endOfGameStatDescs": [
+        "Total Bonus Damage: @eogvar1@"
+      ]
+    },
+    {
+      "id": 8112,
+      "name": "Electrocute",
+      "endOfGameStatDescs": [
+        "Total Damage Dealt: @eogvar1@"
+      ]
+    },
+    {
+      "id": 8453,
+      "name": "Revitalize",
+      "endOfGameStatDescs": [
+        "Bonus Healing: @eogvar1@",
+        "Bonus Shielding: @eogvar2@"
+      ]
+    },
+    {
+      "id": 8473,
+      "name": "Bone Plating",
+      "endOfGameStatDescs": [
+        "Total Damage Blocked: @eogvar1@"
+      ]
+    },
+    {
+      "id": 8214,
+      "name": "Summon Aery",
+      "endOfGameStatDescs": [
+        "Damage Dealt: @eogvar1@",
+        "Damage Shielded: @eogvar2@"
+      ]
+    },
+    {
+      "id": 8237,
+      "name": "Scorch",
+      "endOfGameStatDescs": [
+        "Total Bonus Damage: @eogvar1@"
+      ]
+    },
+    {
+      "id": 8010,
+      "name": "Conqueror",
+      "endOfGameStatDescs": [
+        "Total healing: @eogvar1@"
+      ]
+    },
+    {
+      "id": 8210,
+      "name": "Transcendence",
+      "endOfGameStatDescs": [
+        "Seconds refunded: @eogvar1@"
+      ]
+    },
+    {
+      "id": 8005,
+      "name": "Press the Attack",
+      "endOfGameStatDescs": [
+        "Total Damage: @eogvar1@",
+        "Bonus Damage: @eogvar2@"
+      ]
+    },
+    {
+      "id": 9111,
+      "name": "Triumph",
+      "endOfGameStatDescs": [
+        "Total Health Restored: @eogvar1@",
+        "Total bonus gold granted: @eogvar2@"
+      ]
+    },
+    {
+      "id": 8105,
+      "name": "Relentless Hunter",
+      "endOfGameStatDescs": [
+        "Total Stacks: @eogvar2@",
+        "Move Speed Increase: <speed>@eogvar1@</speed>"
+      ]
+    },
+    {
+      "id": 8439,
+      "name": "Aftershock",
+      "endOfGameStatDescs": [
+        "Total Damage Dealt: @eogvar1@",
+        "Total Damage Mitigated: @eogvar2@"
+      ]
+    },
+    {
+      "id": 8014,
+      "name": "Coup de Grace",
+      "endOfGameStatDescs": [
+        "Total Bonus Damage: @eogvar1@"
+      ]
+    },
+    {
+      "id": 8021,
+      "name": "Fleet Footwork",
+      "endOfGameStatDescs": [
+        "Total Healing: @eogvar1@"
+      ]
+    },
+    {
+      "id": 8226,
+      "name": "Manaflow Band",
+      "endOfGameStatDescs": [
+        "Total bonus mana: @eogvar1@",
+        "Total mana restored: @eogvar2@"
+      ]
+    },
+    {
+      "id": 8451,
+      "name": "Overgrowth",
+      "endOfGameStatDescs": [
+        "Total Bonus Max Health: @eogvar1@"
+      ]
+    },
+    {
+      "id": 9103,
+      "name": "Legend: Bloodline",
+      "endOfGameStatDescs": [
+        "Time Completed: @eogvar1@:@eogvar2@"
+      ]
+    },
+    {
+      "id": 8463,
+      "name": "Font of Life",
+      "endOfGameStatDescs": [
+        "Total Ally Healing: @eogvar1@"
+      ]
+    },
+    {
+      "id": 8304,
+      "name": "Magical Footwear",
+      "endOfGameStatDescs": [
+        "Boots Arrival Time: @eogvar1@:@eogvar2@@eogvar3@"
+      ]
+    },
+    {
+      "id": 8236,
+      "name": "Gathering Storm",
+      "endOfGameStatDescs": [
+        "Total Bonus AD/AP: @eogvar1@"
+      ]
+    },
+    {
+      "id": 8009,
+      "name": "Presence of Mind",
+      "endOfGameStatDescs": [
+        "Resource Restored: @eogvar1@"
+      ]
+    },
+    {
+      "id": 9104,
+      "name": "Legend: Alacrity",
+      "endOfGameStatDescs": [
+        "Time Completed: @eogvar1@:@eogvar2@"
+      ]
+    },
+    {
+      "id": 8140,
+      "name": "Grisly Mementos",
+      "endOfGameStatDescs": [
+        "Mementos Collected: @eogvar1@"
+      ]
+    },
+    {
+      "id": 8345,
+      "name": "Biscuit Delivery",
+      "endOfGameStatDescs": [
+        "Biscuits Received: @eogvar1@",
+        "Total Healing: @eogvar3@"
+      ]
+    },
+    {
+      "id": 8444,
+      "name": "Second Wind",
+      "endOfGameStatDescs": [
+        "Total Healing: @eogvar1@"
+      ]
+    },
+    {
+      "id": 8437,
+      "name": "Grasp of the Undying",
+      "endOfGameStatDescs": [
+        "Total damage: @eogvar1@",
+        "Total Healing: @eogvar2@"
+      ]
+    },
+    {
+      "id": 8233,
+      "name": "Absolute Focus",
+      "endOfGameStatDescs": [
+        "Total time active: @eogvar1@:@eogvar2@"
+      ]
+    },
+    {
+      "id": 8347,
+      "name": "Cosmic Insight",
+      "endOfGameStatDescs": [
+        "--"
+      ]
+    },
+    {
+      "id": 8229,
+      "name": "Arcane Comet",
+      "endOfGameStatDescs": [
+        "Total Damage Dealt: @eogvar1@"
+      ]
+    }
+  ]
+}

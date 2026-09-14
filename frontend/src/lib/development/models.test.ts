@@ -11,6 +11,73 @@ import { developmentFixture } from "../../test/match-development-fixture";
 import { developmentHref, parseDevelopmentSearch } from "./route";
 
 describe("reviewed data models", () => {
+  it("orders exact event times before source tie-breaks without mutating the capture", () => {
+    const event = { ...developmentFixture.events[0], type: "ITEM_SOLD", frameAtMs: 600000 };
+    const events = [
+      { ...event, timestampMs: 600001, frameEventIndex: 1 },
+      { ...event, timestampMs: 600000, frameEventIndex: 3 },
+      { ...event, timestampMs: 600000, frameEventIndex: 2 },
+    ];
+    const rows = eventDisplayRows(events, developmentFixture.roster, null);
+    expect(rows.map(row => row.records[0].frameEventIndex)).toEqual([2, 3, 1]);
+    expect(events.map(record => record.frameEventIndex)).toEqual([1, 3, 2]);
+  });
+  it.each([[6, "ally", "enemy"], [1, "enemy", "ally"]])(
+    "relates actors to focal participant %s, independently of map side", (focus, first, second) => {
+      const ward = { ...developmentFixture.events[0], type: "WARD_PLACED", fields: { wardType: "SIGHT_WARD" } };
+      const rows = eventDisplayRows([ward, { ...ward, actorParticipantId: 1 }], developmentFixture.roster, null, Number(focus));
+      expect(rows.map(row => row.actorRelation)).toEqual([first, second]);
+    },
+  );
+  it("never infers a destroyer or ward owner from the affected object or enemy relationship", () => {
+    const event = { ...developmentFixture.events[0], itemId: null, actorParticipantId: 0, type: "BUILDING_KILL", fields: { teamId: 100, buildingType: "TOWER_BUILDING", laneType: "TOP_LANE", towerType: "OUTER_TURRET" } };
+    const [structure, ward] = eventDisplayRows([event, { ...event, actorParticipantId: 6, type: "WARD_KILL", fields: { wardType: "SIGHT_WARD" } }], developmentFixture.roster, null, 6);
+    expect(structure.identityText).toBe("Unknown destroyer");
+    expect(structure.actorRelation).toBe("unknown");
+    expect(structure.objectRelation).toBe("unknown");
+    expect(structure.subject).toContain("Outer turret");
+    expect(ward.note).toBe("Ward owner not recorded.");
+    expect(ward.objectRelation).toBe("unknown");
+  });
+  it("keeps unverified undo and level evidence neutral while identifying the skill slot", () => {
+    const base = { ...developmentFixture.events[0], itemId: null };
+    const rows = eventDisplayRows([
+      { ...base, type: "ITEM_UNDO", fields: { beforeId: 3071, afterId: 0 } },
+      { ...base, type: "LEVEL_UP", fields: { level: 9 } },
+      { ...base, type: "SKILL_LEVEL_UP", fields: { skillSlot: 1 } },
+      { ...base, type: "SKILL_LEVEL_UP", fields: { skillSlot: 8 } },
+    ], developmentFixture.roster, null, 6);
+    expect(rows[0].action).toBe("Undid item change");
+    expect(rows[1].action).toBe("Level event recorded");
+    expect(rows[2].action).toBe("Ability rank-up");
+    expect(rows[2].subject).toBe("Q");
+    expect(rows[3].subject).toBe("Ability slot unavailable");
+  });
+  it("uses independently validated object ownership without overriding a conflicting actor team", () => {
+    const event = {
+      ...developmentFixture.events[0], itemId: null, type: "BUILDING_KILL",
+      fields: { teamId: 200, killerTeamId: 100, buildingType: "TOWER_BUILDING" },
+      presentation: {
+        actorTeam: { teamId: null, basis: "conflicting" as const },
+        objectTeam: { teamId: 100, basis: "known" as const },
+      },
+    };
+    const [row] = eventDisplayRows([event], developmentFixture.roster, null, 6);
+    expect(row.actorRelation).toBe("unknown");
+    expect(row.objectRelation).toBe("enemy");
+    expect(row.note).toBe("Enemy structure.");
+  });
+  it("retains every source record when exact ward pairing becomes ambiguous", () => {
+    const base = { ...developmentFixture.events[0], timestampMs: 505210, frameAtMs: 600000, fields: { itemId: 2055 }, itemId: 2055, type: "ITEM_DESTROYED" };
+    const events = [
+      { ...base, frameEventIndex: 1 },
+      { ...base, type: "WARD_PLACED", fields: { wardType: "CONTROL_WARD" }, frameEventIndex: 2 },
+      { ...base, frameEventIndex: 3 },
+    ];
+    const rows = eventDisplayRows(events, developmentFixture.roster, null, 6);
+    expect(rows).toHaveLength(3);
+    expect(rows.flatMap(row => row.records)).toEqual(events);
+  });
   it.each([
     ["AIR_DRAGON", "Cloud Dragon", "dragon_cloud"],
     ["FIRE_DRAGON", "Infernal Dragon", "dragon_infernal"],

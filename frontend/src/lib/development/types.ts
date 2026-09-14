@@ -16,6 +16,8 @@ export type MatchDevelopmentSummary = {
 };
 
 export type MatchDevelopmentParticipant = {
+  runes?: ParticipantRunes | null;
+  participantTotals?: ParticipantTotals | null;
   gameName?: string | null;
   tagLine?: string | null;
   summonerName?: string | null;
@@ -39,6 +41,26 @@ export type MatchDevelopmentParticipant = {
   endItemIds: number[];
 };
 
+export type RuneAvailability = "available" | "missing" | "unsupported" | "unverified";
+export type RuneMetric = {
+  id: string; label: string; availability: RuneAvailability; value: number | null;
+  unit: string; targetScope: string; timeScope: "end-of-game";
+  valueBasis: "source-reported" | "derived"; mappingVersion: string;
+};
+export type RuneCounters = { var1: number | null; var2: number | null; var3: number | null };
+export type RuneSelection = { runeId: number; metrics: RuneMetric[]; counters?: RuneCounters | null };
+export type RuneStyle = { styleId: number | null; role: "primaryStyle" | "subStyle" | "unknown"; selections: RuneSelection[] };
+export type ParticipantRunes = {
+  availability: RuneAvailability; matchPatch: string; normalizationVersion: string;
+  layoutManifestId: string | null; performanceStatus: RuneAvailability;
+  styles: RuneStyle[]; shards: { offense: number | null; flex: number | null; defense: number | null };
+};
+export type ParticipantTotals = {
+  totalDamageDealt: number | null; totalDamageDealtToChampions: number | null;
+  totalHeal: number | null; totalHealsOnTeammates: number | null;
+  totalDamageShieldedOnTeammates: number | null;
+};
+
 export type MatchDevelopmentSample = {
   timestampMs: number;
   goldDifference: number | null;
@@ -51,7 +73,13 @@ export type MatchDevelopmentSample = {
   focalXp: number | null;
 };
 
+export type EventTeamFact = {
+  teamId: number | null;
+  basis: "known" | "missing" | "conflicting" | "unsupported";
+};
+
 export type MatchDevelopmentEvent = {
+  presentation?: { actorTeam: EventTeamFact; objectTeam: EventTeamFact } | null;
   type?: string;
   frameAtMs?: number;
   frameEventIndex?: number;

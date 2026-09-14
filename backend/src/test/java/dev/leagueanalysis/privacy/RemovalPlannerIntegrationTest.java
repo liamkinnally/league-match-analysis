@@ -245,7 +245,8 @@ class RemovalPlannerIntegrationTest {
         for (var group : List.of(plan.puuidHashes(), plan.aliasHashes(), plan.matchHashes()))
             content.append(new TreeSet<>(group)).append('\n');
         for (String table : List.of("ingestion_run", "source_payload", "source_capture", "ingestion_item", "riot_identity",
-                "riot_match", "riot_team", "riot_participant", "participant_state_observation", "match_event", "evidence_coverage")) {
+                "riot_match", "riot_team", "riot_participant", "participant_state_observation", "match_event", "evidence_coverage",
+                "player_profile_current", "rank_refresh_state", "rank_observation")) {
             content.append(table.length()).append(':').append(table).append('\n');
             for (String row : jdbc.queryForList("select to_jsonb(t)::text from league_analysis." + table + " t order by to_jsonb(t)::text", String.class))
                 content.append(row.length()).append(':').append(row).append('\n');

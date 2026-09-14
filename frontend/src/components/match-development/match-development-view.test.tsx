@@ -54,6 +54,40 @@ const assets = {
   spells: {},
 };
 
+it("opens rune inspection without changing focus, comparison, interval or metric", () => {
+  window.history.replaceState(null, "", "/matches/NA1_7000000001/development?focus=6&compare=1&from=480000&to=600000&metric=xp");
+  render(<MatchDevelopmentView data={developmentFixture} interval={{ from: 480000, to: 600000 }} invented assets={assets} />);
+  fireEvent.click(screen.getByRole("tab", { name: "Runes" }));
+  expect(push).toHaveBeenLastCalledWith("/matches/NA1_7000000001/development?focus=6&compare=1&from=480000&to=600000&metric=xp&finalView=runes", { scroll: false });
+});
+
+it("keeps portrait inspection independent and preserves its URL state through analysis controls", () => {
+  window.history.replaceState(null, "", "/matches/NA1_7000000001/development?focus=6&compare=1&from=480000&to=600000&metric=cs&finalView=runes&runeParticipant=1");
+  const view = render(<MatchDevelopmentView data={developmentFixture} interval={{ from: 480000, to: 600000 }} invented assets={assets} />);
+  expect(screen.getByRole("tab", { name: "Runes" })).toHaveAttribute("aria-selected", "true");
+  expect(screen.getByRole("heading", { name: "Name unavailable · Darius" })).toBeVisible();
+  const portrait = screen.getByRole("button", { name: /Vi.*Team 200.*participant 7/ });
+  portrait.focus();
+  fireEvent.click(portrait);
+  expect(portrait).toHaveFocus();
+  expect(push).toHaveBeenLastCalledWith("/matches/NA1_7000000001/development?focus=6&compare=1&from=480000&to=600000&metric=cs&finalView=runes&runeParticipant=7", { scroll: false });
+  fireEvent.change(screen.getByRole("combobox", { name: "Compare with opponent" }), { target: { value: "2" } });
+  expect(push).toHaveBeenLastCalledWith("/matches/NA1_7000000001/development?focus=6&compare=2&from=480000&to=600000&metric=cs&finalView=runes&runeParticipant=1", { scroll: false });
+  const scoreboardLinks = view.container.querySelectorAll("#scoreboard a[href*='focus=']");
+  expect(scoreboardLinks.length).toBeGreaterThan(0);
+  for (const link of scoreboardLinks) expect(link.getAttribute("href")).toContain("finalView=runes&runeParticipant=1");
+});
+
+it("supports final-state keyboard tabs while keeping explicit rune participant", () => {
+  window.history.replaceState(null, "", "/matches/NA1_7000000001/development?focus=6&compare=1&runeParticipant=7");
+  render(<MatchDevelopmentView data={developmentFixture} interval={{ from: 480000, to: 600000 }} invented assets={assets} />);
+  const scoreboard = screen.getByRole("tab", { name: "Scoreboard" });
+  scoreboard.focus();
+  fireEvent.keyDown(scoreboard, { key: "ArrowRight" });
+  expect(screen.getByRole("tab", { name: "Runes" })).toHaveFocus();
+  expect(push).toHaveBeenLastCalledWith("/matches/NA1_7000000001/development?focus=6&compare=1&from=480000&to=600000&finalView=runes&runeParticipant=7", { scroll: false });
+});
+
 it("keeps result styling independent of team side and roster order", () => {
   render(
     <MatchDevelopmentView
@@ -498,4 +532,36 @@ it.each([12, 14])("shows ARAM map %i without Summoner's Rift roles, ranks, or ju
   expect(screen.getAllByText("Towers").length).toBeGreaterThan(0);
   const options = within(screen.getByRole("combobox", { name: "Compare with opponent" })).getAllByRole("option");
   expect(options.some(option => option.textContent?.includes("UNKNOWN"))).toBe(false);
+});
+
+it("returns to the originating history and preserves it across detail controls", () => {
+  const runId = "00000000-0000-0000-0000-000000000001";
+  window.history.replaceState(null, "", `/matches/NA1_7000000001/development?focus=6&compare=1&from=480000&to=600000&finalView=runes&runeParticipant=1&historyRunId=${runId}`);
+  const view = render(<MatchDevelopmentView data={developmentFixture} interval={{ from: 480000, to: 600000 }} invented assets={assets} />);
+  expect(screen.getByRole("link", { name: "Match history" })).toHaveAttribute("href", `/search?runId=${runId}`);
+  fireEvent.click(screen.getByRole("button", { name: /Vi.*Team 200.*participant 7/ }));
+  expect(push.mock.calls.at(-1)?.[0]).toContain(`runeParticipant=7&historyRunId=${runId}`);
+  fireEvent.click(screen.getByRole("tab", { name: "Runes" }));
+  expect(push.mock.calls.at(-1)?.[0]).toContain(`historyRunId=${runId}`);
+  fireEvent.change(screen.getByRole("combobox", { name: "Compare with opponent" }), { target: { value: "2" } });
+  expect(push.mock.calls.at(-1)?.[0]).toContain(`historyRunId=${runId}`);
+  for (const link of view.container.querySelectorAll("a[href*='/development?']")) expect(link.getAttribute("href")).toContain(`historyRunId=${runId}`);
+  fireEvent.click(screen.getByRole("tab", { name: "CS" }));
+  expect(new URLSearchParams(window.location.search).get("historyRunId")).toBe(runId);
+});
+it.each(["", "?historyRunId=https%3A%2F%2Fevil.example", "?historyRunId=bad"])("falls back to search for absent or invalid history origin %s", query => {
+  window.history.replaceState(null, "", `/matches/NA1_7000000001/development${query}`);
+  render(<MatchDevelopmentView data={developmentFixture} interval={{ from: 480000, to: 600000 }} invented assets={assets} />);
+  expect(screen.getByRole("link", { name: "Match history" })).toHaveAttribute("href", "/search");
+});
+
+it("restores the origin from browser navigation without deriving it from the focal player", () => {
+  const first = "00000000-0000-0000-0000-000000000001", second = "00000000-0000-0000-0000-000000000002";
+  window.history.replaceState(null, "", `/matches/NA1_7000000001/development?historyRunId=${first}`);
+  render(<MatchDevelopmentView data={developmentFixture} interval={{ from: 480000, to: 600000 }} invented assets={assets} />);
+  for (const runId of [second, first]) {
+    window.history.replaceState(null, "", `/matches/NA1_7000000001/development?focus=1&historyRunId=${runId}`);
+    fireEvent(window, new PopStateEvent("popstate"));
+    expect(screen.getByRole("link", { name: "Match history" })).toHaveAttribute("href", `/search?runId=${runId}`);
+  }
 });

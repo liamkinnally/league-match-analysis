@@ -55,3 +55,5 @@ Deleting application rows does not retroactively erase older backup files. The s
 Any database restored from a backup must be reconciled against the current external removal ledger before the application serves traffic. This prevents a restore from silently reintroducing data that had already been removed.
 
 The removal ledger is private operational data. It is not exposed through the application or included in the normal repository.
+
+Current profile data includes minimized profile icon and level observations, current ranked records, and discrete rank/LP observations collected during requested lookups. These follow the same manual retention and removal policy as stored matches. Removing a stored identity also removes its profile cache and rank observations; backup restoration must reconcile these records against the external removal ledger before serving traffic. No separate raw Summoner or League response archive is retained for this feature.

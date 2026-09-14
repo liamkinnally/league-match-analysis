@@ -1,6 +1,8 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import PlayerSearch from "./player-search";
+vi.mock("../lib/player-lookup/use-player-profile", () => ({ usePlayerProfile: () => ({ profile: null, issue: null, loading: false, loadingRecent: false, loadingOlder: false, busy: false, reload: vi.fn(), loadRecent: vi.fn(), loadOlder: vi.fn() }) }));
+vi.mock("./player-profile", () => ({ PlayerProfilePanel: ({ identity }: { identity: { gameName: string; tagLine: string } }) => <h2>{identity.gameName}<span>#{identity.tagLine}</span></h2> }));
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 const runId = "00000000-0000-0000-0000-000000000001";
@@ -80,7 +82,7 @@ it("polls at two-second intervals and exposes completed rows while lookup contin
   const fetcher = vi.fn().mockImplementation(async () => Response.json({ ...running, matches: [{ matchId: "NA1_7000000002", queueId: 420, participantId: 6, championName: "Garen", championId: 86, gameVersion: "16.17.1", endItemIds: [3071, 3047, 3053, 6333, 3065, 0, 3364], position: "TOP", win: true, startedAtMs: 1788890400000, durationSeconds: 1800, kills: 7, deaths: 2, assists: 9, cs: 180, gold: 12500, timelineAvailable: true }] }));
   vi.stubGlobal("fetch", fetcher);
   await act(async () => render(<PlayerSearch initialRunId={runId} />));
-  expect(screen.getByRole("link", { name: /Garen.*match development/ })).toHaveAttribute("href", "/matches/NA1_7000000002/development?focus=6");
+  expect(screen.getByRole("link", { name: /Garen.*match development/ })).toHaveAttribute("href", `/matches/NA1_7000000002/development?focus=6&historyRunId=${runId}`);
   await act(async () => vi.advanceTimersByTime(1999));
   expect(fetcher.mock.calls.filter(([url]) => String(url).startsWith("/api/player-matches"))).toHaveLength(1);
   await act(async () => vi.advanceTimersByTime(1));
@@ -196,4 +198,18 @@ it("keeps an empty raw page scoped to that page when older supported matches may
   expect(screen.getByText("Load older matches to continue through this player's history.")).toBeVisible();
   expect(screen.getByRole("button", { name: "Load older matches" })).toBeEnabled();
   expect(screen.queryByText("No supported matches found on NA1.")).not.toBeInTheDocument();
+});
+
+it("uses empty Doublelift/NA01 examples and never relabels loaded identity from edited inputs", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => Response.json({ ...running, status: "EMPTY", hasMore: false })));
+  const empty = render(<PlayerSearch />);
+  expect(screen.getByLabelText("Game name")).toHaveAttribute("placeholder", "ex. Doublelift");
+  expect(screen.getByLabelText("Tag line")).toHaveAttribute("placeholder", "NA01");
+  expect(screen.getByLabelText("Game name")).toHaveValue("");
+  expect(screen.getByLabelText("Tag line")).toHaveValue("");
+  empty.unmount();
+  await act(async () => render(<PlayerSearch initialRunId={runId} />));
+  fireEvent.change(screen.getByLabelText("Game name"), { target: { value: "Edited search" } });
+  expect(screen.getByRole("heading", { name: "Invented#NA1" })).toBeVisible();
+  expect(screen.queryByRole("heading", { name: /Edited search/ })).not.toBeInTheDocument();
 });

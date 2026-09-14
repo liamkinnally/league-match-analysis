@@ -18,7 +18,7 @@ test("player lookup", async ({ page, request }) => {
   const runId = new URL(page.url()).searchParams.get("runId");
   const row = page.getByRole("link", { name: "Garen victory match development" });
   await expect(row).toBeVisible({ timeout: 20000 });
-  await expect(row).toHaveAttribute("href", `/matches/${matchId}/development?focus=6`);
+  await expect(row).toHaveAttribute("href", `/matches/${matchId}/development?focus=6&historyRunId=${runId}`);
   const champion = row.getByRole("img", { name: "Garen" });
   await expect(champion).toBeVisible();
   await expect.poll(() => champion.evaluate(
@@ -36,7 +36,10 @@ test("player lookup", async ({ page, request }) => {
   await expect(page.getByRole("heading", { name: "Garen vs Darius" })).toBeVisible();
   await expect(page.getByText(/Garen extended his lead: CS \+4 to \+13/)).toBeVisible();
   await expect(page.getByRole("table", { name: "Before and after differences" })).toContainText("CS+4+13Gold+100+510XP+20+220");
-  await page.goBack();
+  await expect(page.getByRole("link", { name: "Match history", exact: true })).toHaveAttribute("href", `/search?runId=${runId}`);
+  await page.getByRole("tab", { name: "Runes", exact: true }).click();
+  await expect(page.getByRole("link", { name: "Match history", exact: true })).toHaveAttribute("href", `/search?runId=${runId}`);
+  await page.getByRole("link", { name: "Match history", exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`runId=${runId}`));
   await expect(row).toBeVisible();
 });
@@ -69,20 +72,20 @@ test("slow history keeps navigation and completed matches usable, then recovers 
       status: stage === "complete" ? "COMPLETE" : "RUNNING", message: null, retryNotBefore: null, queueId: 420, lastUpdated: null, nextRefreshAt: null, previousRunId: null, hasMore: true, matches: [match] }) });
   });
   await page.goto(`/search?runId=${runId}`);
-  await expect(page.getByRole("region", { name: "Player lookup" }).getByRole("status")).toContainText("Loading match history");
+  await expect(page.locator(".player-lookup__status").getByRole("status")).toContainText("Loading match history");
   await expect(page.getByRole("button", { name: "Find matches" })).toBeEnabled();
   stage = "running"; release?.();
   const row = page.getByRole("link", { name: "Garen victory match development" });
   await expect(row).toBeVisible();
   await expect(row.getByText("SUPPORT", { exact: true })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Player lookup" }).getByRole("status")).toContainText("1 match is ready to open");
+  await expect(page.locator(".player-lookup__status").getByRole("status")).toContainText("1 match is ready to open");
   await page.getByLabel("Game name").fill("Another player");
   stage = "failed";
   await expect(page.getByRole("region", { name: "Player lookup" }).getByRole("alert")).toBeVisible();
   await expect(row).toBeVisible();
   stage = "complete";
   await page.getByRole("button", { name: "Retry loading" }).click();
-  await expect(page.getByRole("region", { name: "Player lookup" }).getByRole("status")).toContainText("1 recent match — Ready to review");
+  await expect(page.locator(".player-lookup__status").getByRole("status")).toContainText("1 recent match — Ready to review");
   await expect(page.getByLabel("Game name")).toHaveValue("Another player");
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);

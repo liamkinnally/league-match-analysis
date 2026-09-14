@@ -53,7 +53,57 @@
         "item4": 0,
         "item5": 0,
         "item6": 3340,
-        "win": false
+        "win": false,
+        "perks": {
+          "statPerks": {
+            "offense": 5008,
+            "flex": 5008,
+            "defense": 5001
+          },
+          "styles": [
+            {
+              "description": "primaryStyle",
+              "style": 8000,
+              "selections": [
+                {
+                  "perk": 8010,
+                  "var1": 320,
+                  "var2": 0,
+                  "var3": 0
+                },
+                {
+                  "perk": 9111
+                },
+                {
+                  "perk": 9104
+                },
+                {
+                  "perk": 8299
+                }
+              ]
+            },
+            {
+              "description": "subStyle",
+              "style": 8400,
+              "selections": [
+                {
+                  "perk": 8444,
+                  "var1": 620,
+                  "var2": 0,
+                  "var3": 0
+                },
+                {
+                  "perk": 8451
+                }
+              ]
+            }
+          ]
+        },
+        "totalDamageDealt": 86000,
+        "totalDamageDealtToChampions": 18500,
+        "totalHeal": 2000,
+        "totalHealsOnTeammates": 0,
+        "totalDamageShieldedOnTeammates": 0
       },
       {
         "participantId": 2,
@@ -81,7 +131,54 @@
         "item4": 0,
         "item5": 0,
         "item6": 3364,
-        "win": false
+        "win": false,
+        "perks": {
+          "statPerks": {
+            "offense": 5008,
+            "flex": 5008,
+            "defense": 5001
+          },
+          "styles": [
+            {
+              "description": "primaryStyle",
+              "style": 8000,
+              "selections": [
+                {
+                  "perk": 8010,
+                  "var1": 320,
+                  "var2": 0,
+                  "var3": 0
+                },
+                {
+                  "perk": 9111
+                },
+                {
+                  "perk": 9104
+                },
+                {
+                  "perk": 8014
+                }
+              ]
+            },
+            {
+              "description": "subStyle",
+              "style": 8300,
+              "selections": [
+                {
+                  "perk": 8304
+                },
+                {
+                  "perk": 8347
+                }
+              ]
+            }
+          ]
+        },
+        "totalDamageDealt": 87000,
+        "totalDamageDealtToChampions": 19000,
+        "totalHeal": 2000,
+        "totalHealsOnTeammates": 0,
+        "totalDamageShieldedOnTeammates": 0
       },
       {
         "participantId": 3,
@@ -109,7 +206,57 @@
         "item4": 0,
         "item5": 0,
         "item6": 3340,
-        "win": false
+        "win": false,
+        "perks": {
+          "statPerks": {
+            "offense": 5008,
+            "flex": 5008,
+            "defense": 5001
+          },
+          "styles": [
+            {
+              "description": "primaryStyle",
+              "style": 8200,
+              "selections": [
+                {
+                  "perk": 8229,
+                  "var1": 1250,
+                  "var2": 0,
+                  "var3": 0
+                },
+                {
+                  "perk": 8226
+                },
+                {
+                  "perk": 8210
+                },
+                {
+                  "perk": 8237,
+                  "var1": 360,
+                  "var2": 0,
+                  "var3": 0
+                }
+              ]
+            },
+            {
+              "description": "subStyle",
+              "style": 8300,
+              "selections": [
+                {
+                  "perk": 8345
+                },
+                {
+                  "perk": 8347
+                }
+              ]
+            }
+          ]
+        },
+        "totalDamageDealt": 88000,
+        "totalDamageDealtToChampions": 19500,
+        "totalHeal": 2000,
+        "totalHealsOnTeammates": 0,
+        "totalDamageShieldedOnTeammates": 0
       },
       {
         "participantId": 4,
@@ -137,7 +284,54 @@
         "item4": 0,
         "item5": 0,
         "item6": 3340,
-        "win": false
+        "win": false,
+        "perks": {
+          "statPerks": {
+            "offense": 5008,
+            "flex": 5008,
+            "defense": 5001
+          },
+          "styles": [
+            {
+              "description": "primaryStyle",
+              "style": 8000,
+              "selections": [
+                {
+                  "perk": 8021,
+                  "var1": 850,
+                  "var2": 0,
+                  "var3": 0
+                },
+                {
+                  "perk": 8009
+                },
+                {
+                  "perk": 9103
+                },
+                {
+                  "perk": 8014
+                }
+              ]
+            },
+            {
+              "description": "subStyle",
+              "style": 8200,
+              "selections": [
+                {
+                  "perk": 8233
+                },
+                {
+                  "perk": 8236
+                }
+              ]
+            }
+          ]
+        },
+        "totalDamageDealt": 89000,
+        "totalDamageDealtToChampions": 20000,
+        "totalHeal": 2000,
+        "totalHealsOnTeammates": 0,
+        "totalDamageShieldedOnTeammates": 0
       },
       {
         "participantId": 5,
@@ -165,7 +359,60 @@
         "item4": 0,
         "item5": 0,
         "item6": 3364,
-        "win": false
+        "win": false,
+        "perks": {
+          "statPerks": {
+            "offense": 5008,
+            "flex": 5008,
+            "defense": 5001
+          },
+          "styles": [
+            {
+              "description": "primaryStyle",
+              "style": 8200,
+              "selections": [
+                {
+                  "perk": 8214,
+                  "var1": 740,
+                  "var2": 980,
+                  "var3": 0
+                },
+                {
+                  "perk": 8226
+                },
+                {
+                  "perk": 8210
+                },
+                {
+                  "perk": 8237,
+                  "var1": 360,
+                  "var2": 0,
+                  "var3": 0
+                }
+              ]
+            },
+            {
+              "description": "subStyle",
+              "style": 8400,
+              "selections": [
+                {
+                  "perk": 8463
+                },
+                {
+                  "perk": 8453,
+                  "var1": 350,
+                  "var2": 420,
+                  "var3": 0
+                }
+              ]
+            }
+          ]
+        },
+        "totalDamageDealt": 90000,
+        "totalDamageDealtToChampions": 20500,
+        "totalHeal": 2000,
+        "totalHealsOnTeammates": 0,
+        "totalDamageShieldedOnTeammates": 0
       },
       {
         "participantId": 6,
@@ -193,7 +440,57 @@
         "item4": 0,
         "item5": 0,
         "item6": 3340,
-        "win": true
+        "win": true,
+        "perks": {
+          "statPerks": {
+            "offense": 5008,
+            "flex": 5008,
+            "defense": 5001
+          },
+          "styles": [
+            {
+              "description": "primaryStyle",
+              "style": 8400,
+              "selections": [
+                {
+                  "perk": 8437,
+                  "var1": 576,
+                  "var2": 454,
+                  "var3": 0
+                },
+                {
+                  "perk": 8446
+                },
+                {
+                  "perk": 8444,
+                  "var1": 620,
+                  "var2": 0,
+                  "var3": 0
+                },
+                {
+                  "perk": 8451
+                }
+              ]
+            },
+            {
+              "description": "subStyle",
+              "style": 8000,
+              "selections": [
+                {
+                  "perk": 9111
+                },
+                {
+                  "perk": 8299
+                }
+              ]
+            }
+          ]
+        },
+        "totalDamageDealt": 91000,
+        "totalDamageDealtToChampions": 21000,
+        "totalHeal": 2000,
+        "totalHealsOnTeammates": 0,
+        "totalDamageShieldedOnTeammates": 0
       },
       {
         "participantId": 7,
@@ -221,7 +518,54 @@
         "item4": 0,
         "item5": 0,
         "item6": 3364,
-        "win": true
+        "win": true,
+        "perks": {
+          "statPerks": {
+            "offense": 5008,
+            "flex": 5008,
+            "defense": 5001
+          },
+          "styles": [
+            {
+              "description": "primaryStyle",
+              "style": 8100,
+              "selections": [
+                {
+                  "perk": 8112,
+                  "var1": 1100,
+                  "var2": 0,
+                  "var3": 0
+                },
+                {
+                  "perk": 8126
+                },
+                {
+                  "perk": 8140
+                },
+                {
+                  "perk": 8105
+                }
+              ]
+            },
+            {
+              "description": "subStyle",
+              "style": 8000,
+              "selections": [
+                {
+                  "perk": 9111
+                },
+                {
+                  "perk": 9104
+                }
+              ]
+            }
+          ]
+        },
+        "totalDamageDealt": 92000,
+        "totalDamageDealtToChampions": 21500,
+        "totalHeal": 2000,
+        "totalHealsOnTeammates": 0,
+        "totalDamageShieldedOnTeammates": 0
       },
       {
         "participantId": 8,
@@ -249,7 +593,57 @@
         "item4": 0,
         "item5": 0,
         "item6": 3340,
-        "win": true
+        "win": true,
+        "perks": {
+          "statPerks": {
+            "offense": 5008,
+            "flex": 5008,
+            "defense": 5001
+          },
+          "styles": [
+            {
+              "description": "primaryStyle",
+              "style": 8200,
+              "selections": [
+                {
+                  "perk": 8229,
+                  "var1": 1250,
+                  "var2": 0,
+                  "var3": 0
+                },
+                {
+                  "perk": 8226
+                },
+                {
+                  "perk": 8210
+                },
+                {
+                  "perk": 8237,
+                  "var1": 360,
+                  "var2": 0,
+                  "var3": 0
+                }
+              ]
+            },
+            {
+              "description": "subStyle",
+              "style": 8300,
+              "selections": [
+                {
+                  "perk": 8345
+                },
+                {
+                  "perk": 8347
+                }
+              ]
+            }
+          ]
+        },
+        "totalDamageDealt": 93000,
+        "totalDamageDealtToChampions": 22000,
+        "totalHeal": 2000,
+        "totalHealsOnTeammates": 0,
+        "totalDamageShieldedOnTeammates": 0
       },
       {
         "participantId": 9,
@@ -277,7 +671,51 @@
         "item4": 0,
         "item5": 0,
         "item6": 3340,
-        "win": true
+        "win": true,
+        "perks": {
+          "statPerks": {
+            "offense": 5008,
+            "flex": 5008,
+            "defense": 5001
+          },
+          "styles": [
+            {
+              "description": "primaryStyle",
+              "style": 8000,
+              "selections": [
+                {
+                  "perk": 8005
+                },
+                {
+                  "perk": 8009
+                },
+                {
+                  "perk": 9103
+                },
+                {
+                  "perk": 8014
+                }
+              ]
+            },
+            {
+              "description": "subStyle",
+              "style": 8200,
+              "selections": [
+                {
+                  "perk": 8233
+                },
+                {
+                  "perk": 8236
+                }
+              ]
+            }
+          ]
+        },
+        "totalDamageDealt": 94000,
+        "totalDamageDealtToChampions": 22500,
+        "totalHeal": 2000,
+        "totalHealsOnTeammates": 0,
+        "totalDamageShieldedOnTeammates": 0
       },
       {
         "participantId": 10,
@@ -305,7 +743,54 @@
         "item4": 0,
         "item5": 0,
         "item6": 3364,
-        "win": true
+        "win": true,
+        "perks": {
+          "statPerks": {
+            "offense": 5008,
+            "flex": 5008,
+            "defense": 5001
+          },
+          "styles": [
+            {
+              "description": "primaryStyle",
+              "style": 8400,
+              "selections": [
+                {
+                  "perk": 8439
+                },
+                {
+                  "perk": 8463
+                },
+                {
+                  "perk": 8473
+                },
+                {
+                  "perk": 8453,
+                  "var1": 350,
+                  "var2": 420,
+                  "var3": 0
+                }
+              ]
+            },
+            {
+              "description": "subStyle",
+              "style": 8300,
+              "selections": [
+                {
+                  "perk": 8304
+                },
+                {
+                  "perk": 8347
+                }
+              ]
+            }
+          ]
+        },
+        "totalDamageDealt": 95000,
+        "totalDamageDealtToChampions": 23000,
+        "totalHeal": 2000,
+        "totalHealsOnTeammates": 0,
+        "totalDamageShieldedOnTeammates": 0
       }
     ],
     "teams": [

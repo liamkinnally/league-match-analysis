@@ -1,0 +1,33 @@
+.entry-app .player-profile { margin-block: .8rem 1rem; border: 1px solid var(--development-line); border-radius: .3rem; background: var(--development-panel); color: var(--development-text); font-size: .8rem; }
+.player-profile__heading { display: flex; align-items: center; gap: .8rem; padding: .9rem 1rem; min-inline-size: 0; }
+.player-profile__heading > div { min-inline-size: 0; }
+.entry-app .player-profile h2 { margin: 0 0 .15rem; font-size: 1.2rem; line-height: 1.3; overflow-wrap: anywhere; }
+.player-profile h2 span { margin-inline-start: .3rem; color: var(--development-muted); font-size: .85em; font-weight: 450; }
+.player-profile__icon { display: grid; place-items: center; inline-size: 3.2rem; block-size: 3.2rem; flex: 0 0 3.2rem; object-fit: cover; background: var(--development-surface); border: 1px solid var(--development-line); border-radius: .2rem; color: var(--development-muted); }
+.player-profile__level { display: block; color: var(--development-muted); font-size: .75rem; }
+.player-profile__row { display: grid; grid-template-columns: 10.5rem minmax(0, 1fr); gap: .8rem; padding: .75rem 1rem; border-block-start: 1px solid var(--development-line); }
+.player-profile__row > div { min-inline-size: 0; }
+.player-profile__label { color: var(--development-muted); font-size: .75rem; }
+.player-profile strong { font-weight: 550; }
+.player-profile small { display: block; font-size: .71rem; color: var(--development-muted); line-height: 1.6; }
+.player-profile time { font-variant-numeric: tabular-nums; }
+.player-profile__rank { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0 .4rem; }
+.player-profile__rank-icon { inline-size: 1.8rem; block-size: 1.8rem; object-fit: contain; grid-row: span 2; }
+.player-profile__rank:has(.player-profile__rank-icon) .player-profile__freshness { grid-column: 2; }
+.player-profile__rank:not(:has(.player-profile__rank-icon)) { display: block; }
+.player-profile__recent-action { display: flex; align-items: center; flex-wrap: wrap; gap: .4rem .7rem; margin-block-start: .5rem; }
+.player-profile__notice { margin: 0; padding: .75rem 1rem; border-block-start: 1px solid var(--development-line); color: var(--development-muted); }
+.player-rank-observations summary { min-block-size: 2rem; padding-block: .3rem; cursor: pointer; color: var(--development-text); }
+.player-rank-observations summary span { color: var(--development-muted); margin-inline-start: .3rem; font-size: .7rem; }
+.player-rank-observations > p { margin: .3rem 0 .6rem; color: var(--development-muted); font-size: .72rem; line-height: 1.55; }
+.player-rank-observations ol { list-style: none; margin: .4rem 0; padding: 0; }
+.player-rank-observations li { display: grid; grid-template-columns: minmax(9rem, 1fr) minmax(8rem, 1fr) auto; gap: .4rem; padding-block: .55rem; border-block-start: 1px solid var(--development-line); font-size: .72rem; }
+.player-rank-observations li time, .player-rank-observations li > span { color: var(--development-muted); }
+@media (max-width: 600px) {
+  .entry-app .player-profile h2 { font-size: 1.05rem; }
+  .player-profile__heading { padding: .8rem; align-items: flex-start; }
+  .player-profile__row { grid-template-columns: minmax(0, 1fr); gap: .25rem; padding: .65rem .8rem; }
+  .player-rank-observations li { grid-template-columns: minmax(0, 1fr) auto; }
+  .player-rank-observations li time { grid-column: 1 / -1; }
+  .player-profile__recent-action .entry-button { inline-size: 100%; min-block-size: 2.5rem; }
+}

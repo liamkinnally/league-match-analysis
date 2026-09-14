@@ -6,6 +6,9 @@ import dev.leagueanalysis.ingestion.riot.application.IngestionItemStatus;
 import dev.leagueanalysis.ingestion.riot.application.IngestionRunStatus;
 import dev.leagueanalysis.ingestion.riot.application.RiotIngestionCommand;
 import dev.leagueanalysis.ingestion.riot.application.RiotIngestionStore;
+import dev.leagueanalysis.ingestion.riot.adapter.out.riot.MatchV5Decoder;
+import dev.leagueanalysis.ingestion.riot.adapter.out.riot.RiotPayloadException;
+import dev.leagueanalysis.ingestion.riot.domain.ParticipantDetails;
 import dev.leagueanalysis.ingestion.riot.domain.CapturedDocument;
 import dev.leagueanalysis.ingestion.riot.domain.ProviderDocument;
 import dev.leagueanalysis.ingestion.riot.domain.RiotAccount;
@@ -218,7 +221,11 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
     public Optional<Instant> latestCooldown() {
         requireHealthy();
         var value = jdbc.queryForObject("""
-                select max(retry_not_before) from league_analysis.ingestion_run where public_request
+                select max(retry_at) from (
+                    select retry_not_before retry_at from league_analysis.ingestion_run where public_request
+                    union all select retry_at from league_analysis.rank_refresh_state where error='RATE_LIMITED'
+                    union all select retry_at from league_analysis.player_profile_current where error='RATE_LIMITED'
+                ) cooldowns
                 """, OffsetDateTime.class);
         return Optional.ofNullable(value).map(OffsetDateTime::toInstant);
     }
@@ -245,7 +252,7 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
         requireHealthy();
         return jdbc.query("""
                 select id, requested_game_name, requested_tag_line, status, failure_code, retry_not_before,
-                    queue_id, completed_at, previous_run_id, has_more
+                    queue_id, completed_at, case when page_start > 0 then previous_run_id end as previous_run_id, has_more
                 from league_analysis.ingestion_run r where id = ? and public_request and lookup_kind = 'HISTORY'
                     and not league_analysis.privacy_blocked('puuid', resolved_puuid)
                 """, (rs, row) -> {
@@ -419,7 +426,7 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
     }
 
     private List<PublicMatchLookup.MatchSummary> publicMatches(UUID runId) {
-        return jdbc.query("""
+        var matches = jdbc.query("""
                 select m.match_id, m.queue_id, p.participant_id, p.champion_name, p.champion_id, m.game_version, p.end_item_ids::text, p.team_position,
                     p.win, coalesce(m.game_start_ms, m.game_creation_ms) started_at_ms, m.game_duration_seconds,
                     p.kills, p.deaths, p.assists, p.total_minions_killed + p.neutral_minions_killed cs,
@@ -442,6 +449,10 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
                 rs.getLong("game_duration_seconds"), rs.getInt("kills"), rs.getInt("deaths"),
                 rs.getInt("assists"), rs.getInt("cs"), rs.getInt("gold_earned"),
                 rs.getBoolean("timeline_available"), rs.getInt("queue_id")), runId);
+        // Only this already admitted page, at most twenty matches. Each enrichment
+        // commits separately and never acquires account/profile locks.
+        matches.forEach(match -> enrichParticipantDetails(match.matchId()));
+        return matches;
     }
 
     private List<Integer> itemIds(String encoded) {
@@ -645,6 +656,69 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
             insertEvents(materialization);
             insertCoverage(materialization);
         });
+    }
+
+    @Override
+    public boolean enrichParticipantDetails(String matchId) {
+        requireHealthy();
+        return Boolean.TRUE.equals(transactions.execute(status -> {
+            // Match removal takes this gate before table locks. Take it before
+            // match/participant locks too, including when no write is necessary.
+            jdbc.queryForObject("select pg_advisory_xact_lock_shared(?)::text", String.class,
+                    PrivacyRuntimeGuard.WRITE_LOCK);
+            requireHealthy();
+            lockMaterialization(matchId);
+            var sources = jdbc.query("""
+                    select m.detail_source_capture_id, c.source_payload_id, m.game_version, m.data_version,
+                        m.queue_id, m.map_id
+                    from league_analysis.riot_match m
+                    join league_analysis.source_capture c on c.id=m.detail_source_capture_id
+                    where m.match_id=? and c.source_kind='MATCH_DETAIL' and c.resource_key=m.match_id
+                        and not league_analysis.privacy_blocked('match', m.match_id)
+                    for update of m
+                    """, (rs, row) -> new DetailExtensionSource(rs.getObject(1, UUID.class),
+                    rs.getObject(2, UUID.class), rs.getString(3), rs.getString(4), rs.getInt(5), rs.getInt(6)), matchId);
+            if (sources.isEmpty()) return false;
+            var current = sources.getFirst();
+            var participants = jdbc.query("""
+                    select participant_id, puuid, team_id, champion_id, detail_extension_version
+                    from league_analysis.riot_participant where match_id=? order by participant_id for update
+                    """, (rs, row) -> new ExtensionParticipant(rs.getInt(1), rs.getString(2), rs.getInt(3),
+                    rs.getInt(4), rs.getString(5)), matchId);
+            if (participants.isEmpty() || participants.stream().noneMatch(p -> p.version() == null)) return false;
+            // Unknown/newer versions belong to another contract; never downgrade them.
+            if (participants.stream().anyMatch(p -> p.version() != null && !ParticipantDetails.VERSION.equals(p.version())))
+                return false;
+            var source = storedDetail(matchId);
+            if (source.isEmpty()) return false;
+            var document = source.orElseThrow();
+            RiotMatchMaterialization decoded;
+            try {
+                decoded = new MatchV5Decoder().decode(new CapturedDocument(current.payloadId(),
+                        current.captureId(), document), Optional.empty());
+            } catch (IllegalArgumentException | RiotPayloadException invalidRetainedDetail) {
+                // Keep old rows available with explicitly missing extensions.
+                return false;
+            }
+            var match = decoded.match();
+            if (!matchId.equals(match.matchId()) || !current.gameVersion().equals(match.gameVersion())
+                    || !current.dataVersion().equals(match.dataVersion()) || current.queueId() != match.queueId()
+                    || current.mapId() != match.mapId()
+                    || (document.providerGameVersion() != null && !current.gameVersion().equals(document.providerGameVersion())))
+                return false;
+            var memberships = decoded.participants().stream().map(p -> new ExtensionParticipant(
+                    p.participantId(), p.puuid(), p.teamId(), p.championId(), null))
+                    .sorted(java.util.Comparator.comparingInt(ExtensionParticipant::id)).toList();
+            var expected = participants.stream().map(p -> new ExtensionParticipant(p.id(), p.puuid(),
+                    p.teamId(), p.championId(), null)).toList();
+            if (!memberships.equals(expected)) return false;
+            requireHealthy();
+            for (var participant : decoded.participants()) {
+                if (participants.stream().anyMatch(p -> p.id() == participant.participantId() && p.version() == null))
+                    writeParticipantDetails(participant);
+            }
+            return true;
+        }));
     }
 
     @Override
@@ -908,7 +982,22 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
                     participant.goldSpent(), participant.visionScore(),
                     participant.summonerSpellOneId(), participant.summonerSpellTwoId(),
                     participant.win(), json.writeValueAsString(participant.endItemIds()));
+            writeParticipantDetails(participant);
         }
+    }
+
+    private void writeParticipantDetails(dev.leagueanalysis.ingestion.riot.domain.ParticipantFact participant) {
+        var details = participant.details();
+        jdbc.update("""
+                update league_analysis.riot_participant set rune_snapshot=cast(? as jsonb),
+                    participant_totals=cast(? as jsonb), game_ended_in_early_surrender=?,
+                    game_ended_in_surrender=?, team_early_surrendered=?, detail_extension_version=?
+                where match_id=? and participant_id=? and puuid=?
+                """, details.runes() == null ? null : json.writeValueAsString(details.runes()),
+                json.writeValueAsString(details.totals()), details.gameEndedInEarlySurrender(),
+                details.gameEndedInSurrender(), details.teamEarlySurrendered(),
+                dev.leagueanalysis.ingestion.riot.domain.ParticipantDetails.VERSION,
+                participant.matchId(), participant.participantId(), participant.puuid());
     }
 
     private void insertObservations(RiotMatchMaterialization materialization) {
@@ -966,4 +1055,7 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
     }
 
     private record RunItemCaptures(UUID detailCaptureId, UUID timelineCaptureId) {}
+    private record DetailExtensionSource(UUID captureId, UUID payloadId, String gameVersion, String dataVersion,
+            int queueId, int mapId) {}
+    private record ExtensionParticipant(int id, String puuid, int teamId, int championId, String version) {}
 }

@@ -85,6 +85,7 @@ final class PublicHistoryWork implements PublicIngestionWork {
         }
         store.markItemRunning(runId, id, clock.instant());
         if (pages.hasSummary(id, account.puuid(), command.queueId())) {
+            store.enrichParticipantDetails(id);
             complete(id);
             return false;
         }

@@ -181,7 +181,7 @@ public class MatchV5Decoder {
                             requiredInt(node, "item3"),
                             requiredInt(node, "item4"),
                             requiredInt(node, "item5"),
-                            requiredInt(node, "item6"))));
+                            requiredInt(node, "item6")), ParticipantDetailsDecoder.decode(node)));
         }
         return participants;
     }

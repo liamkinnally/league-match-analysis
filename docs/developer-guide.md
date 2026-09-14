@@ -47,7 +47,7 @@ docker compose down
 | `/api/player-matches/{runId}` | Next.js proxy for polling a lookup |
 | `/api/health` | Frontend-to-backend health check |
 
-The match-development page preserves `focus`, `compare`, `from`, `to` and `metric` selections in the URL. Timeline endpoints are exact recorded sample timestamps.
+The match-development page preserves `focus`, `compare`, `from`, `to`, `metric`, `finalView`, `runeParticipant` and the originating `historyRunId` selections in the URL. Timeline endpoints are exact recorded sample timestamps.
 
 ## Local Riot ingestion
 

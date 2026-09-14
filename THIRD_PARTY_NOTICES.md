@@ -32,4 +32,8 @@ SOFTWARE.
 
 League of Legends images and game data belong to Riot Games. See the [Riot notice](README.md#riot-notice).
 
+The bounded rune layout datasets in `frontend/src/lib/game-assets/metadata/` are projections of Riot Data Dragon and CommunityDragon patch 16.17 and 16.18 metadata. Source URLs and separate original/projection SHA-256 hashes are recorded in `frontend/src/lib/game-assets/manifest.ts`. They describe rune identity and layout, not verified interpretations of recorded rune performance counters.
+
+Provider artwork under `frontend/e2e/support/art/` is retained for deterministic, offline interface verification. Its source URLs, retrieval dates, and exact file hashes are recorded in that directory's `manifest.json`. The surrounding match fixtures are synthetic; the artwork is provider content. CommunityDragon serves extracted Riot assets and metadata; see its [asset documentation](https://github.com/CommunityDragon/docs/blob/master/assets.md).
+
 The Apache Maven wrapper retains its Apache 2.0 notices in the wrapper files. Dependency licenses remain with their packages, including the SIL Open Font License 1.1 supplied with Instrument Sans. These notices do not grant a license to the rest of this repository.

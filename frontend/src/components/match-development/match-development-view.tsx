@@ -3,16 +3,17 @@
 import { PRODUCT_NAME } from "../../lib/product";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { DevelopmentFooter } from "../development-footer";
 import { DeferredTimeline } from "./deferred-timeline";
 import { AreaTimeline } from "./area-timeline";
 import { TeamResults } from "./team-results";
 import { AverageRank } from "./ranks";
 import { Scoreboard } from "./scoreboard";
+import { FinalStatePanel } from "./final-state-panel";
 import { EventFeed } from "./event-feed";
 import { SampledValues } from "./sampled-values";
-import { developmentHref } from "../../lib/development/route";
+import { developmentHref, parseDevelopmentSearch, type FinalStateSelection } from "../../lib/development/route";
 import {
   timeLabel as gameTime,
   displayValue,
@@ -39,6 +40,7 @@ function windowHref(
   data: MatchDevelopment,
   window: MatchDevelopmentWindow,
   metric: Metric,
+  finalState: FinalStateSelection,
 ) {
   return developmentHref(
     data.matchId,
@@ -46,6 +48,7 @@ function windowHref(
     data.summary.compareParticipantId ?? undefined,
     { from: window.startMs, to: window.endMs },
     metric,
+    finalState,
   );
 }
 function differenceValue(value: number | null) {
@@ -66,6 +69,9 @@ export function MatchDevelopmentView({
   assets?: GameAssetCatalog | null;
 }) {
   const search = useSearchParams();
+  const router = useRouter();
+  const runeState = parseDevelopmentSearch({ historyRunId: search.getAll("historyRunId").length === 1 ? search.get("historyRunId") ?? undefined : undefined, finalView: search.get("finalView") ?? undefined, runeParticipant: search.get("runeParticipant") ?? undefined });
+  const finalState: FinalStateSelection = { historyRunId: runeState.historyRunId, finalView: runeState.finalView, runeParticipant: search.get("runeParticipant") ?? undefined };
   const requestedMetric = search.get("metric");
   const metric: Metric =
     requestedMetric === "cs" || requestedMetric === "xp"
@@ -79,6 +85,7 @@ export function MatchDevelopmentView({
   };
   const loadedAssets = useGameAssetCatalogs(
     initialAssets === undefined ? [data.summary.gameVersion] : [],
+    { championIds: data.roster.map(person => person.championId), includeRunes: true },
   );
   const assets =
     initialAssets === undefined
@@ -120,6 +127,7 @@ export function MatchDevelopmentView({
         </Link>
         <nav aria-label="Product navigation">
           <Link href="/">Home</Link>
+          <Link href={runeState.historyRunId ? `/search?runId=${runeState.historyRunId}` : "/search"}>Match history</Link>
           <span aria-current="page">Match detail</span>
         </nav>
         <span className="development-region">
@@ -191,6 +199,7 @@ export function MatchDevelopmentView({
               assets={assets}
               metric={metric}
               onMetric={setMetric}
+              finalState={finalState}
             />}
           </div>
           {data.timelineAvailable && data.samples.length ? (
@@ -219,7 +228,7 @@ export function MatchDevelopmentView({
                             }
                             aria-current={current ? "true" : undefined}
                             aria-label={`${gameTime(window.startMs)}–${gameTime(window.endMs)} ${window.summary}`}
-                            href={windowHref(data, window, metric)}
+                            href={windowHref(data, window, metric, finalState)}
                           >
                             <strong>
                               {gameTime(window.startMs)}–
@@ -258,7 +267,7 @@ export function MatchDevelopmentView({
                               <tr key={window.id}>
                                 <td>
                                   <Link
-                                    href={windowHref(data, window, metric)}
+                                    href={windowHref(data, window, metric, finalState)}
                                     scroll={false}
                                     aria-current={
                                       window.id === selectedWindow?.id
@@ -381,13 +390,17 @@ export function MatchDevelopmentView({
             </div>
           ) : null}
         </section>
+        <FinalStatePanel data={data} assets={assets} view={runeState.finalView} participantId={runeState.runeParticipant} invalidSelection={runeState.hasInvalidRuneSelection}
+          onChange={next => router.push(developmentHref(data.matchId, data.summary.focusParticipantId, data.summary.compareParticipantId ?? undefined, interval, metric, { ...finalState, ...next }), { scroll: false })}>
         <Scoreboard
           data={data}
           interval={interval}
           assets={assets}
           ranks={ranks}
           metric={metric}
+          finalState={finalState}
         />
+        </FinalStatePanel>
       </div>
       <DevelopmentFooter />
     </main>

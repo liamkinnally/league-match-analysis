@@ -1,3 +1,5 @@
+import { rankAsset } from "../game-assets/event-assets";
+import { CURRENT_PROFILE_ART_PATCH } from "../game-assets/manifest";
 import type {
   FinalTeamResult,
   MatchDevelopment,
@@ -105,7 +107,7 @@ const DIVISIONS = ["IV", "III", "II", "I"];
 export const AVERAGE_RANK_METHOD =
   "Mean of confirmed current ranks in the selected queue, rounded to the nearest step (halfway rounds higher). Iron IV = 0 through Diamond I = 27; Master = 28, Grandmaster = 29, Challenger = 30. Each high tier is one equal display step. Unranked and unavailable players are excluded. LP is ignored; this is not MMR or a historical match rank.";
 export const rankEmblem = (tier: string) =>
-  `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/images/${tier.toLowerCase()}.png`;
+  rankAsset(tier, CURRENT_PROFILE_ART_PATCH)?.imageUrl ?? null;
 export function rankOrdinal(
   tier: string | null | undefined,
   division: string | null | undefined,

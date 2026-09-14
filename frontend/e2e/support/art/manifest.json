@@ -1,0 +1,1384 @@
+{
+  "description": "Riot provider artwork. Synthetic match data is defined separately in the test fixtures. URLs and exact file hashes record the retrieved art, not an immutable CDN guarantee.",
+  "assets": {
+    "champion-61": {
+      "name": "Orianna",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/champion/Orianna.png",
+      "file": "champion-61.png",
+      "sha256": "7d70d8bcb2991de3f3512efb565c453a9d470dca78088c05aec3691d22dd7511",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/champion/Orianna.png",
+          "sha256": "7d70d8bcb2991de3f3512efb565c453a9d470dca78088c05aec3691d22dd7511",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "champion-64": {
+      "name": "Lee Sin",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/champion/LeeSin.png",
+      "file": "champion-64.png",
+      "sha256": "890f439dd16bfa686b3c6f06f9749eb5477e5b706a8ff85cb8161f91adcff9a8",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/champion/LeeSin.png",
+          "sha256": "890f439dd16bfa686b3c6f06f9749eb5477e5b706a8ff85cb8161f91adcff9a8",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "champion-86": {
+      "name": "Garen",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/champion/Garen.png",
+      "file": "champion-86.png",
+      "sha256": "53018603962e1867b391071f159bb4c60d57919422585c33bfd36551e97f3752",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/champion/Garen.png",
+          "sha256": "53018603962e1867b391071f159bb4c60d57919422585c33bfd36551e97f3752",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "champion-103": {
+      "name": "Ahri",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/champion/Ahri.png",
+      "file": "champion-103.png",
+      "sha256": "8e93368d97e3d302463c4e83ac5980d1f0a3a0aaf92ac44435730fecbd55b565",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/champion/Ahri.png",
+          "sha256": "8e93368d97e3d302463c4e83ac5980d1f0a3a0aaf92ac44435730fecbd55b565",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "champion-111": {
+      "name": "Nautilus",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/champion/Nautilus.png",
+      "file": "champion-111.png",
+      "sha256": "6e8dfa2e6ba3d4564745fe69ace7c796898aa023a2af2727b0be127316712c2c",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/champion/Nautilus.png",
+          "sha256": "6e8dfa2e6ba3d4564745fe69ace7c796898aa023a2af2727b0be127316712c2c",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "champion-122": {
+      "name": "Darius",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/champion/Darius.png",
+      "file": "champion-122.png",
+      "sha256": "4c73167413335e00b3ece58fadaa495a0c3fe05184b246b0f8b9af923a0d3d81",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/champion/Darius.png",
+          "sha256": "4c73167413335e00b3ece58fadaa495a0c3fe05184b246b0f8b9af923a0d3d81",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "champion-145": {
+      "name": "Kai\u2019Sa",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/champion/Kaisa.png",
+      "file": "champion-145.png",
+      "sha256": "e0e86ccb7143d20bcbd83f192530f9712bf4b1d6306ec07a06992d4b72676443",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/champion/Kaisa.png",
+          "sha256": "e0e86ccb7143d20bcbd83f192530f9712bf4b1d6306ec07a06992d4b72676443",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "champion-222": {
+      "name": "Jinx",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/champion/Jinx.png",
+      "file": "champion-222.png",
+      "sha256": "2777d44345974b93f8af378430811670566d0451b6410b2caff2984e93797357",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/champion/Jinx.png",
+          "sha256": "2777d44345974b93f8af378430811670566d0451b6410b2caff2984e93797357",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "champion-254": {
+      "name": "Vi",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/champion/Vi.png",
+      "file": "champion-254.png",
+      "sha256": "282bd7a3e6a3bdd309f90eebf03b1fb7009a5357e6f53e158dd8c7df8103b4ab",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/champion/Vi.png",
+          "sha256": "282bd7a3e6a3bdd309f90eebf03b1fb7009a5357e6f53e158dd8c7df8103b4ab",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "champion-412": {
+      "name": "Thresh",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/champion/Thresh.png",
+      "file": "champion-412.png",
+      "sha256": "27f9bfc32eb28d9e17e42e29f8d555c91110e040991d56577f433ddc9eca6c7e",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/champion/Thresh.png",
+          "sha256": "27f9bfc32eb28d9e17e42e29f8d555c91110e040991d56577f433ddc9eca6c7e",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "item-1028": {
+      "name": "Item 1028",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/item/1028.png",
+      "file": "item-1028.png",
+      "sha256": "90f702e7d757914c96e546ae4076b624800dafc140edffac70733f104684b412",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1028.png",
+          "sha256": "90f702e7d757914c96e546ae4076b624800dafc140edffac70733f104684b412",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "item-1037": {
+      "name": "Item 1037",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/item/1037.png",
+      "file": "item-1037.png",
+      "sha256": "427e176835357420964f6207baf2d07f9273e1f64d33a1d9854655e77ee8d230",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1037.png",
+          "sha256": "427e176835357420964f6207baf2d07f9273e1f64d33a1d9854655e77ee8d230",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "item-1042": {
+      "name": "Item 1042",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/item/1042.png",
+      "file": "item-1042.png",
+      "sha256": "b62b8823a2728891fa67c83054f8ae1d2f7656424b84b5288a5900529cd8a264",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1042.png",
+          "sha256": "b62b8823a2728891fa67c83054f8ae1d2f7656424b84b5288a5900529cd8a264",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "item-1058": {
+      "name": "Item 1058",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/item/1058.png",
+      "file": "item-1058.png",
+      "sha256": "8a942c70b61d633074a237f6858742585e35146a8f6618ae3d8e07c8091063f4",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1058.png",
+          "sha256": "8a942c70b61d633074a237f6858742585e35146a8f6618ae3d8e07c8091063f4",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "item-2055": {
+      "name": "Item 2055",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/item/2055.png",
+      "file": "item-2055.png",
+      "sha256": "2a6b005ac7fef2f8715b10e648c1a8b8dfaeac6e79e12e020fd2cca818e9348a",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/2055.png",
+          "sha256": "2a6b005ac7fef2f8715b10e648c1a8b8dfaeac6e79e12e020fd2cca818e9348a",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "item-3006": {
+      "name": "Item 3006",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/item/3006.png",
+      "file": "item-3006.png",
+      "sha256": "81089b0f6e9514f812189ee9b664e44045933c812ef3a62c0732cc2655397264",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3006.png",
+          "sha256": "81089b0f6e9514f812189ee9b664e44045933c812ef3a62c0732cc2655397264",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "item-3020": {
+      "name": "Item 3020",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/item/3020.png",
+      "file": "item-3020.png",
+      "sha256": "0204f61a81aa9c3ef318dd27ed272e8c83e12009ce37a23d7c6193f9d991261b",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3020.png",
+          "sha256": "0204f61a81aa9c3ef318dd27ed272e8c83e12009ce37a23d7c6193f9d991261b",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "item-3031": {
+      "name": "Item 3031",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/item/3031.png",
+      "file": "item-3031.png",
+      "sha256": "39382e1bef39a48d14e6d37e52e9d02068df9153ca60c2bcca033dd276fae5df",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3031.png",
+          "sha256": "39382e1bef39a48d14e6d37e52e9d02068df9153ca60c2bcca033dd276fae5df",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "item-3047": {
+      "name": "Item 3047",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/item/3047.png",
+      "file": "item-3047.png",
+      "sha256": "22bc8d6451e5a100d06dd80b1c97600e991db20a2f9fd1eb8da151afc23881a1",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3047.png",
+          "sha256": "22bc8d6451e5a100d06dd80b1c97600e991db20a2f9fd1eb8da151afc23881a1",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "item-3051": {
+      "name": "Item 3051",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/item/3051.png",
+      "file": "item-3051.png",
+      "sha256": "14fabb078fa73f97745951ea865ec1bc7ea5b0cf2f3769c3917710b6a329b75f",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3051.png",
+          "sha256": "14fabb078fa73f97745951ea865ec1bc7ea5b0cf2f3769c3917710b6a329b75f",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "item-3065": {
+      "name": "Item 3065",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/item/3065.png",
+      "file": "item-3065.png",
+      "sha256": "2e42844fe60ba038f5a3402abb4d1e42578acb032ad934c6e5cf883a7df92421",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3065.png",
+          "sha256": "2e42844fe60ba038f5a3402abb4d1e42578acb032ad934c6e5cf883a7df92421",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "item-3071": {
+      "name": "Item 3071",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/item/3071.png",
+      "file": "item-3071.png",
+      "sha256": "fcb008f805d2bfeb63b3ea183d833fd63c2ef13b04c9ae2d67bc6ddfa3e77989",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3071.png",
+          "sha256": "fcb008f805d2bfeb63b3ea183d833fd63c2ef13b04c9ae2d67bc6ddfa3e77989",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "item-3089": {
+      "name": "Item 3089",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/item/3089.png",
+      "file": "item-3089.png",
+      "sha256": "ad77331bb9a325db9536f5614f3ca3516e24279406123f2892eb33ee419d369b",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3089.png",
+          "sha256": "ad77331bb9a325db9536f5614f3ca3516e24279406123f2892eb33ee419d369b",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "item-3109": {
+      "name": "Item 3109",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/item/3109.png",
+      "file": "item-3109.png",
+      "sha256": "3b7dd8a37b86c923e7ebc8a1530982a8e7be218c95f93ebd05460914de56f109",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3109.png",
+          "sha256": "3b7dd8a37b86c923e7ebc8a1530982a8e7be218c95f93ebd05460914de56f109",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "item-3190": {
+      "name": "Item 3190",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/item/3190.png",
+      "file": "item-3190.png",
+      "sha256": "c4db34bc5eac5723f688b2830c45fe0a1c23249bb865a6782634639ae3fd9401",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3190.png",
+          "sha256": "c4db34bc5eac5723f688b2830c45fe0a1c23249bb865a6782634639ae3fd9401",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "item-3340": {
+      "name": "Item 3340",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/item/3340.png",
+      "file": "item-3340.png",
+      "sha256": "a7153d00ff55d5165ac8c6d113681582d0c2902330c44cb12141472415c1c722",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3340.png",
+          "sha256": "a7153d00ff55d5165ac8c6d113681582d0c2902330c44cb12141472415c1c722",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "item-3363": {
+      "name": "Item 3363",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/item/3363.png",
+      "file": "item-3363.png",
+      "sha256": "b6a5c5c4734269116b9325dff2aab9ef9b711f85d815883b69494471911e35e3",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3363.png",
+          "sha256": "b6a5c5c4734269116b9325dff2aab9ef9b711f85d815883b69494471911e35e3",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "item-3364": {
+      "name": "Item 3364",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/item/3364.png",
+      "file": "item-3364.png",
+      "sha256": "e4361d1e905557df0b4eebc224665f3fab43ac6106f4ec3536bd785d593b26ec",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3364.png",
+          "sha256": "e4361d1e905557df0b4eebc224665f3fab43ac6106f4ec3536bd785d593b26ec",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "item-6631": {
+      "name": "Item 6631",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/item/6631.png",
+      "file": "item-6631.png",
+      "sha256": "f24121688bf9d5f1e31b47a0d432d82416cda050667633af8f5b7688570acf98",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6631.png",
+          "sha256": "f24121688bf9d5f1e31b47a0d432d82416cda050667633af8f5b7688570acf98",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "item-6655": {
+      "name": "Item 6655",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/item/6655.png",
+      "file": "item-6655.png",
+      "sha256": "4db05b7a2a461db8c6b4cff7053653f755ed2d0442e2133d1c4131a77d832a7b",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6655.png",
+          "sha256": "4db05b7a2a461db8c6b4cff7053653f755ed2d0442e2133d1c4131a77d832a7b",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "item-6657": {
+      "name": "Item 6657",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/item/6657.png",
+      "file": "item-6657.png",
+      "sha256": "5912345a763703373d2e559e4e49255fdfbc473b25773af9b6cbbfc819dbba72",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6657.png",
+          "sha256": "5912345a763703373d2e559e4e49255fdfbc473b25773af9b6cbbfc819dbba72",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "item-6672": {
+      "name": "Item 6672",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/item/6672.png",
+      "file": "item-6672.png",
+      "sha256": "a0a6990103df12899a7113e6c532f06b7ce6112233992ea5c7e8999d204ee8f8",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6672.png",
+          "sha256": "a0a6990103df12899a7113e6c532f06b7ce6112233992ea5c7e8999d204ee8f8",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "spell-4": {
+      "name": "Flash",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/spell/SummonerFlash.png",
+      "file": "spell-4.png",
+      "sha256": "1272fe7b3275c0afc872a6aaa6b65e27d41572d57f9ce19b9ed81b79aa5eb2aa",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/spell/SummonerFlash.png",
+          "sha256": "1272fe7b3275c0afc872a6aaa6b65e27d41572d57f9ce19b9ed81b79aa5eb2aa",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "spell-7": {
+      "name": "Heal",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/spell/SummonerHeal.png",
+      "file": "spell-7.png",
+      "sha256": "ccebc4b0554572a041b2b5014f25a84d7265c371e97448a516765aaad651dc55",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/spell/SummonerHeal.png",
+          "sha256": "ccebc4b0554572a041b2b5014f25a84d7265c371e97448a516765aaad651dc55",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "spell-11": {
+      "name": "Smite",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/spell/SummonerSmite.png",
+      "file": "spell-11.png",
+      "sha256": "f07e92e0ded6fae182b1d66191a62dcaf5fcf207a0d9622105e00c39c27a0a28",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/spell/SummonerSmite.png",
+          "sha256": "f07e92e0ded6fae182b1d66191a62dcaf5fcf207a0d9622105e00c39c27a0a28",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "spell-12": {
+      "name": "Teleport",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/spell/SummonerTeleport.png",
+      "file": "spell-12.png",
+      "sha256": "9b86d0c879504d7ad22815084efb0c59521a40edf5bc6bf85031db9f5e2e976f",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/spell/SummonerTeleport.png",
+          "sha256": "9b86d0c879504d7ad22815084efb0c59521a40edf5bc6bf85031db9f5e2e976f",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "spell-14": {
+      "name": "Ignite",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/spell/SummonerDot.png",
+      "file": "spell-14.png",
+      "sha256": "958db3407c83a9499a5e464c2e37df59c6544590dcd3d822965a83740303b9af",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/spell/SummonerDot.png",
+          "sha256": "958db3407c83a9499a5e464c2e37df59c6544590dcd3d822965a83740303b9af",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "tree-8100": {
+      "name": "Domination",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/7200_Domination.png",
+      "file": "tree-8100.png",
+      "sha256": "5982e902c9049bd357e18fa4914290906468a554645735aa2c10b8f36c87868c",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8112": {
+      "name": "Electrocute",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Domination/Electrocute/Electrocute.png",
+      "file": "rune-8112.png",
+      "sha256": "6e900ec70646a691dd71806938cfcef5d55c2a59fe1acca68475ca35c73636d3",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8128": {
+      "name": "Dark Harvest",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Domination/DarkHarvest/DarkHarvest.png",
+      "file": "rune-8128.png",
+      "sha256": "bf3a0943bf6af128ce579463862cebca81e97d948b5b92afb9d1427a2fabc1fa",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-9923": {
+      "name": "Hail of Blades",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Domination/HailOfBlades/HailOfBlades.png",
+      "file": "rune-9923.png",
+      "sha256": "279c2ad940f3b5a33cd6f08b1718cdfe73e2c3ea3117f3361fd02df6f26fdd13",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8126": {
+      "name": "Cheap Shot",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Domination/CheapShot/CheapShot.png",
+      "file": "rune-8126.png",
+      "sha256": "f39d286e4256d3c13259600a044f1ee242b4febb05675e786a5145fa14c38974",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8139": {
+      "name": "Taste of Blood",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Domination/TasteOfBlood/GreenTerror_TasteOfBlood.png",
+      "file": "rune-8139.png",
+      "sha256": "0a8ee6585ba4c5ef6200d77189e98bd123c195de49f615a6d10ae5436b545b8e",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8143": {
+      "name": "Sudden Impact",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Domination/SuddenImpact/SuddenImpact.png",
+      "file": "rune-8143.png",
+      "sha256": "2fc29e67ce07d5bbf17824714c01b0cc8cf058d597cb79bfa03c4c08ce039afe",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8137": {
+      "name": "Sixth Sense",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Domination/SixthSense/SixthSense.png",
+      "file": "rune-8137.png",
+      "sha256": "26ed90469d05e8b69ba91568e6d9242db3777f94f2bde5ad160811f09217ac1d",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8140": {
+      "name": "Grisly Mementos",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Domination/GrislyMementos/GrislyMementos.png",
+      "file": "rune-8140.png",
+      "sha256": "86b3e368755f32dbec2f0208d1c6325d88085e1f5f50c4342cba89461d64ed20",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8141": {
+      "name": "Deep Ward",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Domination/DeepWard/DeepWard.png",
+      "file": "rune-8141.png",
+      "sha256": "8de75a8b5ce0417ddba0ef1fd4143cf6bff912199811b3eeced1f70f03fe06f4",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8135": {
+      "name": "Treasure Hunter",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Domination/TreasureHunter/TreasureHunter.png",
+      "file": "rune-8135.png",
+      "sha256": "8def01263d23ea7f7601eaa0bfa0f56a83247c9dd94d1b57b3805299b076a482",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8105": {
+      "name": "Relentless Hunter",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Domination/RelentlessHunter/RelentlessHunter.png",
+      "file": "rune-8105.png",
+      "sha256": "22dc1799cc07e5c62b221614963eb0aa6bd80f4521026279e6514e181d3899b9",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8106": {
+      "name": "Ultimate Hunter",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Domination/UltimateHunter/UltimateHunter.png",
+      "file": "rune-8106.png",
+      "sha256": "208f95819b2aa65d1f2a8aa38498b13d495464f1ed622e7ce39c3709d7ac63be",
+      "retrievedAt": "2026-09-14"
+    },
+    "tree-8300": {
+      "name": "Inspiration",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/7203_Whimsy.png",
+      "file": "tree-8300.png",
+      "sha256": "0fe0ea987bdad4aa595bded9d04716c5b77c00b0002177975158253146aed733",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8351": {
+      "name": "Glacial Augment",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Inspiration/GlacialAugment/GlacialAugment.png",
+      "file": "rune-8351.png",
+      "sha256": "5e82f4855c198ccdfa58ebc56d0aaec0d654423d8289521632580cf24597a98e",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8360": {
+      "name": "Unsealed Spellbook",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Inspiration/UnsealedSpellbook/UnsealedSpellbook.png",
+      "file": "rune-8360.png",
+      "sha256": "db2edc2719a68639c40955593975fc8fcc36ada206d9348ccb9db0b566a6f226",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8369": {
+      "name": "First Strike",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Inspiration/FirstStrike/FirstStrike.png",
+      "file": "rune-8369.png",
+      "sha256": "1f901df7b83c4ad0c3456d605d83e5ecaa0072a0640bf9ea2749323169f9580d",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8306": {
+      "name": "Hextech Flashtraption",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Inspiration/HextechFlashtraption/HextechFlashtraption.png",
+      "file": "rune-8306.png",
+      "sha256": "67ffb6f6ea4ab64526c7ba4e5410a52e4b662a47ccff566d4a1b78b69abba51f",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8304": {
+      "name": "Magical Footwear",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Inspiration/MagicalFootwear/MagicalFootwear.png",
+      "file": "rune-8304.png",
+      "sha256": "b80bf9bab38d6cb2a8d04fa7d409f402b3ea6a2313394e0f846f8dc464b1a218",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8321": {
+      "name": "Cash Back",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Inspiration/CashBack/CashBack2.png",
+      "file": "rune-8321.png",
+      "sha256": "f2451db21e9a1b8acfb7c7f58eeb17edb7286be451f26766e5fdbdfc898ad1d9",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8313": {
+      "name": "Triple Tonic",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Inspiration/PerfectTiming/AlchemistCabinet.png",
+      "file": "rune-8313.png",
+      "sha256": "6314fb6a869a78622e9082267ca3f7731a2d13c020748f89bebca9ec1d19a7ac",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8352": {
+      "name": "Time Warp Tonic",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Inspiration/TimeWarpTonic/TimeWarpTonic.png",
+      "file": "rune-8352.png",
+      "sha256": "e2266a1337c494d7270005b248be116ae61e5ee018234cce51485dfa9e205386",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8345": {
+      "name": "Biscuit Delivery",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Inspiration/BiscuitDelivery/BiscuitDelivery.png",
+      "file": "rune-8345.png",
+      "sha256": "4f4c70536a85455ac082b4d9b89643c670c0a083c52f8c68072b20332992ab19",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8347": {
+      "name": "Cosmic Insight",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Inspiration/CosmicInsight/CosmicInsight.png",
+      "file": "rune-8347.png",
+      "sha256": "c95f312f1c4d1293b9d60db0ac8d1a31895d9a9c8add7fd9a9de6c7825eee0ef",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8410": {
+      "name": "Approach Velocity",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Resolve/ApproachVelocity/ApproachVelocity.png",
+      "file": "rune-8410.png",
+      "sha256": "838bcdb70b0543e072001df66639af3da0d9194eee1678a88ddf18be411f489c",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8316": {
+      "name": "Jack Of All Trades",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Inspiration/JackOfAllTrades/JackofAllTrades2.png",
+      "file": "rune-8316.png",
+      "sha256": "0c23f4ed12284097be7e40272dee1fb82d59eead8defc21ba16578fb1d6dbafb",
+      "retrievedAt": "2026-09-14"
+    },
+    "tree-8000": {
+      "name": "Precision",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/7201_Precision.png",
+      "file": "tree-8000.png",
+      "sha256": "3ee3abe2826ba9f0f1b9fb7d8358818443880ccb3ebea965348837aa5c898e57",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8005": {
+      "name": "Press the Attack",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Precision/PressTheAttack/PressTheAttack.png",
+      "file": "rune-8005.png",
+      "sha256": "f9322ca20bfa3aa60d0d1b33ace65905127e81a81ed90cd2e96366c7237dacaf",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8008": {
+      "name": "Lethal Tempo",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Precision/LethalTempo/LethalTempoTemp.png",
+      "file": "rune-8008.png",
+      "sha256": "e698b64c52b039fa65393eb91effccf316577415fe0f6a4f8befae05fb12fc90",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8021": {
+      "name": "Fleet Footwork",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Precision/FleetFootwork/FleetFootwork.png",
+      "file": "rune-8021.png",
+      "sha256": "bf5d0434dc61ed443b42d46d6152d5fd60b4abec3179fdb1e42309b9096cea07",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8010": {
+      "name": "Conqueror",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Precision/Conqueror/Conqueror.png",
+      "file": "rune-8010.png",
+      "sha256": "2b6c32a35a7df8cf9f0fe1f7c5d931ddb37307c1bafd66bac7e8979ad6fa0b86",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-9101": {
+      "name": "Absorb Life",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Precision/AbsorbLife/AbsorbLife.png",
+      "file": "rune-9101.png",
+      "sha256": "2e172ffa8bfb07551dfd61ab076087623d11b0d47791f4babd783dc586e257a7",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-9111": {
+      "name": "Triumph",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Precision/Triumph.png",
+      "file": "rune-9111.png",
+      "sha256": "75d54c361b70cebcc62b1a5447d729fa12879e449d52b5bf2fe83be291cbbfa2",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8009": {
+      "name": "Presence of Mind",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Precision/PresenceOfMind/PresenceOfMind.png",
+      "file": "rune-8009.png",
+      "sha256": "7fddaa3fb9f5261613779957a08b3dc1f957ebddc28d47c85c1d4a38be150b98",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-9104": {
+      "name": "Legend: Alacrity",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Precision/LegendAlacrity/LegendAlacrity.png",
+      "file": "rune-9104.png",
+      "sha256": "a987e2c2ef3d38c306b9c7d59bb94c1bc7ef2a3408b9c0bfcec5cc156e26ab62",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-9105": {
+      "name": "Legend: Haste",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Precision/LegendHaste/LegendHaste.png",
+      "file": "rune-9105.png",
+      "sha256": "ef9f01c039daed279015d67a02f2954c99d5077a7aadad5cbfa66d95d5b91088",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-9103": {
+      "name": "Legend: Bloodline",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Precision/LegendBloodline/LegendBloodline.png",
+      "file": "rune-9103.png",
+      "sha256": "cb34a410310c5e71b2cac2d41f4b1e0bf3e3e363e0d4be1ef0d9f91d971fb099",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8014": {
+      "name": "Coup de Grace",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Precision/CoupDeGrace/CoupDeGrace.png",
+      "file": "rune-8014.png",
+      "sha256": "941db8d8b5e93b81c6f5ec8da2e23baee933cb6a61ecbe5847b1fa26ed05f436",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8017": {
+      "name": "Cut Down",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Precision/CutDown/CutDown.png",
+      "file": "rune-8017.png",
+      "sha256": "8539600426b04cb518cdfadaf4db207f37223e27b943d916a08789851539dd8b",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8299": {
+      "name": "Last Stand",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Sorcery/LastStand/LastStand.png",
+      "file": "rune-8299.png",
+      "sha256": "c80a20a544645f99aa95c488a939221ce658e3d9486632b1f5aceb10d7ef4711",
+      "retrievedAt": "2026-09-14"
+    },
+    "tree-8400": {
+      "name": "Resolve",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/7204_Resolve.png",
+      "file": "tree-8400.png",
+      "sha256": "7251816d3438504452594b6a38f54440bc92092312dc9c036ad2b0c7ee73d375",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8437": {
+      "name": "Grasp of the Undying",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Resolve/GraspOfTheUndying/GraspOfTheUndying.png",
+      "file": "rune-8437.png",
+      "sha256": "d419555c07c18276a319e9fe580e10290db3c9bcd112148d579ddc039cdc6315",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8439": {
+      "name": "Aftershock",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Resolve/VeteranAftershock/VeteranAftershock.png",
+      "file": "rune-8439.png",
+      "sha256": "c48202b105b8bd083d382290f763a4654ab7e10a95cd815491f24a301cf8864c",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8465": {
+      "name": "Guardian",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Resolve/Guardian/Guardian.png",
+      "file": "rune-8465.png",
+      "sha256": "19316a3ff79b6aa67a5c9eb4a00dab2656be0ebe4fa7ba7010e2b00f6b439561",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8446": {
+      "name": "Demolish",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Resolve/Demolish/Demolish.png",
+      "file": "rune-8446.png",
+      "sha256": "90602a87ef14442b3bddae24872709634e2e1f109bc82844b31a892682cf95fd",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8463": {
+      "name": "Font of Life",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Resolve/FontOfLife/FontOfLife.png",
+      "file": "rune-8463.png",
+      "sha256": "66715a5cf3dc00c60ca81bec6defe5b201beefa2b9d2394f8bae46a1c5b59f80",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8401": {
+      "name": "Shield Bash",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Resolve/MirrorShell/MirrorShell.png",
+      "file": "rune-8401.png",
+      "sha256": "1100a37f9f068262949181539af8ec552a4b16cfa6548118636e55fd7fbbbd2a",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8429": {
+      "name": "Conditioning",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Resolve/Conditioning/Conditioning.png",
+      "file": "rune-8429.png",
+      "sha256": "0fd7b4847b03f627c50300b71d951406af0421b5991ddf2cbdf3d322ed8ad7d6",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8444": {
+      "name": "Second Wind",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Resolve/SecondWind/SecondWind.png",
+      "file": "rune-8444.png",
+      "sha256": "5395ee0d28a2a5a40895db8904447e16558e49c2c687a2d87fb3aaf8ebb09590",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8473": {
+      "name": "Bone Plating",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Resolve/BonePlating/BonePlating.png",
+      "file": "rune-8473.png",
+      "sha256": "90e9d37bf2d67d78f8ebe1d295f37d365b053480d4cabff69c024ba18649093e",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8451": {
+      "name": "Overgrowth",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Resolve/Overgrowth/Overgrowth.png",
+      "file": "rune-8451.png",
+      "sha256": "9d31e45e21bd99d6fdb62ea6b13581f27641a1bfe761f9bfea7d5582529585dd",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8453": {
+      "name": "Revitalize",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Resolve/Revitalize/Revitalize.png",
+      "file": "rune-8453.png",
+      "sha256": "eeb104e95034ae3ba2e8d0b9f89bbe80e2a7a40bfbb6650bcdc9b3f9f083f2f6",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8242": {
+      "name": "Unflinching",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Sorcery/Unflinching/Unflinching.png",
+      "file": "rune-8242.png",
+      "sha256": "40bf08364e770a28376cab28ee35be062d767ddab85e51af0b5ee656f592940a",
+      "retrievedAt": "2026-09-14"
+    },
+    "tree-8200": {
+      "name": "Sorcery",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/7202_Sorcery.png",
+      "file": "tree-8200.png",
+      "sha256": "ab4f310160bd7e435ead08fa44025d857ce4a884cc9533664f056ab5e148103e",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8214": {
+      "name": "Summon Aery",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Sorcery/SummonAery/SummonAery.png",
+      "file": "rune-8214.png",
+      "sha256": "89fd9b48da8848cea8524976af25e46d7c76fed6323b1a43f486368ba9fda2a9",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8229": {
+      "name": "Arcane Comet",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Sorcery/ArcaneComet/ArcaneComet.png",
+      "file": "rune-8229.png",
+      "sha256": "24443adb6051ff8c548a7fd530bdedf1e7e64d6e8f2f7f0d1356f1b3d3235097",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8230": {
+      "name": "Stormraider's Surge",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Sorcery/PhaseRush/StormraidersSurgeRuneIcon2.png",
+      "file": "rune-8230.png",
+      "sha256": "42af8143c90fd7d5568a762829a6e406b33ec84e8a9de681124cf8d4b1acf68b",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8992": {
+      "name": "Deathfire Touch",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Sorcery/DeathfireTouch/DEATHFIRE_TOUCH_KEYSTONE.png",
+      "file": "rune-8992.png",
+      "sha256": "7b59da6fd79c622546bca0e341433f1a0b5b5c63adb899299be5c0f21afde729",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8224": {
+      "name": "Axiom Arcanist",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Sorcery/NullifyingOrb/Axiom_Arcanist.png",
+      "file": "rune-8224.png",
+      "sha256": "356b584530c9046da23fc0b6e212522b61182d5561b868c5732ef88e90f4cf7c",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8226": {
+      "name": "Manaflow Band",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Sorcery/ManaflowBand/ManaflowBand.png",
+      "file": "rune-8226.png",
+      "sha256": "de2144f32ec12ef688405eabffb7d9b59ac6b0b8e14e46bb57cdd1d6b6af638d",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8275": {
+      "name": "Nimbus Cloak",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Sorcery/NimbusCloak/6361.png",
+      "file": "rune-8275.png",
+      "sha256": "5cd5b64e4e75a865bedf6260eb9a64be84cde34b570c0cb075f4241a2a565727",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8210": {
+      "name": "Transcendence",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Sorcery/Transcendence/Transcendence.png",
+      "file": "rune-8210.png",
+      "sha256": "ffbb3543992f1be83edde9b2a560c069fdeaa64cc7ac4c8f5e136d70ad540293",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8234": {
+      "name": "Celerity",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Sorcery/Celerity/CelerityTemp.png",
+      "file": "rune-8234.png",
+      "sha256": "3f2315b7b004b95aab34c34412ea38ffd3bd251c0c18bb3d3687fa38566989e9",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8233": {
+      "name": "Absolute Focus",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Sorcery/AbsoluteFocus/AbsoluteFocus.png",
+      "file": "rune-8233.png",
+      "sha256": "9a5d5939216069427bcc33dcfe3879be8563c9a2ae6c40b248717520dd06f324",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8237": {
+      "name": "Scorch",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Sorcery/Scorch/Scorch.png",
+      "file": "rune-8237.png",
+      "sha256": "dde12ae30ce293999142d8ee205f3611d2726741f7b05563257e0030eea37dc4",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8232": {
+      "name": "Waterwalking",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Sorcery/Waterwalking/Waterwalking.png",
+      "file": "rune-8232.png",
+      "sha256": "c3d4d56136a22fc51b42c906f90fe3cffd44468fd12013d26dfc72124426b6a8",
+      "retrievedAt": "2026-09-14"
+    },
+    "rune-8236": {
+      "name": "Gathering Storm",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Sorcery/GatheringStorm/GatheringStorm.png",
+      "file": "rune-8236.png",
+      "sha256": "71c085cb595b6d1f0dc86852cfcbc0d0f75df8f4ea497d502044fb1346a0b939",
+      "retrievedAt": "2026-09-14"
+    },
+    "shard-5011": {
+      "name": "Health",
+      "sourceUrl": "https://raw.communitydragon.org/16.17/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/statmods/statmodshealthscalingicon.png",
+      "file": "shard-5011.png",
+      "sha256": "e37476b286dcfcc0e0d7ad3066cad7055e75321a89dfe291c9e6425ec59c21b2",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://raw.communitydragon.org/16.18/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/statmods/statmodshealthscalingicon.png",
+          "sha256": "e37476b286dcfcc0e0d7ad3066cad7055e75321a89dfe291c9e6425ec59c21b2",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "shard-5013": {
+      "name": "Tenacity and Slow Resist",
+      "sourceUrl": "https://raw.communitydragon.org/16.17/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/statmods/statmodstenacityicon.png",
+      "file": "shard-5013.png",
+      "sha256": "78e77ffdb247215d15419354e5ad88601a1987a40e293a58da0bc6321498b03d",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://raw.communitydragon.org/16.18/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/statmods/statmodstenacityicon.png",
+          "sha256": "78e77ffdb247215d15419354e5ad88601a1987a40e293a58da0bc6321498b03d",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "shard-5008": {
+      "name": "Adaptive Force",
+      "sourceUrl": "https://raw.communitydragon.org/16.17/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/statmods/statmodsadaptiveforceicon.png",
+      "file": "shard-5008.png",
+      "sha256": "098ae91bfa5beec8d3b1a7bb5cc1f0923710c071ed4c6edee06db986aa848952",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://raw.communitydragon.org/16.18/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/statmods/statmodsadaptiveforceicon.png",
+          "sha256": "098ae91bfa5beec8d3b1a7bb5cc1f0923710c071ed4c6edee06db986aa848952",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "shard-5001": {
+      "name": "Health Scaling",
+      "sourceUrl": "https://raw.communitydragon.org/16.17/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/statmods/statmodshealthplusicon.png",
+      "file": "shard-5001.png",
+      "sha256": "a49670fe6f10d23dfa2b9bd0fe55024b89c67213ba0de6091beb65af90cec6a2",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://raw.communitydragon.org/16.18/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/statmods/statmodshealthplusicon.png",
+          "sha256": "a49670fe6f10d23dfa2b9bd0fe55024b89c67213ba0de6091beb65af90cec6a2",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "shard-5007": {
+      "name": "Ability Haste",
+      "sourceUrl": "https://raw.communitydragon.org/16.17/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/statmods/statmodscdrscalingicon.png",
+      "file": "shard-5007.png",
+      "sha256": "8059506d8d886338a4b4dbc160745cd3fa3bc257a63bbd0fad7cd8d746d05f8f",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://raw.communitydragon.org/16.18/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/statmods/statmodscdrscalingicon.png",
+          "sha256": "8059506d8d886338a4b4dbc160745cd3fa3bc257a63bbd0fad7cd8d746d05f8f",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "shard-5005": {
+      "name": "Attack Speed",
+      "sourceUrl": "https://raw.communitydragon.org/16.17/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/statmods/statmodsattackspeedicon.png",
+      "file": "shard-5005.png",
+      "sha256": "ece281b890cd37e2307cd05a525f473e208cbd2a91ea45b5341225d961363ee3",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://raw.communitydragon.org/16.18/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/statmods/statmodsattackspeedicon.png",
+          "sha256": "ece281b890cd37e2307cd05a525f473e208cbd2a91ea45b5341225d961363ee3",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "shard-5010": {
+      "name": "Move Speed",
+      "sourceUrl": "https://raw.communitydragon.org/16.17/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/statmods/statmodsmovementspeedicon.png",
+      "file": "shard-5010.png",
+      "sha256": "47cc8897552a102361a264cb193ddfe9b33cb8a674e4a4ee6aee83915de4a5ca",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://raw.communitydragon.org/16.18/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/statmods/statmodsmovementspeedicon.png",
+          "sha256": "47cc8897552a102361a264cb193ddfe9b33cb8a674e4a4ee6aee83915de4a5ca",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "event-TOWER_BUILDING": {
+      "name": "TOWER_BUILDING",
+      "sourceUrl": "https://raw.communitydragon.org/16.17/game/assets/ux/minimap/icons/icon_ui_tower_minimap.png",
+      "file": "event-TOWER_BUILDING.png",
+      "sha256": "ea2bfd61e2db0f30ed17bf595f4cdebff6980a12a284e9c770d0c436a7e16aa2",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://raw.communitydragon.org/16.18/game/assets/ux/minimap/icons/icon_ui_tower_minimap.png",
+          "sha256": "ea2bfd61e2db0f30ed17bf595f4cdebff6980a12a284e9c770d0c436a7e16aa2",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "event-INHIBITOR_BUILDING": {
+      "name": "INHIBITOR_BUILDING",
+      "sourceUrl": "https://raw.communitydragon.org/16.17/game/assets/ux/minimap/icons/icon_ui_inhibitor_minimap_v2.png",
+      "file": "event-INHIBITOR_BUILDING.png",
+      "sha256": "d03a5155c27137f5812f0b927ab3c413dccffd17dad1fbc81d5d524dff708db6",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://raw.communitydragon.org/16.18/game/assets/ux/minimap/icons/icon_ui_inhibitor_minimap_v2.png",
+          "sha256": "d03a5155c27137f5812f0b927ab3c413dccffd17dad1fbc81d5d524dff708db6",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "event-NEXUS_BUILDING": {
+      "name": "NEXUS_BUILDING",
+      "sourceUrl": "https://raw.communitydragon.org/16.17/game/assets/ux/minimap/icons/icon_ui_nexus_minimap_v2.png",
+      "file": "event-NEXUS_BUILDING.png",
+      "sha256": "07f20edbf6a5a477f2fc2edcb49fb4d8dd40052e13d1c180a2ba8d241cccad58",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://raw.communitydragon.org/16.18/game/assets/ux/minimap/icons/icon_ui_nexus_minimap_v2.png",
+          "sha256": "07f20edbf6a5a477f2fc2edcb49fb4d8dd40052e13d1c180a2ba8d241cccad58",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "event-BARON_NASHOR": {
+      "name": "BARON_NASHOR",
+      "sourceUrl": "https://raw.communitydragon.org/16.17/game/assets/ux/minimap/icons/baron.png",
+      "file": "event-BARON_NASHOR.png",
+      "sha256": "293cd66b5603b0200269e3f886b2483dfcf535e274b7084a062641226f2baae2",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://raw.communitydragon.org/16.18/game/assets/ux/minimap/icons/baron.png",
+          "sha256": "293cd66b5603b0200269e3f886b2483dfcf535e274b7084a062641226f2baae2",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "event-RIFTHERALD": {
+      "name": "RIFTHERALD",
+      "sourceUrl": "https://raw.communitydragon.org/16.17/game/assets/ux/minimap/icons/riftherald.png",
+      "file": "event-RIFTHERALD.png",
+      "sha256": "b3505d4138d0cdf46ce1bd44827f27f689af58662e0f29e9e1009517bf2bd463",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://raw.communitydragon.org/16.18/game/assets/ux/minimap/icons/riftherald.png",
+          "sha256": "b3505d4138d0cdf46ce1bd44827f27f689af58662e0f29e9e1009517bf2bd463",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "event-HORDE": {
+      "name": "HORDE",
+      "sourceUrl": "https://raw.communitydragon.org/16.17/game/assets/ux/minimap/icons/grub.png",
+      "file": "event-HORDE.png",
+      "sha256": "327bcaa8ba7af9567f5f35e995951a56ea2fe05723b5b2ee103329521dc00cbf",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://raw.communitydragon.org/16.18/game/assets/ux/minimap/icons/grub.png",
+          "sha256": "327bcaa8ba7af9567f5f35e995951a56ea2fe05723b5b2ee103329521dc00cbf",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "event-DRAGON": {
+      "name": "DRAGON",
+      "sourceUrl": "https://raw.communitydragon.org/16.17/game/assets/ux/minimap/icons/dragon.png",
+      "file": "event-DRAGON.png",
+      "sha256": "c96f76e5b316b767ad5e794dfce600e020c7398311856b5ef1680ac4ab442f75",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://raw.communitydragon.org/16.18/game/assets/ux/minimap/icons/dragon.png",
+          "sha256": "c96f76e5b316b767ad5e794dfce600e020c7398311856b5ef1680ac4ab442f75",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "event-AIR_DRAGON": {
+      "name": "AIR_DRAGON",
+      "sourceUrl": "https://raw.communitydragon.org/16.17/game/assets/ux/minimap/icons/dragon_cloud.png",
+      "file": "event-AIR_DRAGON.png",
+      "sha256": "04d51eefcdec3906475e71eb7f7a6f69bbfde64fd6fe69a8f462837bd714b096",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://raw.communitydragon.org/16.18/game/assets/ux/minimap/icons/dragon_cloud.png",
+          "sha256": "04d51eefcdec3906475e71eb7f7a6f69bbfde64fd6fe69a8f462837bd714b096",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "event-FIRE_DRAGON": {
+      "name": "FIRE_DRAGON",
+      "sourceUrl": "https://raw.communitydragon.org/16.17/game/assets/ux/minimap/icons/dragon_infernal.png",
+      "file": "event-FIRE_DRAGON.png",
+      "sha256": "605d1d07e74495800e781fe5bce3cceac3dabfed65065206c3ac43096b719fb7",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://raw.communitydragon.org/16.18/game/assets/ux/minimap/icons/dragon_infernal.png",
+          "sha256": "605d1d07e74495800e781fe5bce3cceac3dabfed65065206c3ac43096b719fb7",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "event-EARTH_DRAGON": {
+      "name": "EARTH_DRAGON",
+      "sourceUrl": "https://raw.communitydragon.org/16.17/game/assets/ux/minimap/icons/dragon_mountain.png",
+      "file": "event-EARTH_DRAGON.png",
+      "sha256": "0b154f13184920bb03a92f38e812b386962aa7deb46af2f82d143ad130431352",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://raw.communitydragon.org/16.18/game/assets/ux/minimap/icons/dragon_mountain.png",
+          "sha256": "0b154f13184920bb03a92f38e812b386962aa7deb46af2f82d143ad130431352",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "event-WATER_DRAGON": {
+      "name": "WATER_DRAGON",
+      "sourceUrl": "https://raw.communitydragon.org/16.17/game/assets/ux/minimap/icons/dragon_ocean.png",
+      "file": "event-WATER_DRAGON.png",
+      "sha256": "1df106f6a4631715f5310f9f2c720be8dfadb09c1eaa6863f7b592b2e9f0315c",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://raw.communitydragon.org/16.18/game/assets/ux/minimap/icons/dragon_ocean.png",
+          "sha256": "1df106f6a4631715f5310f9f2c720be8dfadb09c1eaa6863f7b592b2e9f0315c",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "event-HEXTECH_DRAGON": {
+      "name": "HEXTECH_DRAGON",
+      "sourceUrl": "https://raw.communitydragon.org/16.17/game/assets/ux/minimap/icons/dragon_hextech.png",
+      "file": "event-HEXTECH_DRAGON.png",
+      "sha256": "bc555144cb6337254c229180aecde8a760f7a94114d4e23a1d0c14f4e2eee96e",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://raw.communitydragon.org/16.18/game/assets/ux/minimap/icons/dragon_hextech.png",
+          "sha256": "bc555144cb6337254c229180aecde8a760f7a94114d4e23a1d0c14f4e2eee96e",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "event-CHEMTECH_DRAGON": {
+      "name": "CHEMTECH_DRAGON",
+      "sourceUrl": "https://raw.communitydragon.org/16.17/game/assets/ux/minimap/icons/dragon_chemtech.png",
+      "file": "event-CHEMTECH_DRAGON.png",
+      "sha256": "eb189be39b0e3a70385e7c988bd9f0523c42f4bf5d1551ef6b9d40da30a4b385",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://raw.communitydragon.org/16.18/game/assets/ux/minimap/icons/dragon_chemtech.png",
+          "sha256": "eb189be39b0e3a70385e7c988bd9f0523c42f4bf5d1551ef6b9d40da30a4b385",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "event-ELDER_DRAGON": {
+      "name": "ELDER_DRAGON",
+      "sourceUrl": "https://raw.communitydragon.org/16.17/game/assets/ux/minimap/icons/dragon_elder.png",
+      "file": "event-ELDER_DRAGON.png",
+      "sha256": "1d33e64840ecef20947c513059498a963fdce910e30c8a3ba1875b28428ef5f8",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://raw.communitydragon.org/16.18/game/assets/ux/minimap/icons/dragon_elder.png",
+          "sha256": "1d33e64840ecef20947c513059498a963fdce910e30c8a3ba1875b28428ef5f8",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "event-WARD_EYE": {
+      "name": "Ward",
+      "sourceUrl": "https://raw.communitydragon.org/16.17/plugins/rcp-fe-lol-postgame/global/default/scoreboard-stat-switcher-eye.svg",
+      "file": "event-WARD_EYE.svg",
+      "sha256": "de9e4c35dda95753d32e4486aa5b450758af6528d52436447d11abcb4d8574ae",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://raw.communitydragon.org/16.18/plugins/rcp-fe-lol-postgame/global/default/scoreboard-stat-switcher-eye.svg",
+          "sha256": "de9e4c35dda95753d32e4486aa5b450758af6528d52436447d11abcb4d8574ae",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "rank-GOLD": {
+      "name": "Gold",
+      "sourceUrl": "https://raw.communitydragon.org/16.17/plugins/rcp-fe-lol-shared-components/global/default/images/gold.png",
+      "file": "rank-GOLD.png",
+      "sha256": "12b172e8a4e6ba09824c51ec6a3c5fdf16b22fc45e9c4d379d7b9f991eb295a9",
+      "retrievedAt": "2026-09-14"
+    },
+    "profile-29": {
+      "name": "Profile icon 29",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/profileicon/29.png",
+      "file": "profile-29.png",
+      "sha256": "9e9febcda33fab375425d58af13ee7cc79942bf552ac8e3c982f3bc7acdb676e",
+      "retrievedAt": "2026-09-14"
+    },
+    "ability-86-Q": {
+      "name": "Decisive Strike",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/spell/GarenQ.png",
+      "file": "ability-86-Q.png",
+      "sha256": "5ba32b3c14ed850b447a6cb54cf243144823e1ac61cf071ed9920cd26700ff8d",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/spell/GarenQ.png",
+          "sha256": "5ba32b3c14ed850b447a6cb54cf243144823e1ac61cf071ed9920cd26700ff8d",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "ability-86-W": {
+      "name": "Courage",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/spell/GarenW.png",
+      "file": "ability-86-W.png",
+      "sha256": "4b653d35ceedddc2fc715e934307114c567c92aebd5b34708bdc5c077ce410eb",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/spell/GarenW.png",
+          "sha256": "4b653d35ceedddc2fc715e934307114c567c92aebd5b34708bdc5c077ce410eb",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "ability-86-E": {
+      "name": "Judgment",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/spell/GarenE.png",
+      "file": "ability-86-E.png",
+      "sha256": "87526f9005c608b7b776128fc4526b28f615b782c3429c3d6bc200209c25f2da",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/spell/GarenE.png",
+          "sha256": "87526f9005c608b7b776128fc4526b28f615b782c3429c3d6bc200209c25f2da",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "ability-86-R": {
+      "name": "Demacian Justice",
+      "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.17.1/img/spell/GarenR.png",
+      "file": "ability-86-R.png",
+      "sha256": "82031c7b445c6bced255fcc91b9a8570a8215f96092c766cb1a0e519cac5e949",
+      "retrievedAt": "2026-09-14",
+      "alternateSources": [
+        {
+          "sourceUrl": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/spell/GarenR.png",
+          "sha256": "82031c7b445c6bced255fcc91b9a8570a8215f96092c766cb1a0e519cac5e949",
+          "retrievedAt": "2026-09-14"
+        }
+      ]
+    },
+    "rank-EMERALD": {
+      "name": "Emerald rank",
+      "sourceUrl": "https://raw.communitydragon.org/16.18/plugins/rcp-fe-lol-shared-components/global/default/images/emerald.png",
+      "file": "rank-EMERALD.png",
+      "sha256": "071c4ff6742e38a7da4684f57335771e7c5cd0019a7b1c60defb03ae61c2ce19",
+      "retrievedAt": "2026-09-14"
+    },
+    "rank-GOLD-16.18": {
+      "name": "Gold rank",
+      "sourceUrl": "https://raw.communitydragon.org/16.18/plugins/rcp-fe-lol-shared-components/global/default/images/gold.png",
+      "file": "rank-GOLD-16.18.png",
+      "sha256": "9b523d9006b88dccd982127cd67878190b5da3b0d3557f51bc667bcd541abf30",
+      "retrievedAt": "2026-09-14"
+    }
+  }
+}

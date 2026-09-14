@@ -68,7 +68,37 @@ function isParticipant(value: unknown): value is MatchDevelopmentParticipant {
     isInteger(value.summonerSpellOneId) &&
     isInteger(value.summonerSpellTwoId) &&
     isIntegerArray(value.endItemIds)
+    && (value.runes === undefined || value.runes === null || isRunes(value.runes))
+    && (value.participantTotals === undefined || value.participantTotals === null || isParticipantTotals(value.participantTotals))
   );
+}
+
+const isAvailability = (value: unknown) => typeof value === "string" && ["available", "missing", "unsupported", "unverified"].includes(value);
+const isNullablePositiveId = (value: unknown) => value === null || (isInteger(value) && value > 0);
+function isRunes(value: unknown): boolean {
+  if (!isRecord(value) || !isRecord(value.shards)) return false;
+  const shards = value.shards;
+  return isAvailability(value.availability) && isString(value.matchPatch)
+    && isString(value.normalizationVersion) && (value.layoutManifestId === null || isString(value.layoutManifestId))
+    && isAvailability(value.performanceStatus) && Array.isArray(value.styles) && value.styles.every(style =>
+      isRecord(style) && isNullablePositiveId(style.styleId) && ["primaryStyle", "subStyle", "unknown"].includes(String(style.role))
+      && Array.isArray(style.selections) && style.selections.every(selection =>
+        isRecord(selection) && isInteger(selection.runeId) && selection.runeId > 0
+        && isRuneCounters(selection.counters)
+        && Array.isArray(selection.metrics) && selection.metrics.every(metric =>
+          isRecord(metric) && isString(metric.id) && isString(metric.label) && isAvailability(metric.availability)
+          && (metric.value === null || (typeof metric.value === "number" && Number.isFinite(metric.value)))
+          && typeof metric.unit === "string" && isString(metric.targetScope) && metric.timeScope === "end-of-game"
+          && ["source-reported", "derived"].includes(String(metric.valueBasis)) && isString(metric.mappingVersion))))
+    && ["offense", "flex", "defense"].every(key => isNullablePositiveId(shards[key]));
+}
+function isRuneCounters(value: unknown): boolean {
+  return value === undefined || value === null || (isRecord(value)
+    && ["var1", "var2", "var3"].every(key => value[key] === null || isInteger(value[key])));
+}
+function isParticipantTotals(value: unknown): boolean {
+  return isRecord(value) && ["totalDamageDealt", "totalDamageDealtToChampions", "totalHeal", "totalHealsOnTeammates", "totalDamageShieldedOnTeammates"].every(key =>
+    value[key] === null || (isInteger(value[key]) && value[key] >= 0));
 }
 
 function isSample(value: unknown): value is MatchDevelopmentSample {
@@ -86,10 +116,19 @@ function isSample(value: unknown): value is MatchDevelopmentSample {
   );
 }
 
+function isEventPresentation(value: unknown): boolean {
+  if (value === undefined || value === null) return true;
+  if (!isRecord(value)) return false;
+  return [value.actorTeam, value.objectTeam].every((fact) =>
+    isRecord(fact) && ["known", "missing", "conflicting", "unsupported"].includes(String(fact.basis)) &&
+    (fact.basis === "known" ? isInteger(fact.teamId) && Number(fact.teamId) > 0 : fact.teamId === null));
+}
+
 function isEvent(value: unknown): value is MatchDevelopmentEvent {
   return (
     isRecord(value) &&
     isInteger(value.timestampMs) &&
+    isEventPresentation(value.presentation) &&
     isString(value.label) &&
     isIntegerArray(value.participantIds) &&
     isMaybeInteger(value.itemId) &&

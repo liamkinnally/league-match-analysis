@@ -45,3 +45,46 @@ test("tokenless sample supports match selection and URL restoration", async ({ p
   await expect(page.getByRole("link", { name: "Explore sample match" })).toBeVisible();
   expect(liveRequests).toEqual([]);
 });
+
+
+test("rune portraits preserve the analysis selection and recover through browser history", async ({ page }) => {
+  await installDeterministicGameAssets(page);
+  const errors: string[] = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.goto("/matches/NA1_7000000001/development?focus=6&compare=1&from=480000&to=600000&metric=xp");
+  await page.getByRole("tab", { name: "Runes", exact: true }).click();
+  const panel = page.getByRole("tabpanel", { name: "Runes", exact: true });
+  const portraits = panel.getByRole("group", { name: "Inspect participant runes" });
+  await expect(portraits.getByRole("button")).toHaveCount(10);
+  await expect(panel.getByRole("heading", { name: /Invented Player 6.*Garen/ })).toBeVisible();
+  await expect(panel.getByText("576", { exact: true })).toBeVisible();
+  await expect(panel.getByText("454", { exact: true })).toBeVisible();
+  await portraits.getByRole("button", { name: /participant 5$/ }).click();
+  await expect(page).toHaveURL(/runeParticipant=5/);
+  await expect(page.getByRole("heading", { name: "Garen vs Darius" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "XP", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect(panel.getByRole("heading", { name: /Invented Player 5/ })).toBeVisible();
+  await page.reload();
+  await expect(portraits.getByRole("button", { name: /participant 5$/ })).toHaveAttribute("aria-pressed", "true");
+  await page.goBack();
+  await expect(panel.getByRole("heading", { name: /Invented Player 6.*Garen/ })).toBeVisible();
+  const desktopRows = await portraits.locator(".rune-portrait-team").evaluateAll(teams => teams.map(team => Math.round(team.getBoundingClientRect().top)));
+  expect(new Set(desktopRows).size).toBe(1);
+  await expect(panel.locator(".rune-description").first()).toBeVisible();
+  await expect(panel.locator(".rune-description summary")).toHaveCount(0);
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await page.locator(".development-final-state").evaluate(element => window.scrollTo(0, element.getBoundingClientRect().top + window.scrollY - (document.querySelector(".development-nav")?.getBoundingClientRect().height ?? 48) - 16));
+  await page.screenshot({ path: "test-results/runes-desktop.png" });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await portraits.getByRole("button", { name: /participant 10$/ }).click();
+  await expect(panel.getByRole("heading", { name: /Invented Player 10/ })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  const mobileRows = await portraits.locator(".rune-portrait-team").evaluateAll(teams => teams.map(team => ({ top: Math.round(team.getBoundingClientRect().top), center: team.getBoundingClientRect().left + team.getBoundingClientRect().width / 2 })));
+  expect(new Set(mobileRows.map(row => row.top)).size).toBe(2);
+  expect(Math.abs(mobileRows[0].center - mobileRows[1].center)).toBeLessThan(1);
+  await page.locator(".development-final-state").evaluate(element => window.scrollTo(0, element.getBoundingClientRect().top + window.scrollY - (document.querySelector(".development-nav")?.getBoundingClientRect().height ?? 48) - 16));
+  await page.screenshot({ path: "test-results/runes-mobile.png" });
+  await page.getByRole("tab", { name: "Scoreboard", exact: true }).click();
+  await expect(page.getByRole("table").first()).toBeVisible();
+  expect(errors).toEqual([]);
+});

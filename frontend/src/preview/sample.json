@@ -38,7 +38,94 @@
       ],
       "gameName": "Invented Player 1",
       "tagLine": "DEMO",
-      "summonerName": null
+      "summonerName": null,
+      "runes": {
+        "availability": "available",
+        "matchPatch": "16.17",
+        "normalizationVersion": "participant-details-v1",
+        "layoutManifestId": "rune-layout-16.17-v1",
+        "performanceStatus": "unverified",
+        "styles": [
+          {
+            "styleId": 8000,
+            "role": "primaryStyle",
+            "selections": [
+              {
+                "runeId": 8010,
+                "metrics": [],
+                "counters": {
+                  "var1": 320,
+                  "var2": 0,
+                  "var3": 0
+                }
+              },
+              {
+                "runeId": 9111,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 9104,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 8299,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              }
+            ]
+          },
+          {
+            "styleId": 8400,
+            "role": "subStyle",
+            "selections": [
+              {
+                "runeId": 8444,
+                "metrics": [],
+                "counters": {
+                  "var1": 620,
+                  "var2": 0,
+                  "var3": 0
+                }
+              },
+              {
+                "runeId": 8451,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              }
+            ]
+          }
+        ],
+        "shards": {
+          "offense": 5008,
+          "flex": 5008,
+          "defense": 5001
+        }
+      },
+      "participantTotals": {
+        "totalDamageDealt": 86000,
+        "totalDamageDealtToChampions": 18500,
+        "totalHeal": 2000,
+        "totalHealsOnTeammates": 0,
+        "totalDamageShieldedOnTeammates": 0
+      }
     },
     {
       "participantId": 2,
@@ -69,7 +156,94 @@
       ],
       "gameName": "Invented Player 2",
       "tagLine": "DEMO",
-      "summonerName": null
+      "summonerName": null,
+      "runes": {
+        "availability": "available",
+        "matchPatch": "16.17",
+        "normalizationVersion": "participant-details-v1",
+        "layoutManifestId": "rune-layout-16.17-v1",
+        "performanceStatus": "unverified",
+        "styles": [
+          {
+            "styleId": 8000,
+            "role": "primaryStyle",
+            "selections": [
+              {
+                "runeId": 8010,
+                "metrics": [],
+                "counters": {
+                  "var1": 320,
+                  "var2": 0,
+                  "var3": 0
+                }
+              },
+              {
+                "runeId": 9111,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 9104,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 8014,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              }
+            ]
+          },
+          {
+            "styleId": 8300,
+            "role": "subStyle",
+            "selections": [
+              {
+                "runeId": 8304,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 8347,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              }
+            ]
+          }
+        ],
+        "shards": {
+          "offense": 5008,
+          "flex": 5008,
+          "defense": 5001
+        }
+      },
+      "participantTotals": {
+        "totalDamageDealt": 87000,
+        "totalDamageDealtToChampions": 19000,
+        "totalHeal": 2000,
+        "totalHealsOnTeammates": 0,
+        "totalDamageShieldedOnTeammates": 0
+      }
     },
     {
       "participantId": 3,
@@ -100,7 +274,94 @@
       ],
       "gameName": "Invented Player 3",
       "tagLine": "DEMO",
-      "summonerName": null
+      "summonerName": null,
+      "runes": {
+        "availability": "available",
+        "matchPatch": "16.17",
+        "normalizationVersion": "participant-details-v1",
+        "layoutManifestId": "rune-layout-16.17-v1",
+        "performanceStatus": "unverified",
+        "styles": [
+          {
+            "styleId": 8200,
+            "role": "primaryStyle",
+            "selections": [
+              {
+                "runeId": 8229,
+                "metrics": [],
+                "counters": {
+                  "var1": 1250,
+                  "var2": 0,
+                  "var3": 0
+                }
+              },
+              {
+                "runeId": 8226,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 8210,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 8237,
+                "metrics": [],
+                "counters": {
+                  "var1": 360,
+                  "var2": 0,
+                  "var3": 0
+                }
+              }
+            ]
+          },
+          {
+            "styleId": 8300,
+            "role": "subStyle",
+            "selections": [
+              {
+                "runeId": 8345,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 8347,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              }
+            ]
+          }
+        ],
+        "shards": {
+          "offense": 5008,
+          "flex": 5008,
+          "defense": 5001
+        }
+      },
+      "participantTotals": {
+        "totalDamageDealt": 88000,
+        "totalDamageDealtToChampions": 19500,
+        "totalHeal": 2000,
+        "totalHealsOnTeammates": 0,
+        "totalDamageShieldedOnTeammates": 0
+      }
     },
     {
       "participantId": 4,
@@ -131,7 +392,94 @@
       ],
       "gameName": "Invented Player 4",
       "tagLine": "DEMO",
-      "summonerName": null
+      "summonerName": null,
+      "runes": {
+        "availability": "available",
+        "matchPatch": "16.17",
+        "normalizationVersion": "participant-details-v1",
+        "layoutManifestId": "rune-layout-16.17-v1",
+        "performanceStatus": "unverified",
+        "styles": [
+          {
+            "styleId": 8000,
+            "role": "primaryStyle",
+            "selections": [
+              {
+                "runeId": 8021,
+                "metrics": [],
+                "counters": {
+                  "var1": 850,
+                  "var2": 0,
+                  "var3": 0
+                }
+              },
+              {
+                "runeId": 8009,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 9103,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 8014,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              }
+            ]
+          },
+          {
+            "styleId": 8200,
+            "role": "subStyle",
+            "selections": [
+              {
+                "runeId": 8233,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 8236,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              }
+            ]
+          }
+        ],
+        "shards": {
+          "offense": 5008,
+          "flex": 5008,
+          "defense": 5001
+        }
+      },
+      "participantTotals": {
+        "totalDamageDealt": 89000,
+        "totalDamageDealtToChampions": 20000,
+        "totalHeal": 2000,
+        "totalHealsOnTeammates": 0,
+        "totalDamageShieldedOnTeammates": 0
+      }
     },
     {
       "participantId": 5,
@@ -162,7 +510,94 @@
       ],
       "gameName": "Invented Player 5",
       "tagLine": "DEMO",
-      "summonerName": null
+      "summonerName": null,
+      "runes": {
+        "availability": "available",
+        "matchPatch": "16.17",
+        "normalizationVersion": "participant-details-v1",
+        "layoutManifestId": "rune-layout-16.17-v1",
+        "performanceStatus": "unverified",
+        "styles": [
+          {
+            "styleId": 8200,
+            "role": "primaryStyle",
+            "selections": [
+              {
+                "runeId": 8214,
+                "metrics": [],
+                "counters": {
+                  "var1": 740,
+                  "var2": 980,
+                  "var3": 0
+                }
+              },
+              {
+                "runeId": 8226,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 8210,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 8237,
+                "metrics": [],
+                "counters": {
+                  "var1": 360,
+                  "var2": 0,
+                  "var3": 0
+                }
+              }
+            ]
+          },
+          {
+            "styleId": 8400,
+            "role": "subStyle",
+            "selections": [
+              {
+                "runeId": 8463,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 8453,
+                "metrics": [],
+                "counters": {
+                  "var1": 350,
+                  "var2": 420,
+                  "var3": 0
+                }
+              }
+            ]
+          }
+        ],
+        "shards": {
+          "offense": 5008,
+          "flex": 5008,
+          "defense": 5001
+        }
+      },
+      "participantTotals": {
+        "totalDamageDealt": 90000,
+        "totalDamageDealtToChampions": 20500,
+        "totalHeal": 2000,
+        "totalHealsOnTeammates": 0,
+        "totalDamageShieldedOnTeammates": 0
+      }
     },
     {
       "participantId": 6,
@@ -193,7 +628,94 @@
       ],
       "gameName": "Invented Player 6",
       "tagLine": "DEMO",
-      "summonerName": null
+      "summonerName": null,
+      "runes": {
+        "availability": "available",
+        "matchPatch": "16.17",
+        "normalizationVersion": "participant-details-v1",
+        "layoutManifestId": "rune-layout-16.17-v1",
+        "performanceStatus": "unverified",
+        "styles": [
+          {
+            "styleId": 8400,
+            "role": "primaryStyle",
+            "selections": [
+              {
+                "runeId": 8437,
+                "metrics": [],
+                "counters": {
+                  "var1": 576,
+                  "var2": 454,
+                  "var3": 0
+                }
+              },
+              {
+                "runeId": 8446,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 8444,
+                "metrics": [],
+                "counters": {
+                  "var1": 620,
+                  "var2": 0,
+                  "var3": 0
+                }
+              },
+              {
+                "runeId": 8451,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              }
+            ]
+          },
+          {
+            "styleId": 8000,
+            "role": "subStyle",
+            "selections": [
+              {
+                "runeId": 9111,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 8299,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              }
+            ]
+          }
+        ],
+        "shards": {
+          "offense": 5008,
+          "flex": 5008,
+          "defense": 5001
+        }
+      },
+      "participantTotals": {
+        "totalDamageDealt": 91000,
+        "totalDamageDealtToChampions": 21000,
+        "totalHeal": 2000,
+        "totalHealsOnTeammates": 0,
+        "totalDamageShieldedOnTeammates": 0
+      }
     },
     {
       "participantId": 7,
@@ -224,7 +746,94 @@
       ],
       "gameName": "Invented Player 7",
       "tagLine": "DEMO",
-      "summonerName": null
+      "summonerName": null,
+      "runes": {
+        "availability": "available",
+        "matchPatch": "16.17",
+        "normalizationVersion": "participant-details-v1",
+        "layoutManifestId": "rune-layout-16.17-v1",
+        "performanceStatus": "unverified",
+        "styles": [
+          {
+            "styleId": 8100,
+            "role": "primaryStyle",
+            "selections": [
+              {
+                "runeId": 8112,
+                "metrics": [],
+                "counters": {
+                  "var1": 1100,
+                  "var2": 0,
+                  "var3": 0
+                }
+              },
+              {
+                "runeId": 8126,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 8140,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 8105,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              }
+            ]
+          },
+          {
+            "styleId": 8000,
+            "role": "subStyle",
+            "selections": [
+              {
+                "runeId": 9111,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 9104,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              }
+            ]
+          }
+        ],
+        "shards": {
+          "offense": 5008,
+          "flex": 5008,
+          "defense": 5001
+        }
+      },
+      "participantTotals": {
+        "totalDamageDealt": 92000,
+        "totalDamageDealtToChampions": 21500,
+        "totalHeal": 2000,
+        "totalHealsOnTeammates": 0,
+        "totalDamageShieldedOnTeammates": 0
+      }
     },
     {
       "participantId": 8,
@@ -255,7 +864,94 @@
       ],
       "gameName": "Invented Player 8",
       "tagLine": "DEMO",
-      "summonerName": null
+      "summonerName": null,
+      "runes": {
+        "availability": "available",
+        "matchPatch": "16.17",
+        "normalizationVersion": "participant-details-v1",
+        "layoutManifestId": "rune-layout-16.17-v1",
+        "performanceStatus": "unverified",
+        "styles": [
+          {
+            "styleId": 8200,
+            "role": "primaryStyle",
+            "selections": [
+              {
+                "runeId": 8229,
+                "metrics": [],
+                "counters": {
+                  "var1": 1250,
+                  "var2": 0,
+                  "var3": 0
+                }
+              },
+              {
+                "runeId": 8226,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 8210,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 8237,
+                "metrics": [],
+                "counters": {
+                  "var1": 360,
+                  "var2": 0,
+                  "var3": 0
+                }
+              }
+            ]
+          },
+          {
+            "styleId": 8300,
+            "role": "subStyle",
+            "selections": [
+              {
+                "runeId": 8345,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 8347,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              }
+            ]
+          }
+        ],
+        "shards": {
+          "offense": 5008,
+          "flex": 5008,
+          "defense": 5001
+        }
+      },
+      "participantTotals": {
+        "totalDamageDealt": 93000,
+        "totalDamageDealtToChampions": 22000,
+        "totalHeal": 2000,
+        "totalHealsOnTeammates": 0,
+        "totalDamageShieldedOnTeammates": 0
+      }
     },
     {
       "participantId": 9,
@@ -286,7 +982,94 @@
       ],
       "gameName": "Invented Player 9",
       "tagLine": "DEMO",
-      "summonerName": null
+      "summonerName": null,
+      "runes": {
+        "availability": "available",
+        "matchPatch": "16.17",
+        "normalizationVersion": "participant-details-v1",
+        "layoutManifestId": "rune-layout-16.17-v1",
+        "performanceStatus": "unverified",
+        "styles": [
+          {
+            "styleId": 8000,
+            "role": "primaryStyle",
+            "selections": [
+              {
+                "runeId": 8005,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 8009,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 9103,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 8014,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              }
+            ]
+          },
+          {
+            "styleId": 8200,
+            "role": "subStyle",
+            "selections": [
+              {
+                "runeId": 8233,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 8236,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              }
+            ]
+          }
+        ],
+        "shards": {
+          "offense": 5008,
+          "flex": 5008,
+          "defense": 5001
+        }
+      },
+      "participantTotals": {
+        "totalDamageDealt": 94000,
+        "totalDamageDealtToChampions": 22500,
+        "totalHeal": 2000,
+        "totalHealsOnTeammates": 0,
+        "totalDamageShieldedOnTeammates": 0
+      }
     },
     {
       "participantId": 10,
@@ -317,7 +1100,94 @@
       ],
       "gameName": "Invented Player 10",
       "tagLine": "DEMO",
-      "summonerName": null
+      "summonerName": null,
+      "runes": {
+        "availability": "available",
+        "matchPatch": "16.17",
+        "normalizationVersion": "participant-details-v1",
+        "layoutManifestId": "rune-layout-16.17-v1",
+        "performanceStatus": "unverified",
+        "styles": [
+          {
+            "styleId": 8400,
+            "role": "primaryStyle",
+            "selections": [
+              {
+                "runeId": 8439,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 8463,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 8473,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 8453,
+                "metrics": [],
+                "counters": {
+                  "var1": 350,
+                  "var2": 420,
+                  "var3": 0
+                }
+              }
+            ]
+          },
+          {
+            "styleId": 8300,
+            "role": "subStyle",
+            "selections": [
+              {
+                "runeId": 8304,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              },
+              {
+                "runeId": 8347,
+                "metrics": [],
+                "counters": {
+                  "var1": null,
+                  "var2": null,
+                  "var3": null
+                }
+              }
+            ]
+          }
+        ],
+        "shards": {
+          "offense": 5008,
+          "flex": 5008,
+          "defense": 5001
+        }
+      },
+      "participantTotals": {
+        "totalDamageDealt": 95000,
+        "totalDamageDealtToChampions": 23000,
+        "totalHeal": 2000,
+        "totalHealsOnTeammates": 0,
+        "totalDamageShieldedOnTeammates": 0
+      }
     }
   ],
   "teams": [
@@ -1336,6 +2206,16 @@
       "timestampMs": 505210,
       "label": "Purchased item 3071",
       "type": "ITEM_PURCHASED",
+      "presentation": {
+        "actorTeam": {
+          "teamId": 200,
+          "basis": "known"
+        },
+        "objectTeam": {
+          "teamId": null,
+          "basis": "missing"
+        }
+      },
       "participantIds": [
         6
       ],
@@ -1359,6 +2239,16 @@
       "timestampMs": 552430,
       "label": "Champion kill",
       "type": "CHAMPION_KILL",
+      "presentation": {
+        "actorTeam": {
+          "teamId": 200,
+          "basis": "known"
+        },
+        "objectTeam": {
+          "teamId": null,
+          "basis": "missing"
+        }
+      },
       "participantIds": [
         1,
         6,
@@ -1397,6 +2287,16 @@
       "timestampMs": 589775,
       "label": "Dragon secured",
       "type": "ELITE_MONSTER_KILL",
+      "presentation": {
+        "actorTeam": {
+          "teamId": 200,
+          "basis": "known"
+        },
+        "objectTeam": {
+          "teamId": null,
+          "basis": "missing"
+        }
+      },
       "participantIds": [
         7
       ],

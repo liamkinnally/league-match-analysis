@@ -35,6 +35,19 @@ class PublicMatchLookupServiceTest {
         });
     }
 
+    @Test void explicitRecentRecordUsesSoloQueueBoundedPageAndAccountCooldown() {
+        UUID original=UUID.randomUUID();
+        when(store.readPageCommand(original)).thenReturn(Optional.of(new RiotIngestionCommand("Invented","NA1",20,0,0,clock.instant().getEpochSecond(),null)));
+        when(store.latestRefresh(any())).thenReturn(Optional.of(clock.instant().minusSeconds(899)));
+        assertThatThrownBy(()->service.recentRecord(original,"peer")).isInstanceOfSatisfying(PublicLookupException.class,e->assertThat(e.status()).isEqualTo(429));
+        assertThat(work).isEmpty();
+        when(store.latestRefresh(any())).thenReturn(Optional.empty());
+        var result=service.recentRecord(original,"peer");
+        assertThat(service.recentRecord(original,"peer").lookup().runId()).isEqualTo(result.lookup().runId());
+        assertThat(work).hasSize(1);
+        verify(ingestion).historyWork(eq(result.lookup().runId()),argThat(c->c.queueId()==420&&c.matchLimit()==20&&c.start()==0&&c.endTime().equals(clock.instant().getEpochSecond())),eq(store));
+    }
+
     @Test void returnsRunBeforeWorkAndSharesIdenticalActiveRequests() {
         var first = service.submit(" Invented ", "NA1", "peer");
         var second = service.submit("invented", "na1", "peer");

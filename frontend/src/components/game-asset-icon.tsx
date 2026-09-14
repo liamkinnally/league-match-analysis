@@ -11,7 +11,7 @@ export function GameAssetIcon({ asset, fallback, className }: {
 }) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   if (!asset || failedUrl === asset.imageUrl) {
-    return <span className={className} aria-label={asset?.name}>{fallback}</span>;
+    return <span className={className} role="img" aria-label={asset?.name ?? fallback}>{fallback}</span>;
   }
-  return <img className={className} src={asset.imageUrl} alt={asset.name} onError={() => setFailedUrl(asset.imageUrl)} />;
+  return <img width={32} height={32} className={className} src={asset.imageUrl} alt={asset.name} onError={() => setFailedUrl(asset.imageUrl)} />;
 }
