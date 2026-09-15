@@ -12,7 +12,7 @@ export function ProfileTime({ value }: { value: string }) {
 }
 export function RankObservations({ history, busy, loadOlder }: { history: PlayerProfile["rankHistory"]; busy: boolean; loadOlder: () => void }) {
   return <details className="player-rank-observations">
-    <summary>View rank observations <span>{history.observations.length} loaded</span></summary>
+    <summary>View rank observations <span>{history.observations.length}</span></summary>
     <p>Recorded snapshots only. Gaps and ranked resets may occur between observations; changes are not attributed to individual matches.</p>
     {history.observations.length ? <ol aria-label="Observed Solo/Duo ranks">{history.observations.map(row => <li key={row.id}>
       <ProfileTime value={row.observedAt} /><strong>{rankValue(row)}</strong>

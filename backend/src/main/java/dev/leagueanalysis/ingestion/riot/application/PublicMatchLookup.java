@@ -16,7 +16,8 @@ public record PublicMatchLookup(UUID runId, String gameName, String tagLine, Str
         return new PublicMatchLookup(runId, name, tag, status, message, retryNotBefore, matches,
                 queueId, lastUpdated, nextRefreshAt, previousRunId, hasMore);
     }
+    /** Remake is unknown unless ten explicit early-surrender flags agree; win retains the provider result. */
     public record MatchSummary(String matchId, int participantId, String championName, int championId,
             String gameVersion, List<Integer> endItemIds, String position, boolean win, long startedAtMs, long durationSeconds, int kills, int deaths,
-            int assists, int cs, int gold, boolean timelineAvailable, int queueId) {}
+            int assists, int cs, int gold, boolean timelineAvailable, int queueId, Boolean remake) {}
 }

@@ -426,11 +426,26 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
     }
 
     private List<PublicMatchLookup.MatchSummary> publicMatches(UUID runId) {
-        var matches = jdbc.query("""
+        var matches = queryPublicMatches(runId);
+        // Only this already admitted page, at most twenty matches. Each enrichment
+        // commits separately and never acquires account/profile locks.
+        for (var match : matches) enrichParticipantDetails(match.matchId());
+        // Another reader may have completed the same backfill while this one waited.
+        return matches.isEmpty() ? matches : queryPublicMatches(runId);
+    }
+
+    private List<PublicMatchLookup.MatchSummary> queryPublicMatches(UUID runId) {
+        return jdbc.query("""
                 select m.match_id, m.queue_id, p.participant_id, p.champion_name, p.champion_id, m.game_version, p.end_item_ids::text, p.team_position,
                     p.win, coalesce(m.game_start_ms, m.game_creation_ms) started_at_ms, m.game_duration_seconds,
                     p.kills, p.deaths, p.assists, p.total_minions_killed + p.neutral_minions_killed cs,
-                    p.gold_earned, m.timeline_source_capture_id is not null timeline_available
+                    p.gold_earned, m.timeline_source_capture_id is not null timeline_available,
+                    (select case when count(*) = 10 and count(e.game_ended_in_early_surrender) = 10
+                        then case when bool_and(e.game_ended_in_early_surrender) then true
+                            when not bool_or(e.game_ended_in_early_surrender) then false end
+                        end
+                     from league_analysis.riot_participant e where e.match_id = m.match_id
+                        and not league_analysis.privacy_blocked('puuid', e.puuid)) remake
                 from league_analysis.ingestion_run r
                 join league_analysis.ingestion_item i on i.ingestion_run_id = r.id
                 join league_analysis.riot_match m on m.match_id = i.match_id
@@ -448,11 +463,7 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
                 rs.getString("team_position"), rs.getBoolean("win"), rs.getLong("started_at_ms"),
                 rs.getLong("game_duration_seconds"), rs.getInt("kills"), rs.getInt("deaths"),
                 rs.getInt("assists"), rs.getInt("cs"), rs.getInt("gold_earned"),
-                rs.getBoolean("timeline_available"), rs.getInt("queue_id")), runId);
-        // Only this already admitted page, at most twenty matches. Each enrichment
-        // commits separately and never acquires account/profile locks.
-        matches.forEach(match -> enrichParticipantDetails(match.matchId()));
-        return matches;
+                rs.getBoolean("timeline_available"), rs.getInt("queue_id"), rs.getObject("remake", Boolean.class)), runId);
     }
 
     private List<Integer> itemIds(String encoded) {

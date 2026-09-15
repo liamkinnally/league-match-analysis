@@ -1,6 +1,6 @@
 export type MatchSummary = {
   matchId: string; queueId: number; participantId: number; championName: string; championId: number;
-  gameVersion: string; endItemIds: number[]; position: string; win: boolean; startedAtMs: number; durationSeconds: number;
+  gameVersion: string; endItemIds: number[]; position: string; win: boolean; remake: boolean | null; startedAtMs: number; durationSeconds: number;
   kills: number; deaths: number; assists: number; cs: number; gold: number; timelineAvailable: boolean;
 };
 export type PlayerLookup = {
@@ -70,7 +70,7 @@ export function parseLookup(value: unknown): PlayerLookup {
       if (!Array.isArray(m.endItemIds) || m.endItemIds.length > 7) throw new Error("INVALID_LOOKUP");
       return { matchId, queueId: m.queueId, participantId, championName: text(m.championName), championId: number(m.championId),
         gameVersion: text(m.gameVersion), endItemIds: m.endItemIds.map((id) => number(id, 100000)),
-        position: text(m.position || "UNKNOWN"), win: boolean(m.win), startedAtMs: number(m.startedAtMs),
+        position: text(m.position || "UNKNOWN"), win: boolean(m.win), remake: m.remake == null ? null : boolean(m.remake), startedAtMs: number(m.startedAtMs),
         durationSeconds: number(m.durationSeconds), kills: number(m.kills), deaths: number(m.deaths),
         assists: number(m.assists), cs: number(m.cs), gold: number(m.gold), timelineAvailable: boolean(m.timelineAvailable) };
     }),

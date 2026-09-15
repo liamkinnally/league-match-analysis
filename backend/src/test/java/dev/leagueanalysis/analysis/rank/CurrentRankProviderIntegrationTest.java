@@ -115,6 +115,16 @@ class CurrentRankProviderIntegrationTest {
         assertThat(publicProfile.soloRank().wins()).isEqualTo(6);
         assertThat(publicProfile.soloRank().losses()).isEqualTo(4);
         assertThat(publicProfile.soloRank().winRate()).isEqualTo(60.0);
+        var publicFlex = json.readTree(json.writeValueAsString(publicProfile)).path("flexRank");
+        assertThat(publicFlex.isObject()).as("The public profile includes cached Flex rank").isTrue();
+        assertThat(publicFlex.path("status").asString()).isEqualTo("ranked");
+        assertThat(publicFlex.path("tier").asString()).isEqualTo("SILVER");
+        assertThat(publicFlex.path("division").asString()).isEqualTo("I");
+        assertThat(publicFlex.path("leaguePoints").asInt()).isEqualTo(23);
+        assertThat(publicFlex.path("wins").asInt()).isEqualTo(5);
+        assertThat(publicFlex.path("losses").asInt()).isEqualTo(9);
+        assertThat(publicFlex.path("winRate").asDouble()).isEqualTo(35.7);
+        assertThat(publicFlex.path("fetchedAt").asString()).isEqualTo(now.get().toString());
         assertThat(publicProfile.rankHistory().observations()).singleElement().satisfies(observation -> {
             assertThat(observation.status()).isEqualTo("ranked");
             assertThat(observation.leaguePoints()).isEqualTo(37);

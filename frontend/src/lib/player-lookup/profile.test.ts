@@ -10,3 +10,9 @@ it("rejects false records, malformed timestamps, and oversized observation pages
   expect(() => parsePlayerProfile({ ...profileFixture, summoner: { ...profileFixture.summoner, fetchedAt: "yesterday" } })).toThrow();
   expect(() => parsePlayerProfile({ ...profileFixture, rankHistory: { ...profileFixture.rankHistory, observations: Array(51).fill(profileFixture.rankHistory.observations[0]) } })).toThrow();
 });
+it("keeps an older backend's missing Flex rank unavailable and validates present Flex values", () => {
+  const { flexRank, ...legacy } = profileFixture;
+  expect(parsePlayerProfile(legacy).flexRank.status).toBe("unavailable");
+  expect(parsePlayerProfile(profileFixture).flexRank.status).toBe("unranked");
+  expect(() => parsePlayerProfile({ ...profileFixture, flexRank: { ...flexRank, status: "ranked", tier: "PRIVATE" } })).toThrow();
+});

@@ -6,7 +6,7 @@ const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 const id = (n: number) => `00000000-0000-0000-0000-${String(n).padStart(12, "0")}`;
 const match = (n: number) => ({ matchId: `NA1_${n}`, queueId: 420, participantId: 6, championName: "Garen", championId: 86,
-  gameVersion: "16.17.1", endItemIds: [], position: "TOP", win: true, startedAtMs: n, durationSeconds: 1800,
+  gameVersion: "16.17.1", endItemIds: [], position: "TOP", win: true, remake: false, startedAtMs: n, durationSeconds: 1800,
   kills: 1, deaths: 2, assists: 3, cs: 100, gold: 10000, timelineAvailable: false });
 const page = (n: number, ids: number[], extra: Partial<PlayerLookup> = {}): PlayerLookup => ({ runId: id(n), gameName: "Invented", tagLine: "NA1", queueId: 420,
   status: "COMPLETE", message: null, retryNotBefore: null, lastUpdated: "2026-09-12T00:00:00Z", nextRefreshAt: null,

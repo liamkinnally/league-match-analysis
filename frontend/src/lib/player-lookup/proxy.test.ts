@@ -130,3 +130,13 @@ it("accepts mixed supported match queues only in all-queue history", () => {
   expect(() => parseLookup({ ...lookup, queueId: 0, matches: [{ ...match, queueId: 0 }] })).toThrow();
   expect(() => parseLookup({ ...lookup, queueId: 0, matches: [{ ...match, queueId: 1700 }] })).toThrow();
 });
+it("preserves nullable remake evidence without interpreting absence as a counted game", () => {
+  const match = { matchId: "NA1_21", queueId: 420, participantId: 6, championName: "Garen", championId: 86,
+    gameVersion: "16.17.1", endItemIds: [], position: "TOP", win: true, startedAtMs: 1788890400000,
+    durationSeconds: 1800, kills: 7, deaths: 2, assists: 9, cs: 180, gold: 12500, timelineAvailable: false };
+  for (const remake of [true, false, null]) {
+    expect(parseLookup({ ...lookup, matches: [{ ...match, remake }] }).matches[0].remake).toBe(remake);
+  }
+  expect(parseLookup({ ...lookup, matches: [match] }).matches[0].remake).toBeNull();
+  expect(() => parseLookup({ ...lookup, matches: [{ ...match, remake: "false" }] })).toThrow();
+});
