@@ -11,6 +11,7 @@ selection_query="focus=6&object=trn_000000000000000000000002&start=780275&end=90
 usage() {
   cat <<'EOF'
 Usage:
+  ./scripts/dev [live]
   ./scripts/dev app
   ./scripts/dev fixture
   ./scripts/dev ui
@@ -20,15 +21,6 @@ EOF
 print_command() {
   printf '%q ' "$@"
   printf '\n'
-}
-
-ensure_local_environment() {
-  if [[ "${DEV_DRY_RUN:-0}" == "1" ]]; then
-    printf 'ensure ignored .env and frontend/.env.local exist without overwriting\n'
-    return
-  fi
-  [[ -e "$repo_dir/.env" ]] || cp "$repo_dir/.env.example" "$repo_dir/.env"
-  [[ -e "$frontend_dir/.env.local" ]] || cp "$frontend_dir/.env.example" "$frontend_dir/.env.local"
 }
 
 print_lab_urls() {
@@ -45,63 +37,18 @@ run_ui() {
   print_lab_urls
   if [[ "${DEV_DRY_RUN:-0}" == "1" ]]; then
     printf '(cd %q && ' "$frontend_dir"
-    print_command env UI_LAB_ENABLED=1 LEAGUE_ANALYSIS_RUNTIME=local npm run dev
+    print_command env -u RIOT_API_KEY NEXT_PUBLIC_RIOT_API_KEY= UI_LAB_ENABLED=1 LEAGUE_ANALYSIS_RUNTIME=local npm run dev
     printf ')\n'
   else
-    (cd "$frontend_dir" && env UI_LAB_ENABLED=1 LEAGUE_ANALYSIS_RUNTIME=local npm run dev)
+    (cd "$frontend_dir" && env -u RIOT_API_KEY NEXT_PUBLIC_RIOT_API_KEY= UI_LAB_ENABLED=1 LEAGUE_ANALYSIS_RUNTIME=local npm run dev)
   fi
 }
 
-run_stack() {
-  local profile=$1
-  ensure_local_environment
+[[ $# -le 1 ]] || { usage >&2; exit 2; }
 
-  if [[ "${DEV_DRY_RUN:-0}" == "1" ]]; then
-    printf '(cd %q && ' "$repo_dir"
-    print_command docker compose up -d --wait postgres
-    printf ')\n'
-    if [[ $profile == "fixture" ]]; then
-      printf '(cd %q && ' "$backend_dir"
-      print_command ./mvnw -B -ntp test-compile
-      printf ')\n'
-    fi
-    printf '(cd %q && ' "$backend_dir"
-    if [[ $profile == "fixture" ]]; then
-      print_command ./mvnw spring-boot:run \
-        -Dspring-boot.run.profiles=local,e2e \
-        -Dspring-boot.run.useTestClasspath=true \
-        -Dspring-boot.run.additional-classpath-elements=target/test-classes
-    else
-      print_command ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
-    fi
-    printf ')\n'
-    printf '(cd %q && ' "$frontend_dir"
-    print_command npm run dev
-    printf ')\n'
-    return
-  fi
-
-  (cd "$repo_dir" && docker compose up -d --wait postgres)
-  if [[ $profile == "fixture" ]]; then
-    (cd "$backend_dir" && ./mvnw -B -ntp test-compile)
-    (cd "$backend_dir" && ./mvnw spring-boot:run \
-      -Dspring-boot.run.profiles=local,e2e \
-      -Dspring-boot.run.useTestClasspath=true \
-      -Dspring-boot.run.additional-classpath-elements=target/test-classes) &
-  else
-    (cd "$backend_dir" && ./mvnw spring-boot:run \
-      -Dspring-boot.run.profiles=local) &
-  fi
-  local backend_pid=$!
-  trap 'kill "$backend_pid" 2>/dev/null || true' INT TERM EXIT
-  (cd "$frontend_dir" && npm run dev)
-}
-
-[[ $# -eq 1 ]] || { usage >&2; exit 2; }
-
-case "$1" in
-  app) run_stack app ;;
-  fixture) run_stack fixture ;;
+case "${1:-live}" in
+  live|app|fixture) exec node "$script_dir/dev-stack.mjs" "${1:-live}" ;;
   ui) run_ui ;;
+  --help|-h) usage ;;
   *) usage >&2; exit 2 ;;
 esac

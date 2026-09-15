@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Automated checks never inherit the live-development Riot credential.
+export RIOT_API_KEY= RIOT_PUBLIC_LOOKUP_ENABLED=false NEXT_PUBLIC_RIOT_API_KEY=
+
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
 repo_dir=$(cd "$script_dir/.." && pwd -P)
 backend_dir="$repo_dir/backend"
@@ -83,28 +86,7 @@ task_frontend() {
 
 ui_behavior() {
   ensure_local_environment
-  if [[ "${VERIFY_DRY_RUN:-0}" == "1" ]]; then
-    run_in "$repo_dir" docker compose up -d --wait postgres
-    run_in "$backend_dir" ./mvnw -B -ntp test-compile
-    run_in "$frontend_dir" npm run test:e2e -- "$@"
-    return
-  fi
-
-  local started_postgres=0
-  if ! (cd "$repo_dir" && docker compose --env-file .env ps --status running --services) | grep -qx postgres; then
-    (cd "$repo_dir" && docker compose up -d --wait postgres)
-    started_postgres=1
-  fi
-
-  local result=0
-  (cd "$backend_dir" && ./mvnw -B -ntp test-compile) || result=$?
-  if [[ $result -eq 0 ]]; then
-    (cd "$frontend_dir" && npm run test:e2e -- "$@") || result=$?
-  fi
-  if [[ $started_postgres -eq 1 ]]; then
-    (cd "$repo_dir" && docker compose stop postgres) || result=$?
-  fi
-  return "$result"
+  run_in "$frontend_dir" npm run test:e2e -- "$@"
 }
 
 ui_sample() {

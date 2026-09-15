@@ -1,8 +1,20 @@
 import { defineConfig, devices } from "@playwright/test";
+import { localConfig } from "../scripts/lib/dev-config.cjs";
 
-const frontendPort = process.env.E2E_FRONTEND_PORT ?? "3000";
-const backendPort = process.env.E2E_BACKEND_PORT ?? "8080";
-const backendOrigin = `http://127.0.0.1:${backendPort}`;
+const ports = {
+  DEV_FRONTEND_PORT: process.env.E2E_FRONTEND_PORT ?? "3100",
+  DEV_BACKEND_PORT: process.env.E2E_BACKEND_PORT ?? "8180",
+  DEV_POSTGRES_PORT: process.env.E2E_POSTGRES_PORT ?? "5549",
+};
+const runtime = localConfig("fixture", { ...process.env, ...ports });
+// SQL fixture operations in the specs must target the same isolated Compose project.
+Object.assign(process.env, runtime.databaseEnv, {
+  E2E_FRONTEND_PORT: String(runtime.frontendPort),
+  E2E_BACKEND_PORT: String(runtime.backendPort),
+  E2E_POSTGRES_PORT: String(runtime.postgresPort),
+  SPRING_DATASOURCE_URL: runtime.backendEnv.SPRING_DATASOURCE_URL,
+  RIOT_API_KEY: "", RIOT_PUBLIC_LOOKUP_ENABLED: "false",
+});
 
 export default defineConfig({
   testDir: "./e2e",
@@ -12,23 +24,19 @@ export default defineConfig({
   workers: 1,
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
-    baseURL: `http://127.0.0.1:${frontendPort}`,
+    baseURL: runtime.frontendOrigin,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: [
     {
-      command: `cd ../backend && ./mvnw spring-boot:run -Dspring-boot.run.profiles=local,e2e -Dspring-boot.run.useTestClasspath=true -Dspring-boot.run.additional-classpath-elements=target/test-classes -Dspring-boot.run.arguments=--server.port=${backendPort}`,
-      url: `${backendOrigin}/actuator/health`,
-      reuseExistingServer: !process.env.CI,
-      timeout: 120_000,
-    },
-    {
-      command: `BACKEND_URL=${backendOrigin} npm run dev -- --port ${frontendPort}`,
-      url: `http://127.0.0.1:${frontendPort}`,
-      reuseExistingServer: !process.env.CI,
-      timeout: 120_000,
+      command: "../scripts/dev fixture",
+      env: { ...runtime.composeEnv, ...ports },
+      url: `${runtime.frontendOrigin}/api/health`,
+      reuseExistingServer: false,
+      timeout: 180_000,
+      gracefulShutdown: { signal: "SIGTERM", timeout: 15_000 },
     },
   ],
 });

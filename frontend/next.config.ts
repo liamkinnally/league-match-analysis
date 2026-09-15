@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   agentRules: false,
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   // Vercel's adapter owns server packaging; Docker needs standalone output.
   output: process.env.VERCEL === "1" ? undefined : "standalone",
 };
