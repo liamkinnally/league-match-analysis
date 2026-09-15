@@ -5,6 +5,48 @@ import { profileFixture } from "./profile.test-fixture";
 const runId = "00000000-0000-0000-0000-000000000001";
 const subject = { runId, ...profileFixture.identity, updatedAt: "2026-09-14T10:00:00Z", historyStatus: "COMPLETE" };
 afterEach(() => vi.useRealTimers());
+it("waits for first account verification while history is running and shows the automatically fetched profile", async () => {
+  vi.useFakeTimers();
+  const fetcher = vi.fn()
+    .mockImplementationOnce(async () => Response.json({}, { status: 404 }))
+    .mockImplementation(async () => Response.json(profileFixture));
+  vi.stubGlobal("fetch", fetcher);
+  const hook = renderHook(() => usePlayerProfile({ ...subject, historyStatus: "RUNNING" }));
+  await act(async () => {});
+  expect(hook.result.current.loading).toBe(true);
+  expect(hook.result.current.issue).toBeNull();
+  await act(async () => vi.advanceTimersByTime(2000));
+  expect(fetcher).toHaveBeenCalledTimes(2);
+  expect(hook.result.current.profile?.summoner.summonerLevel).toBe(123);
+  expect(hook.result.current.loading).toBe(false);
+  expect(fetcher.mock.calls.every(([, options]) => options.method === "GET")).toBe(true);
+});
+it("stops waiting for account verification when the history lookup fails", async () => {
+  vi.useFakeTimers();
+  const fetcher = vi.fn().mockImplementation(async () => Response.json({}, { status: 404 }));
+  vi.stubGlobal("fetch", fetcher);
+  const hook = renderHook(({ status }) => usePlayerProfile({ ...subject, historyStatus: status }), { initialProps: { status: "RUNNING" } });
+  await act(async () => {});
+  await act(async () => hook.rerender({ status: "FAILED" }));
+  expect(hook.result.current.loading).toBe(false);
+  expect(hook.result.current.issue?.message).toContain("not available");
+  await act(async () => vi.advanceTimersByTime(20_000));
+  expect(fetcher).toHaveBeenCalledTimes(2);
+});
+it("bounds verification polling if a running lookup never gains a verified identity", async () => {
+  vi.useFakeTimers();
+  const fetcher = vi.fn().mockImplementation(async () => Response.json({}, { status: 404 }));
+  vi.stubGlobal("fetch", fetcher);
+  const hook = renderHook(() => usePlayerProfile({ ...subject, historyStatus: "RUNNING" }));
+  await act(async () => {});
+  await act(async () => vi.advanceTimersByTimeAsync(15 * 60_000));
+  expect(hook.result.current.loading).toBe(false);
+  expect(hook.result.current.issue).not.toBeNull();
+  expect(fetcher.mock.calls.length).toBeLessThanOrEqual(450);
+  const calls = fetcher.mock.calls.length;
+  await act(async () => vi.advanceTimersByTime(20_000));
+  expect(fetcher).toHaveBeenCalledTimes(calls);
+});
 it("polls only refreshing cached projections and stops once sections finish", async () => {
   vi.useFakeTimers();
   const fetcher = vi.fn().mockImplementationOnce(async () => Response.json({ ...profileFixture, soloRank: { ...profileFixture.soloRank, refreshing: true } })).mockImplementation(async () => Response.json(profileFixture));

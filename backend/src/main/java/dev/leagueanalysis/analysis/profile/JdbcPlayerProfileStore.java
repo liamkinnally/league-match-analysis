@@ -49,8 +49,9 @@ public class JdbcPlayerProfileStore implements RankSnapshotStore {
     }
     public void finishProfileWork(UUID run) {
         requireHealthy();
+        // Retain the deadline to fence older work and distinguish completion from work not yet queued.
         jdbc.update("""
-            update league_analysis.player_profile_current set profile_pending_run_id=null,profile_pending_until=null
+            update league_analysis.player_profile_current set profile_pending_run_id=null
             where profile_pending_run_id=? and not league_analysis.privacy_blocked('puuid',puuid)
             """,run);
     }
@@ -59,8 +60,11 @@ public class JdbcPlayerProfileStore implements RankSnapshotStore {
         return Boolean.TRUE.equals(jdbc.queryForObject("""
             select exists(select 1 from league_analysis.player_profile_current where puuid=? and platform=?
                 and profile_pending_run_id is not null and profile_pending_until>?)
-            or exists(select 1 from league_analysis.ingestion_run where id=? and resolved_puuid=?
-                and public_request and lookup_kind='HISTORY' and status='RUNNING' and started_at>?)
+            or exists(select 1 from league_analysis.ingestion_run r where r.id=? and r.resolved_puuid=?
+                and r.public_request and r.lookup_kind='HISTORY' and r.status='RUNNING' and r.started_at>?
+                and not exists(select 1 from league_analysis.player_profile_current p
+                    where p.puuid=r.resolved_puuid and p.platform=r.platform_route
+                      and p.profile_pending_until>=r.started_at+interval '900 seconds'))
             """,Boolean.class,subject.puuid(),subject.platform(),time(now),run,subject.puuid(),time(now.minusSeconds(900))));
     }
     public void claimRecent(Subject subject,Instant now) {

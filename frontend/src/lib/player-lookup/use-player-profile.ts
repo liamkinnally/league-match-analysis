@@ -5,7 +5,7 @@ import { retryDate } from "./types";
 
 type Subject = ProfileIdentity & { runId: string; updatedAt: string | null; historyStatus: string };
 type Issue = { message: string; retryNotBefore: string | null };
-class ProfileRequestError extends Error { constructor(readonly issue: Issue) { super(issue.message); } }
+class ProfileRequestError extends Error { constructor(readonly issue: Issue, readonly status: number) { super(issue.message); } }
 async function requestProfile(url: string, signal: AbortSignal, method = "GET"): Promise<PlayerProfile> {
   const controller = new AbortController(), abort = () => controller.abort();
   signal.addEventListener("abort", abort, { once: true });
@@ -14,7 +14,7 @@ async function requestProfile(url: string, signal: AbortSignal, method = "GET"):
   try {
     const response = await fetch(url, { signal: controller.signal, cache: "no-store", method });
     const body: unknown = await response.json().catch(() => null);
-    if (!response.ok) throw new ProfileRequestError({ message: response.status === 429 ? "Recent Solo/Duo collection is cooling down." : response.status === 404 ? "Profile details are not available for this lookup yet." : "Profile details could not be loaded. Previously loaded values may be out of date.", retryNotBefore: body && typeof body === "object" && "retryNotBefore" in body ? retryDate(body.retryNotBefore) : null });
+    if (!response.ok) throw new ProfileRequestError({ message: response.status === 429 ? "Recent Solo/Duo collection is cooling down." : response.status === 404 ? "Profile details are not available for this lookup yet." : "Profile details could not be loaded. Previously loaded values may be out of date.", retryNotBefore: body && typeof body === "object" && "retryNotBefore" in body ? retryDate(body.retryNotBefore) : null }, response.status);
     return parsePlayerProfile(body);
   } finally { clearTimeout(timer); signal.removeEventListener("abort", abort); }
 }
@@ -56,10 +56,21 @@ export function usePlayerProfile(subject: Subject | null) {
       });
     };
     try {
-      let next = await requestProfile(`/api/player-matches/${runId}/${kind === "recent" ? "recent-record" : "profile"}${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`, signal, kind === "recent" ? "POST" : "GET");
+      const deadline = Date.now() + 15 * 60_000;
+      let next: PlayerProfile;
+      for (let attempt = 0; ; attempt++) {
+        try {
+          next = await requestProfile(`/api/player-matches/${runId}/${kind === "recent" ? "recent-record" : "profile"}${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`, signal, kind === "recent" ? "POST" : "GET");
+          break;
+        } catch (error) {
+          // A new lookup has no profile until its Account response is verified.
+          if (kind !== "load" || historyStatus !== "RUNNING" || !(error instanceof ProfileRequestError)
+            || error.status !== 404 || attempt >= 449 || Date.now() >= deadline) throw error;
+          await pause(signal);
+        }
+      }
       accept(next, kind === "older");
       if (kind !== "older") {
-        const deadline = Date.now() + 15 * 60_000;
         for (let attempt = 0; profileNeedsPolling(next) && attempt < 450 && Date.now() < deadline; attempt++) {
           await pause(signal);
           next = await requestProfile(`/api/player-matches/${runId}/profile`, signal);
@@ -70,7 +81,7 @@ export function usePlayerProfile(subject: Subject | null) {
     } catch (error) {
       if (!signal.aborted) setState(previous => ({ key: identityKey, profile: previous.key === identityKey ? previous.profile : null, issue: error instanceof ProfileRequestError ? error.issue : { message: "Profile details could not be loaded. Previously loaded values may be out of date.", retryNotBefore: null } }));
     } finally { if (!signal.aborted) { setPending(null); controllerRef.current = null; } }
-  }, [runId, identityKey]);
+  }, [runId, identityKey, historyStatus]);
   useEffect(() => {
     let cancelled = false;
     void Promise.resolve().then(() => { if (!cancelled) void execute("load"); });

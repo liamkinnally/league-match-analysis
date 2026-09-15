@@ -85,7 +85,6 @@ class PlayerProfileIntegrationTest {
     }
     @Test void persistedPendingMarkerFencesOlderCompletionAndExpiresAtItsBoundedDeadline() {
         var subject=profiles.subject(run).orElseThrow();
-        ingestion.finishRun(run,IngestionRunStatus.COMPLETE,null,null,NOW);
         profiles.markProfilePending(subject,run,NOW.plusSeconds(900));
         var newer=ingestion.startPublicRun(new RiotIngestionCommand("Invented","NA1",20,440,0,NOW.getEpochSecond(),null),NOW.plusSeconds(1));
         profiles.markProfilePending(subject,newer,NOW.plusSeconds(901));
@@ -96,6 +95,27 @@ class PlayerProfileIntegrationTest {
         assertThat(profiles.profilePending(subject,run,NOW.plusSeconds(901))).isFalse();
         profiles.finishProfileWork(newer);
         assertThat(profiles.profilePending(subject,run,NOW.plusSeconds(2))).isFalse();
+        profiles.markProfilePending(subject,run,NOW.plusSeconds(900));
+        assertThat(profiles.profilePending(subject,run,NOW.plusSeconds(2))).isFalse();
+    }
+    @Test void newVerifiedLookupRemainsPendingBeforeItsProfileWorkIsMarked() {
+        var subject=profiles.subject(run).orElseThrow();
+        assertThat(profiles.profilePending(subject,run,NOW)).isTrue();
+        profiles.markProfilePending(subject,run,NOW.plusSeconds(900));
+        profiles.finishProfileWork(run);
+        assertThat(profiles.profilePending(subject,run,NOW)).isFalse();
+        var later=NOW.plusSeconds(1);
+        var command=new RiotIngestionCommand("Invented","NA1",20,440,0,later.getEpochSecond(),null);
+        var newer=ingestion.startPublicRun(command,later);
+        var fixture=new PublicLookupGatewayFixture(json,Clock.fixed(later,ZoneOffset.UTC));
+        var account=fixture.resolveAccount(new RiotId(command.gameName(),command.tagLine()));
+        ingestion.recordResolvedAccount(newer,account.account(),ingestion.saveCapture(newer,account.source()));
+        ingestion.recordVerifiedRequestedIdentity(newer,command);
+        assertThat(profiles.profilePending(subject,newer,later)).isTrue();
+        profiles.markProfilePending(subject,newer,later.plusSeconds(900));
+        assertThat(profiles.profilePending(subject,newer,later)).isTrue();
+        profiles.finishProfileWork(newer);
+        assertThat(profiles.profilePending(subject,newer,later)).isFalse();
     }
     @Test void boundedCursorAndRemovalPreviewIncludeEveryPersonalTableAndDetectNewObservationDrift(){
         profiles.claimSummoner("NA1",PUUID,NOW,refresh);var subject=profiles.subject(run).orElseThrow();

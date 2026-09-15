@@ -62,6 +62,28 @@ it("projects version and ordered final item IDs for patch-matched history assets
   expect(result.matches[0]).not.toHaveProperty("raw");
 });
 
+it("serves completed mixed-queue history containing six-digit ARAM item IDs", async () => {
+  const completed = { ...lookup, queueId: 0, status: "COMPLETE", matches: [{
+    matchId: "NA1_7000000003", queueId: 450, participantId: 1, championName: "MissFortune", championId: 21,
+    gameVersion: "16.18.817.5716", endItemIds: [126697, 1001, 1036, 1036, 1036, 1036, 2052],
+    position: "UNKNOWN", win: false, remake: false, startedAtMs: 1789504256758, durationSeconds: 608,
+    kills: 5, deaths: 6, assists: 10, cs: 22, gold: 7267, timelineAvailable: false,
+  }] };
+  vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => Response.json(completed)));
+  const response = await GET(new Request("http://localhost"), { params: Promise.resolve({ runId }) });
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual(completed);
+  const cached = await POST(new Request("http://localhost/api/player-matches", {
+    method: "POST", body: JSON.stringify({ gameName: "Invented", tagLine: "NA1" }),
+  }));
+  expect(cached.status).toBe(200);
+  expect(await cached.json()).toEqual(completed);
+
+  for (const id of [-1, 1.5, "126697", Number.MAX_SAFE_INTEGER + 1, null]) {
+    expect(() => parseLookup({ ...completed, matches: [{ ...completed.matches[0], endItemIds: [id] }] })).toThrow("INVALID_LOOKUP");
+  }
+});
+
 it.each(["RUNNING", "FAILED"])("accepts an unresolved %s lookup without persisting player identity", async (status) => {
   const unresolved = { ...lookup, gameName: "", tagLine: "", status };
   expect(parseLookup(unresolved)).toEqual(unresolved);

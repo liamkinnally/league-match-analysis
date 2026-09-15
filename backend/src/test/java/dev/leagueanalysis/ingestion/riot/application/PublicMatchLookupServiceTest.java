@@ -158,6 +158,31 @@ class PublicMatchLookupServiceTest {
         verify(store).failInterrupted(clock.instant());
     }
 
+    @Test void profileDeadlineCannotFailAlreadyCompletedHistory() {
+        var now = new java.util.concurrent.atomic.AtomicReference<>(clock.instant());
+        var mutableClock = mock(Clock.class);
+        when(mutableClock.instant()).thenAnswer(call -> now.get());
+        var delayed = new ArrayList<Runnable>();
+        var paced = new PublicMatchLookupService(ingestion, store, mutableClock, true, work::add,
+                (task, delay) -> delayed.add(task));
+        var profiles = mock(dev.leagueanalysis.analysis.profile.PlayerProfileService.class);
+        when(profiles.markPending(any(), any())).thenReturn(true);
+        when(profiles.refreshWork(any())).thenReturn(() -> {
+            throw new RiotGatewayException(RiotFailureCode.RATE_LIMITED, "sanitized", now.get().plusSeconds(1000));
+        });
+        paced.profileService(profiles);
+        var id = paced.submit("CurrentAlias", "NA1", "peer").lookup().runId();
+        work.remove().run(); // History completed; profile remains pending.
+        work.remove().run();
+        assertThat(delayed).hasSize(1);
+        now.set(now.get().plusSeconds(901));
+        delayed.removeFirst().run();
+        verify(store, never()).failPublicRun(eq(id), any());
+        verify(profiles).finishWork(id);
+        assertThat(work).isEmpty();
+        paced.close();
+    }
+
     private ProviderDocument document(SourceKind kind, String resource) {
         return new ProviderDocument(
                 kind, resource, clock.instant(), 200, "AMERICAS", "NA1", null,
