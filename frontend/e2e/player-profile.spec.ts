@@ -2,37 +2,93 @@ import { expect, test } from "@playwright/test";
 import { installDeterministicGameAssets } from "./support/game-assets";
 import { parsePlayerProfile } from "../src/lib/player-lookup/profile";
 import { profileFixture } from "../src/lib/player-lookup/profile.test-fixture";
+import type { MatchSummary } from "../src/lib/player-lookup/types";
 
-test("cached profile shows current record and discrete observations without refreshing Riot", async ({ page }) => {
+const runId = "00000000-0000-0000-0000-000000000099";
+const identity = { gameName: "Invented Player", tagLine: "DEMO" };
+const match: MatchSummary = {
+  matchId: "NA1_7000000001", participantId: 6, championId: 86, championName: "Garen",
+  gameVersion: "16.17.1", endItemIds: [3071, 3047, 0, 0, 0, 0, 3340], position: "TOP",
+  win: true, remake: false, startedAtMs: 1788890400000, durationSeconds: 1800,
+  kills: 8, deaths: 4, assists: 7, cs: 190, gold: 14200, timelineAvailable: true, queueId: 420,
+};
+
+test("cached player profile summarizes counted games and keeps all history rows usable on desktop and mobile", async ({ page }) => {
   await installDeterministicGameAssets(page);
-  const runId = "00000000-0000-0000-0000-000000000099";
-  const identity = { gameName: "Invented Player", tagLine: "DEMO" };
   const errors: string[] = [], mutations: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
   page.on("request", request => { if (request.method() === "POST") mutations.push(request.url()); });
+  let matches: MatchSummary[] = [
+    match,
+    { ...match, matchId: "NA1_7000000002", championId: 103, championName: "Ahri", position: "MIDDLE", win: false },
+    { ...match, matchId: "NA1_7000000003", championId: 122, championName: "Darius", win: false, remake: true, durationSeconds: 125 },
+    { ...match, matchId: "NA1_7000000004", championId: 61, championName: "Orianna", position: "MIDDLE", remake: null },
+  ];
   await page.route(`**/api/player-matches/${runId}`, route => route.fulfill({ json: {
-    runId, ...identity, status: "COMPLETE", message: null, retryNotBefore: null, queueId: 0,
-    lastUpdated: "2026-09-14T10:00:00Z", nextRefreshAt: "2099-09-14T10:15:00Z", previousRunId: null, hasMore: false,
-    matches: [{ matchId: "NA1_7000000001", participantId: 6, championId: 86, championName: "Garen", gameVersion: "16.17.1", endItemIds: [], position: "TOP", win: true, startedAtMs: 1788890400000, durationSeconds: 1800, kills: 8, deaths: 4, assists: 7, cs: 190, gold: 14200, timelineAvailable: true, queueId: 420 }],
+    runId, ...identity, status: matches.length ? "COMPLETE" : "EMPTY", message: null, retryNotBefore: null, queueId: 0,
+    lastUpdated: "2026-09-14T10:00:00Z", nextRefreshAt: "2099-09-14T10:15:00Z", previousRunId: null, hasMore: false, matches,
   } }));
   let profile = parsePlayerProfile(structuredClone(profileFixture));
   await page.route(`**/api/player-matches/${runId}/profile`, route => route.fulfill({ json: profile }));
   await page.goto(`/search?runId=${runId}`);
-  const panel = page.getByRole("region", { name: "Searched player profile" });
-  await expect(panel.getByText("57.1% · 80W–60L", { exact: true })).toBeVisible();
-  await expect(panel.getByText(/8 games with recorded outcomes loaded · 5W–3L/)).toBeVisible();
-  await expect(panel.getByText("Level 123", { exact: true })).toBeVisible();
-  await panel.getByText("View rank observations", { exact: false }).click();
-  await expect(panel.getByText(/Tracking since/)).toBeVisible();
-  await panel.screenshot({ path: "test-results/profile-desktop.png" });
+
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Invented Player#DEMO");
+  await expect(page.getByRole("heading", { name: "Player search", exact: true })).toHaveCount(0);
+  await expect(page.getByLabel("Game name")).toBeVisible();
+  await expect(page.getByLabel("Level 123")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Update", exact: true })).toBeDisabled();
+  const solo = page.getByRole("region", { name: "Ranked Solo/Duo", exact: true });
+  await expect(solo.getByRole("img", { name: "Emerald rank" })).toBeVisible();
+  await expect(solo.getByText("Emerald II", { exact: true })).toBeVisible();
+  await expect(solo.getByText("80W – 60L", { exact: true })).toBeVisible();
+  await expect(solo.getByText("57.1%", { exact: false })).toBeVisible();
+  await solo.getByText("View rank observations", { exact: false }).click();
+  await expect(solo.getByRole("list", { name: "Observed Solo/Duo ranks" }).getByText("Emerald II · 42 LP")).toBeVisible();
+
+  const performance = page.getByRole("region", { name: "Recent performance", exact: true });
+  await expect(performance.getByText("2 games in this history")).toBeVisible();
+  await expect(performance.getByText("50%", { exact: true })).toBeVisible();
+  await expect(performance.getByText("1W", { exact: true })).toBeVisible();
+  await expect(performance.getByText("1L", { exact: true })).toBeVisible();
+  await expect(performance.getByText("1 remake excluded. 1 result unavailable.")).toBeVisible();
+  await expect(page.getByText(/eligibility|reporting period|games.*loaded/i)).toHaveCount(0);
+  const history = page.getByRole("list", { name: "Recent match history" });
+  await expect(history.getByRole("listitem")).toHaveCount(4);
+  for (const name of ["Garen victory", "Ahri defeat", "Darius remake", "Orianna victory"]) {
+    await expect(history.getByRole("link", { name: `${name} match development` })).toBeVisible();
+  }
+  await expect(history.getByRole("link", { name: "Darius remake match development" })).toHaveAttribute("href", `/matches/NA1_7000000003/development?focus=6&historyRunId=${runId}`);
+  await page.screenshot({ path: "test-results/profile-desktop.png", fullPage: true });
+
   await page.setViewportSize({ width: 390, height: 844 });
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  await panel.screenshot({ path: "test-results/profile-mobile.png" });
+  await expect(page.getByLabel("Queue Type")).toBeEnabled();
+  await expect(history.getByRole("link", { name: "Garen victory match development" })).toBeVisible();
+  await page.screenshot({ path: "test-results/profile-mobile.png", fullPage: true });
+
   profile = { ...profile, summoner: { ...profile.summoner, stale: true, error: "RATE_LIMITED" }, soloRank: { ...profile.soloRank, stale: true, error: "RATE_LIMITED" } };
   await page.reload();
-  await expect(panel.getByText(/May be out of date/)).toHaveCount(2);
-  await expect(panel.getByText("57.1% · 80W–60L", { exact: true })).toBeVisible();
-  await panel.screenshot({ path: "test-results/profile-stale-mobile.png" });
+  await expect(page.getByText("Profile may be out of date", { exact: true })).toBeVisible();
+  await expect(solo.getByText("Update unavailable · Showing saved rank", { exact: true })).toBeVisible();
+  await expect(solo.getByText("80W – 60L", { exact: true })).toBeVisible();
+  await expect(performance.getByText("2 games in this history")).toBeVisible();
+  await page.screenshot({ path: "test-results/profile-stale-mobile.png", fullPage: true });
+
+  matches = [];
+  profile = { ...profile,
+    summoner: { ...profile.summoner, status: "unavailable", profileIconId: null, summonerLevel: null, stale: false, error: null },
+    soloRank: { ...profile.soloRank, status: "unavailable", tier: null, division: null, leaguePoints: null,
+      wins: null, losses: null, winRate: null, stale: false, error: null, fetchedAt: null },
+    rankHistory: { trackingSince: null, observations: [], nextCursor: null },
+  };
+  await page.reload();
+  await expect(solo.getByText("Rank unavailable", { exact: true })).toBeVisible();
+  await expect(solo.getByText("Unranked", { exact: true })).toHaveCount(0);
+  await expect(performance.getByText("No completed results to summarize yet.")).toBeVisible();
+  await expect(performance.getByText("0%", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("No recent matches", { exact: true })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.screenshot({ path: "test-results/profile-unavailable-mobile.png", fullPage: true });
   expect(mutations).toEqual([]);
   expect(errors).toEqual([]);
 });

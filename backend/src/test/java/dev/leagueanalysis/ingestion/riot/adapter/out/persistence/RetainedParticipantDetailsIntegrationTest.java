@@ -17,12 +17,15 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ArrayNode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -35,6 +38,8 @@ class RetainedParticipantDetailsIntegrationTest {
     @Autowired JdbcRiotIngestionStore store;
     @Autowired JdbcTemplate jdbc;
     @Autowired ObjectMapper json;
+    @Autowired org.springframework.transaction.PlatformTransactionManager transactions;
+    @Autowired dev.leagueanalysis.privacy.PrivacyRuntimeGuard privacyGuard;
 
     @BeforeEach @AfterEach void clear() {
         jdbc.execute("truncate table league_analysis.ingestion_run, league_analysis.source_payload cascade");
@@ -76,6 +81,60 @@ class RetainedParticipantDetailsIntegrationTest {
         assertThat(jdbc.queryForObject("select detail_source_capture_id from league_analysis.riot_match where match_id=?",
                 UUID.class, MATCH)).isNotEqualTo(unused.captureId());
         assertThat(preservedRows()).isEqualTo(before);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"remake,true", "normal,false", "ordinary_surrender,false", "ordinary_only,unknown",
+            "missing_flag,unknown", "conflicting,unknown", "not_ten,unknown"})
+    void firstHistoryReadClassifiesOnlyCompleteUnanimousEarlySurrenderEvidence(String scenario, String expected) throws Exception {
+        var run = legacyMatch(scenario);
+        var before = preservedRows();
+        assertThat(jdbc.queryForObject("select count(*) from league_analysis.riot_participant where detail_extension_version is not null",
+                Integer.class)).isZero();
+
+        var result = store.readPublicRun(run).orElseThrow();
+
+        assertThat(result.matches()).singleElement().satisfies(match -> assertThat(match.win()).isTrue());
+        var summary = json.readTree(json.writeValueAsString(result)).path("matches").get(0);
+        assertThat(summary.has("remake")).as("The first response includes the nullable remake classification").isTrue();
+        if ("unknown".equals(expected)) assertThat(summary.path("remake").isNull()).isTrue();
+        else {
+            assertThat(summary.path("remake").isBoolean()).isTrue();
+            assertThat(summary.path("remake").asBoolean()).isEqualTo(Boolean.parseBoolean(expected));
+        }
+        assertThat(jdbc.queryForObject("select count(*) from league_analysis.riot_participant where detail_extension_version=?",
+                Integer.class, ParticipantDetails.VERSION)).isEqualTo("not_ten".equals(scenario) ? 9 : 10);
+        assertThat(preservedRows()).isEqualTo(before);
+    }
+
+    @Test void excludedParticipantEvidenceDoesNotClassifyAnOtherwiseAvailableMatch() throws Exception {
+        var run = legacyMatch("remake");
+        assertThat(store.enrichParticipantDetails(MATCH)).isTrue();
+        jdbc.update("insert into league_analysis.privacy_exclusion(kind,subject_hash) values ('puuid', league_analysis.privacy_hash(?))",
+                "invented-puuid-2");
+
+        var result = store.readPublicRun(run).orElseThrow();
+
+        assertThat(result.matches()).hasSize(1);
+        var summary = json.readTree(json.writeValueAsString(result)).path("matches").get(0);
+        assertThat(summary.has("remake")).isTrue();
+        assertThat(summary.path("remake").isNull()).isTrue();
+    }
+
+    @Test void firstResponseIncludesEnrichmentCompletedByAnotherReader() throws Exception {
+        var run = legacyMatch("remake");
+        var reader = new JdbcRiotIngestionStore(jdbc, transactions, json) {
+            @Override public boolean enrichParticipantDetails(String matchId) {
+                // Another reader commits after this reader selected the page, before its enrichment lock.
+                assertThat(store.enrichParticipantDetails(matchId)).isTrue();
+                return super.enrichParticipantDetails(matchId);
+            }
+        };
+        reader.setPrivacyRuntimeGuard(privacyGuard);
+
+        var result = reader.readPublicRun(run).orElseThrow();
+
+        assertThat(result.matches()).singleElement().satisfies(match -> assertThat(match.remake()).isTrue());
     }
 
     @Test void versionAndMembershipConflictsStayMissingRatherThanRepairingIdentity() throws Exception {
@@ -138,6 +197,10 @@ class RetainedParticipantDetailsIntegrationTest {
     }
 
     private UUID legacyMatch() throws Exception {
+        return legacyMatch("minimal");
+    }
+
+    private UUID legacyMatch(String scenario) throws Exception {
         var command = new RiotIngestionCommand("InventedPlayer", "NA1", 20);
         var run = store.startPublicRun(command, NOW);
         var account = document(SourceKind.ACCOUNT, "InventedPlayer#NA1", json.createObjectNode()
@@ -153,6 +216,7 @@ class RetainedParticipantDetailsIntegrationTest {
                 {"styles":[{"style":8000,"description":"primaryStyle","selections":[{"perk":8010,"var1":0}]}],
                  "statPerks":{"offense":5005,"flex":5008,"defense":5001}}
                 """));
+        if (!"minimal".equals(scenario)) setSurrenderEvidence(detail, scenario);
         var captured = store.saveCapture(run, document(SourceKind.MATCH_DETAIL, MATCH, detail));
         var timeline = store.saveCapture(run, document(SourceKind.MATCH_TIMELINE, MATCH, fixture("timeline-minimal.json")));
         store.materialize(run, MATCH, new MatchV5Decoder().decode(captured, Optional.of(timeline)));
@@ -164,6 +228,30 @@ class RetainedParticipantDetailsIntegrationTest {
                     team_early_surrendered=null, detail_extension_version=null where match_id=?
                 """, MATCH);
         return run;
+    }
+
+    private void setSurrenderEvidence(ObjectNode detail, String scenario) {
+        var participants = (ArrayNode) detail.path("info").path("participants");
+        int count = "not_ten".equals(scenario) ? 9 : 10;
+        for (int id = 3; id <= count; id++) {
+            var participant = ((ObjectNode) participants.get(0)).deepCopy();
+            participant.put("participantId", id).put("puuid", "invented-puuid-" + id)
+                    .put("riotIdGameName", "InventedPlayer" + id).put("championId", id)
+                    .put("championName", "InventedChampion" + id).put("teamId", id <= 5 ? 100 : 200)
+                    .put("win", id <= 5);
+            participants.add(participant);
+        }
+        var members = json.createArrayNode();
+        for (var node : participants) {
+            var participant = (ObjectNode) node;
+            members.add(participant.path("puuid").asString());
+            participant.put("gameEndedInEarlySurrender", "remake".equals(scenario) || "not_ten".equals(scenario));
+            participant.put("gameEndedInSurrender", "ordinary_surrender".equals(scenario) || "ordinary_only".equals(scenario));
+            if ("ordinary_only".equals(scenario)) participant.remove("gameEndedInEarlySurrender");
+        }
+        ((ObjectNode) detail.path("metadata")).set("participants", members);
+        if ("missing_flag".equals(scenario)) ((ObjectNode) participants.get(9)).remove("gameEndedInEarlySurrender");
+        if ("conflicting".equals(scenario)) ((ObjectNode) participants.get(9)).put("gameEndedInEarlySurrender", true);
     }
 
     private ObjectNode fixture(String name) throws Exception {

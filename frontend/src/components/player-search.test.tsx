@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import PlayerSearch from "./player-search";
 vi.mock("../lib/player-lookup/use-player-profile", () => ({ usePlayerProfile: () => ({ profile: null, issue: null, loading: false, loadingRecent: false, loadingOlder: false, busy: false, reload: vi.fn(), loadRecent: vi.fn(), loadOlder: vi.fn() }) }));
-vi.mock("./player-profile", () => ({ PlayerProfilePanel: ({ identity }: { identity: { gameName: string; tagLine: string } }) => <h2>{identity.gameName}<span>#{identity.tagLine}</span></h2> }));
+vi.mock("./player-profile", () => ({ PlayerProfileHeader: ({ identity, children }: { identity: { gameName: string; tagLine: string }; children?: import("react").ReactNode }) => <><h2>{identity.gameName}<span>#{identity.tagLine}</span></h2>{children}</>, PlayerProfilePanel: () => null }));
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 const runId = "00000000-0000-0000-0000-000000000001";
@@ -119,13 +119,13 @@ it("renders patch-matched champion and final-item assets in a compact history ro
   expect(inventory.children[2]).toHaveAttribute("title", "Empty item slot 3");
   expect(inventory.children[6]).toHaveAttribute("title", "Stealth Ward");
   expect(inventory.children[6]).toHaveClass("development-item-slot--trinket");
-  expect(screen.getByText("Match development →")).toBeVisible();
+  expect(screen.getByRole("link", { name: "Garen victory match development" })).toHaveAttribute("href", expect.stringContaining("historyRunId="));
 });
 
 it.each(["RUNNING", "FAILED"])("labels an unresolved %s lookup without rendering an empty Riot ID", async (status) => {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ ...running, status, gameName: "", tagLine: "" })));
   await act(async () => render(<PlayerSearch initialRunId={runId} />));
-  expect(screen.getByRole("heading", { name: "Player lookup" })).toBeVisible();
+  expect(screen.getByRole("heading", { name: "Find a player’s match history" })).toBeVisible();
   expect(screen.queryByRole("heading", { name: "#" })).not.toBeInTheDocument();
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   expect(screen.getByLabelText("Game name")).toHaveValue("");

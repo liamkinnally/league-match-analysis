@@ -85,7 +85,7 @@ test("slow history keeps navigation and completed matches usable, then recovers 
   await expect(row).toBeVisible();
   stage = "complete";
   await page.getByRole("button", { name: "Retry loading" }).click();
-  await expect(page.locator(".player-lookup__status").getByRole("status")).toContainText("1 recent match — Ready to review");
+  await expect(page.locator(".player-lookup__status").getByRole("status")).toHaveText("1 match");
   await expect(page.getByLabel("Game name")).toHaveValue("Another player");
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);
@@ -136,7 +136,7 @@ test("ARAM history filters, paginates, restores loaded pages, and upgrades a def
   await expect(page.getByRole("button", { name: "Update", exact: true })).toBeDisabled();
   await expect(page.getByText(/Update in \d+:\d\d/)).toBeVisible();
   await expect(rows.first()).toContainText("ARAM");
-  await expect(rows.first()).toContainText("Timeline loads when opened");
+  await expect(rows.first().getByRole("link")).toHaveAttribute("title", "Timeline loads when opened");
   await expect(rows.first()).not.toContainText("TOP");
   await expect(rows.first()).not.toContainText("UNKNOWN");
   const detail = await request.get(`http://127.0.0.1:${process.env.E2E_BACKEND_PORT ?? "8080"}/api/v1/matches/${matchId}/development?focus=6`);

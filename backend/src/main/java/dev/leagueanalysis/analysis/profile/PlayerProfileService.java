@@ -20,15 +20,19 @@ public class PlayerProfileService {
         var subject=store.subject(run).orElseThrow(()->new PublicLookupException(404,"Verified profile not available yet.",null));
         var now=clock.instant();
         boolean pending=store.profilePending(subject,run,now);
-        var state=ranks.peek(subject.platform(),subject.puuid(),"RANKED_SOLO_5x5");var v=state.value();
-        Integer wins=v==null?null:v.wins(),losses=v==null?null:v.losses();
-        Double rate=wins==null||losses==null||(long)wins+losses==0?null:Math.round(wins*1000d/((long)wins+losses))/10d;
-        boolean rankPending=state.refreshing()||(pending&&(v==null||state.stale()));
-        var rank=new PlayerProfile.SoloRank(v==null?rankPending?"loading":"unavailable":v.status(),v==null?null:v.tier(),v==null?null:v.division(),v==null?null:v.lp(),wins,losses,rate,"unknown",state.fetchedAt(),rankPending,state.stale(),state.retryNotBefore(),state.error());
+        var solo=rank(subject,"RANKED_SOLO_5x5",pending);
+        var flex=rank(subject,"RANKED_FLEX_SR",pending);
         var profile=store.summoner(subject,now);
         if(pending&&(profile.fetchedAt()==null||profile.stale()))
             profile=new PlayerProfile.Summoner(profile.fetchedAt()==null?"loading":profile.status(),profile.profileIconId(),profile.summonerLevel(),profile.revisionAt(),profile.fetchedAt(),true,profile.stale(),profile.retryNotBefore(),profile.error());
-        return new PlayerProfile(new PlayerProfile.Identity(subject.gameName(),subject.tagLine()),profile,rank,store.recent(subject,run,now),store.history(subject,cursor));
+        return new PlayerProfile(new PlayerProfile.Identity(subject.gameName(),subject.tagLine()),profile,solo,flex,store.recent(subject,run,now),store.history(subject,cursor));
+    }
+    private PlayerProfile.Rank rank(JdbcPlayerProfileStore.Subject subject,String queue,boolean pending) {
+        var state=ranks.peek(subject.platform(),subject.puuid(),queue);var v=state.value();
+        Integer wins=v==null?null:v.wins(),losses=v==null?null:v.losses();
+        Double rate=wins==null||losses==null||(long)wins+losses==0?null:Math.round(wins*1000d/((long)wins+losses))/10d;
+        boolean rankPending=state.refreshing()||(pending&&(v==null||state.stale()));
+        return new PlayerProfile.Rank(v==null?rankPending?"loading":"unavailable":v.status(),v==null?null:v.tier(),v==null?null:v.division(),v==null?null:v.lp(),wins,losses,rate,"unknown",state.fetchedAt(),rankPending,state.stale(),state.retryNotBefore(),state.error());
     }
     /** Persist the queued stages once Account verification makes their subject available. */
     public boolean markPending(UUID run,Instant deadline) {

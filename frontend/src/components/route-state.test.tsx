@@ -5,7 +5,7 @@ import { MatchLoading, RouteUnavailable } from "./route-state";
 it("keeps navigation accessible while match data is loading without fabricated results", () => {
   render(<MatchLoading />);
   expect(screen.getByRole("status")).toHaveTextContent("Loading results and timeline");
-  expect(screen.getByRole("link", { name: "Player search" })).toHaveAttribute("href", "/search");
+  expect(screen.getByRole("link", { name: "Match history" })).toHaveAttribute("href", "/search");
   expect(screen.queryByText(/Victory|Defeat/)).not.toBeInTheDocument();
 });
 it("retries a failed route and offers an independent path to player search", () => {

@@ -64,6 +64,8 @@ class PlayerProfileIntegrationTest {
         assertThat(profiles.claim("NA1",PUUID,NOW,refresh)).isTrue();profiles.success("NA1",PUUID,gold(),NOW,refresh);
         var profile=service.load(run,null);
         assertThat(profile.soloRank().wins()).isEqualTo(12);assertThat(profile.soloRank().losses()).isEqualTo(8);assertThat(profile.soloRank().winRate()).isEqualTo(60.0);assertThat(profile.soloRank().period()).isEqualTo("unknown");
+        assertThat(profile.flexRank().status()).isEqualTo("unranked");assertThat(profile.flexRank().wins()).isNull();assertThat(profile.flexRank().losses()).isNull();assertThat(profile.flexRank().winRate()).isNull();assertThat(profile.flexRank().period()).isEqualTo("unknown");
+        assertThat(profile.flexRank().fetchedAt()).isEqualTo(profile.soloRank().fetchedAt());
         assertThat(json.writeValueAsString(profile)).doesNotContain(PUUID,"refreshId","puuid","source_capture");
         refresh=UUID.randomUUID();assertThat(profiles.claim("NA1",PUUID,NOW.plusSeconds(301),refresh)).isTrue();
         profiles.success("NA1",PUUID,Map.of("RANKED_SOLO_5x5",new RankSnapshotStore.Value("ranked","GOLD","I",0,0,0)),NOW.plusSeconds(301),refresh);
@@ -128,6 +130,7 @@ class PlayerProfileIntegrationTest {
         assertThat(profiles.recent(subject,run,NOW).completeness()).isEqualTo("unverified");
         jdbc.update("insert into league_analysis.privacy_exclusion(kind,subject_hash) values ('puuid',league_analysis.privacy_hash(?))",PUUID);
         assertThat(profiles.subject(run)).isEmpty();assertThat(profiles.claim("NA1",PUUID,NOW,refresh)).isFalse();
+        assertThatThrownBy(()->service.load(run,null)).isInstanceOf(PublicLookupException.class);
         assertThatThrownBy(()->jdbc.update("insert into league_analysis.player_profile_current(puuid,platform) values (?,'NA1')",PUUID)).hasMessageContaining("PRIVACY_EXCLUDED");
     }
 }

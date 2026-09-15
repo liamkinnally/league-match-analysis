@@ -6,12 +6,12 @@ import { DevelopmentFooter } from "./development-footer";
 export function EntryShell({ children, active, compact = false }: {
   children: ReactNode; active?: "home" | "search"; compact?: boolean;
 }) {
-  return <main className="development-app entry-app">
+  return <main className={`development-app entry-app${active === "search" ? " profile-app" : ""}`}>
     <header className="development-nav">
       <Link className="development-brand" href="/">{PRODUCT_NAME}</Link>
       <nav aria-label="Product navigation">
         <Link href="/" aria-current={active === "home" ? "page" : undefined}>Home</Link>
-        <Link href="/search" aria-current={active === "search" ? "page" : undefined}>Player search</Link>
+        <Link href="/search" aria-current={active === "search" ? "page" : undefined}>Match history</Link>
       </nav>
       <span className="development-region">NA1</span>
     </header>
