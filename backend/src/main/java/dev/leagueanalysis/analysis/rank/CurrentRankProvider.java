@@ -135,11 +135,13 @@ public final class CurrentRankProvider {
             var values=new LinkedHashMap<String,RankSnapshotStore.Value>();
             for(var row:body) {
                 if(!row.isObject() || !row.path("queueType").isString()) throw new IllegalArgumentException();
+                String queue=row.path("queueType").stringValue();
+                // Other ladders can use different tier schemas; only these queues are projected.
+                if(!Set.of("RANKED_SOLO_5x5","RANKED_FLEX_SR").contains(queue))continue;
                 String tier=row.path("tier").asText(""); String division=row.path("rank").asText("");
                 if(!Set.of("IRON","BRONZE","SILVER","GOLD","PLATINUM","EMERALD","DIAMOND","MASTER","GRANDMASTER","CHALLENGER").contains(tier)
                         || !Set.of("I","II","III","IV").contains(division) || !row.path("leaguePoints").isIntegralNumber()
                         || !row.path("leaguePoints").canConvertToInt() || row.path("leaguePoints").intValue()<0) throw new IllegalArgumentException();
-                String queue=row.path("queueType").stringValue();
                 if(values.containsKey(queue)) throw new IllegalArgumentException();
                 Integer wins=optionalCount(row,"wins"),losses=optionalCount(row,"losses");
                 values.put(queue,new RankSnapshotStore.Value("ranked",tier,division,row.path("leaguePoints").intValue(),wins,losses));
