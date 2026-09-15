@@ -71,6 +71,6 @@ export function RankHistoryChart({ history }: { history: PlayerProfile["rankHist
       </circle>)}
     </svg>
     <div className="player-rank-chart__dates"><time dateTime={first.row.observedAt}>{formatDate(first.row)}</time><time dateTime={last.row.observedAt}>{formatDate(last.row)}</time></div>
-    <figcaption>Recorded at profile updates.</figcaption>
+    <figcaption>Data based on profile updates.</figcaption>
   </figure>;
 }

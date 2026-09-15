@@ -3,7 +3,7 @@
 .profile-app .player-search { max-inline-size: 42rem; margin-inline-start: auto; }
 .profile-app .player-lookup__results { border: 0; margin-block-start: 1.7rem; padding: 0; }
 .profile-header { display: flex; align-items: center; gap: 1.2rem; padding-block: 0.5rem 1.7rem; border-block-end: 1px solid var(--development-line); margin-block-end: 1.5rem; }
-.profile-header__portrait { position: relative; flex: 0 0 auto; }
+.profile-header__portrait { align-self: end; position: relative; flex: 0 0 auto; }
 .profile-header__icon { display: grid; place-items: center; inline-size: 5rem; block-size: 5rem; border: 1px solid var(--development-line); border-radius: 0.3rem; background: var(--development-surface); color: var(--development-muted); font-size: 1.5rem; overflow: hidden; }
 .profile-header__icon img { inline-size: 100%; block-size: 100%; object-fit: cover; }
 .profile-header__level { position: absolute; inset-block-end: -0.4rem; inset-inline-start: 50%; transform: translateX(-50%); min-inline-size: 2rem; text-align: center; padding: 0.1rem 0.4rem; background: var(--development-raised); border: 1px solid var(--development-line); border-radius: 0.2rem; font-size: 0.7rem; font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -13,7 +13,7 @@
 .profile-header__identity > p { display: flex; align-items: center; gap: 0.55rem; margin: 0.5rem 0 0; color: var(--development-muted); font-size: 0.75rem; }
 .profile-header__region { border: 1px solid var(--development-line); padding: 0.1rem 0.3rem; border-radius: 0.2rem; font-size: 0.65rem; }
 .profile-header__identity > small, .profile-header__issue { display: block; margin-block-start: 0.4rem; color: var(--development-muted); font-size: 0.72rem; }
-.profile-header__actions { display: grid; justify-items: end; gap: 0.45rem; margin-inline-start: auto; flex: 0 0 auto; }
+.profile-header__actions { align-self: end; margin-block-end: -0.4rem; display: grid; justify-items: end; gap: 0.45rem; margin-inline-start: auto; flex: 0 0 auto; }
 .profile-header__actions small { font-size: 0.7rem; color: var(--development-muted); font-variant-numeric: tabular-nums; }
 .entry-app .profile-update { min-inline-size: 6rem; background: var(--development-accent); border-color: var(--development-accent); color: #111722; font-weight: 650; }
 .entry-app .profile-update:hover:not(:disabled) { background: var(--brand-accent-hover); }
@@ -37,23 +37,25 @@
 .profile-rank__record strong { font-weight: 600; }
 .profile-rank__record strong span, .profile-rank__rate small { font-weight: 400; color: var(--development-muted); }
 .profile-rank__rate { color: var(--development-accent); font-size: 0.85rem; }
+.profile-rank__rate--losing { color: var(--result-defeat); }
 .profile-rank__rate small { display: block; font-size: 0.64rem; text-align: end; }
 .profile-rank__freshness { display: block; grid-column: 1 / -1; color: var(--development-muted); font-size: 0.68rem; margin-block-start: 0.3rem; }
 .profile-panel > .profile-rank__freshness { margin: 0 1rem 0.8rem; }
 .profile-lp-history { margin: 0.3rem 1rem 0.7rem; padding-block-start: 0.8rem; border-block-start: 1px solid var(--development-line); }
 .profile-lp-history h3 { font-size: 0.78rem; font-weight: 550; margin: 0 0 0.7rem; }
-.profile-record-note, .player-rank-observations { margin: 0 1rem; padding-block: 0.6rem; border-block-start: 1px solid var(--development-line); font-size: 0.7rem; color: var(--development-muted); }
-.profile-record-note summary, .player-rank-observations summary { cursor: pointer; min-block-size: 1.5rem; align-content: center; }
-.profile-record-note p, .player-rank-observations p { line-height: 1.55; margin: 0.4rem 0; }
+.player-rank-observations { margin: 0 1rem; padding-block: 0.6rem; border-block-start: 1px solid var(--development-line); font-size: 0.7rem; color: var(--development-muted); }
+.player-rank-observations summary { cursor: pointer; min-block-size: 1.5rem; align-content: center; }
+.player-rank-observations p { line-height: 1.55; margin: 0.4rem 0; }
 .player-rank-observations summary > span { float: right; }
 .player-rank-observations ol { padding: 0; list-style: none; margin: 0.65rem 0; }
 .player-rank-observations li { display: grid; gap: 0.2rem; padding: 0.45rem 0; border-block-start: 1px solid var(--development-line); }
 .player-rank-observations li strong { color: var(--development-text); font-weight: 550; }
 .entry-app .player-rank-observations button { font-size: 0.7rem; }
-.profile-flex > summary { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.85rem 1rem; min-block-size: 3rem; cursor: pointer; font-size: 0.8rem; }
+.profile-flex__summary { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.85rem 1rem; min-block-size: 3rem; font-size: 0.8rem; }
+.profile-flex > summary { cursor: pointer; }
 .profile-flex > summary::after { content: '⌄'; color: var(--development-muted); }
-.profile-flex > summary span:first-child { margin-inline-end: auto; font-weight: 550; }
-.profile-flex > summary span:nth-child(2) { color: var(--development-muted); font-size: 0.7rem; }
+.profile-flex__summary span:first-child { margin-inline-end: auto; font-weight: 550; }
+.profile-flex__summary span:nth-child(2) { color: var(--development-muted); font-size: 0.7rem; }
 .profile-flex[open] > summary { border-block-end: 1px solid var(--development-line); }
 .profile-rank--compact { grid-template-columns: 3.5rem minmax(0, 1fr); }
 .profile-rank--compact .profile-rank__emblem { inline-size: 3.5rem; block-size: 3.5rem; }
@@ -109,9 +111,10 @@
   .entry-app.profile-app .entry-page { inline-size: min(100% - 2rem, 40rem); padding-block-start: 1rem; }
   .profile-layout { grid-template-columns: minmax(0, 1fr); }
   .profile-header { flex-wrap: wrap; gap: 0.8rem; margin-block-end: 1rem; padding-block-end: 1.2rem; }
+  .profile-header__portrait { align-self: center; }
   .profile-header__icon { inline-size: 4.25rem; block-size: 4.25rem; }
   .profile-header__identity { flex: 1; }
-  .profile-header__actions { inline-size: 100%; display: flex; align-items: center; justify-content: space-between; gap: 0.7rem; margin-block-start: 0.4rem; }
+  .profile-header__actions { align-self: auto; margin-block-end: 0; inline-size: 100%; display: flex; align-items: center; justify-content: space-between; gap: 0.7rem; margin-block-start: 0.4rem; }
   .profile-header__actions small { text-align: end; }
   .profile-rank { grid-template-columns: 5.3rem minmax(0, 1fr); padding: 0.8rem 1rem; }
   .profile-rank__emblem { inline-size: 5.3rem; block-size: 5.3rem; }

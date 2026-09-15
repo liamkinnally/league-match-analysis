@@ -21,7 +21,7 @@ export function RecentPerformance({ matches, catalogs }: Props) {
     <header className="player-performance__heading"><h2>Recent performance</h2><span>{result.games} {result.games === 1 ? "game" : "games"} in this history</span></header>
     {result.games > 0 ? <div className="player-performance__body">
       <div className="player-performance__record">
-        <div className="player-performance__ring">
+        <div className={`player-performance__ring${result.winRate !== null && result.winRate < 50 ? " player-performance__ring--losing" : ""}`}>
           <svg viewBox="0 0 108 108" aria-hidden="true"><circle className="player-performance__ring-base" cx="54" cy="54" r="46" />
             <circle className="player-performance__ring-wins" cx="54" cy="54" r="46" pathLength="100" strokeDasharray={`${result.winRate} 100`} /></svg>
           <div><strong>{rate(result.winRate)}</strong><span>Win rate</span></div>
@@ -29,14 +29,14 @@ export function RecentPerformance({ matches, catalogs }: Props) {
         <p><strong>{result.wins}W</strong><span> / </span><strong>{result.losses}L</strong></p>
       </div>
       <div className="player-performance__averages">
-        <span className="player-performance__label">KDA</span><strong className="player-performance__kda">{ratio(result)}</strong>
+        <span className="player-performance__label">KDA</span><strong className={`player-performance__kda${result.kda !== null && result.kda < 2 ? " player-performance__kda--low" : ""}`}>{ratio(result)}</strong>
         <p aria-label="Average kills, deaths, and assists">{decimal(result.averageKills)} <span>/</span> {decimal(result.averageDeaths)} <span>/</span> {decimal(result.averageAssists)}</p>
         <small>{decimal(result.csPerMinute)} CS / min</small>
       </div>
       <div className="player-performance__champions"><span className="player-performance__label">Most played</span>
         <ul>{result.champions.slice(0, 3).map(row => <li key={row.championId}>
           <ChampionIcon row={row} catalogs={catalogs} /><div><strong>{row.championName}</strong><small>{row.games} {row.games === 1 ? "game" : "games"}</small></div>
-          <div className="player-performance__champion-result"><strong>{rate(row.winRate)}</strong><small>{row.wins}W / {row.losses}L</small></div>
+          <div className="player-performance__champion-result"><strong className={row.winRate !== null && row.winRate < 50 ? "player-performance__winrate--losing" : undefined}>{rate(row.winRate)}</strong><small>{row.wins}W / {row.losses}L</small></div>
         </li>)}</ul>
       </div>
     </div> : <p className="player-performance__empty">No completed results to summarize yet.</p>}
@@ -51,7 +51,7 @@ export function RecentPerformance({ matches, catalogs }: Props) {
 export function ChampionPerformance({ matches, catalogs }: Props) {
   const result = summarizePerformance(matches);
   return <section className="player-champions" aria-label="Champion performance">
-    <header className="player-performance__heading"><h2>Champions</h2><span>This history</span></header>
+    <header className="player-performance__heading"><h2>Champions</h2><span>Recent history</span></header>
     {result.champions.length ? <table>
       <thead><tr><th scope="col">Champion</th><th scope="col">KDA</th><th scope="col">Games</th><th scope="col">Win rate</th></tr></thead>
       <tbody>{result.champions.slice(0, 6).map(row => <tr key={row.championId}>

@@ -39,6 +39,7 @@ export default function PlayerSearch({ initialRunId }: { initialRunId?: string }
   const identityKnown = Boolean(lookup?.gameName && lookup?.tagLine);
   const profileState = usePlayerProfile(identityKnown && lookup ? { runId: lookup.runId, gameName: lookup.gameName, tagLine: lookup.tagLine, updatedAt: lookup.lastUpdated, historyStatus: lookup.status } : null);
   const failed = !issue && lookup?.status === "FAILED";
+  const showIssueBySearch = count === 0 && Boolean(failed || issue);
 
   const historyStatus = (<div className="player-lookup__status">
         {issue ? <div className="entry-notice"><p role="alert">{issue.message}</p>
@@ -71,6 +72,7 @@ export default function PlayerSearch({ initialRunId }: { initialRunId?: string }
         autoCapitalize="none" spellCheck={false} value={tagLine} onChange={event => setEditedTag(event.target.value)} /></label>
       <button type="submit" disabled={submitting}>{submitting ? "Finding matches…" : "Find matches"}<span aria-hidden="true">→</span></button>
     </form>
+    {showIssueBySearch && historyStatus}
 
     {(lookup || busy || issue) && <div className="player-lookup__results">
       {lookup && identityKnown && <PlayerProfileHeader identity={{ gameName: lookup.gameName, tagLine: lookup.tagLine }} {...profileState}>
@@ -79,7 +81,7 @@ export default function PlayerSearch({ initialRunId }: { initialRunId?: string }
       </PlayerProfileHeader>}
       <div className={identityKnown ? "profile-layout" : undefined}>
         {identityKnown && <aside className="profile-sidebar" aria-label="Player ranks and champions">
-          <PlayerProfilePanel {...profileState} />
+          <PlayerProfilePanel {...profileState} now={now} />
           {lookup && <ChampionPerformance matches={lookup.matches} catalogs={catalogs} />}
         </aside>}
         <div className="profile-history">
@@ -93,7 +95,7 @@ export default function PlayerSearch({ initialRunId }: { initialRunId?: string }
               {[430, 490].includes(lookup.queueId) && <option value={lookup.queueId}>{queueLabel(lookup.queueId)}</option>}
             </select></label>
           </div>}
-          {historyStatus}
+          {!showIssueBySearch && historyStatus}
           {busy && count === 0 && <HistorySkeleton />}
           {lookup && count > 0 && <ul className="player-history" aria-label="Recent match history">
             {lookup.matches.map((match, index) => {

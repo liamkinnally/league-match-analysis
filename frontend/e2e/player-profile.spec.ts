@@ -16,6 +16,7 @@ const match: MatchSummary = {
 test("cached player profile summarizes counted games and keeps all history rows usable on desktop and mobile", async ({ page }) => {
   await installDeterministicGameAssets(page);
   const errors: string[] = [], mutations: string[] = [];
+  const refreshAvailableAt = new Date(Date.now() + 15 * 60000).toISOString();
   page.on("pageerror", error => errors.push(error.message));
   page.on("request", request => { if (request.method() === "POST") mutations.push(request.url()); });
   let matches: MatchSummary[] = [
@@ -26,7 +27,7 @@ test("cached player profile summarizes counted games and keeps all history rows 
   ];
   await page.route(`**/api/player-matches/${runId}`, route => route.fulfill({ json: {
     runId, ...identity, status: matches.length ? "COMPLETE" : "EMPTY", message: null, retryNotBefore: null, queueId: 0,
-    lastUpdated: "2026-09-14T10:00:00Z", nextRefreshAt: "2099-09-14T10:15:00Z", previousRunId: null, hasMore: false, matches,
+    lastUpdated: "2026-09-14T10:00:00Z", nextRefreshAt: refreshAvailableAt, previousRunId: null, hasMore: false, matches,
   } }));
   let profile = parsePlayerProfile(structuredClone(profileFixture));
   await page.route(`**/api/player-matches/${runId}/profile`, route => route.fulfill({ json: profile }));
@@ -42,6 +43,14 @@ test("cached player profile summarizes counted games and keeps all history rows 
   await expect(solo.getByText("Emerald II", { exact: true })).toBeVisible();
   await expect(solo.getByText("80W – 60L", { exact: true })).toBeVisible();
   await expect(solo.getByText("57.1%", { exact: false })).toBeVisible();
+  await expect(solo.getByText("About this record", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Ranked Flex", exact: true }).locator("summary")).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Champion performance", exact: true }).getByText("Recent history")).toBeVisible();
+  await expect.poll(() => page.evaluate(() => {
+    const badge = document.querySelector(".profile-header__level")!.getBoundingClientRect();
+    const updated = document.querySelector(".profile-header__actions small")!.getBoundingClientRect();
+    return Math.abs(badge.bottom - updated.bottom);
+  })).toBeLessThan(1);
   await solo.getByText("View rank observations", { exact: false }).click();
   await expect(solo.getByRole("list", { name: "Observed Solo/Duo ranks" }).getByText("Emerald II · 42 LP")).toBeVisible();
 
@@ -65,6 +74,26 @@ test("cached player profile summarizes counted games and keeps all history rows 
   await expect(page.getByLabel("Queue Type")).toBeEnabled();
   await expect(history.getByRole("link", { name: "Garen victory match development" })).toBeVisible();
   await page.screenshot({ path: "test-results/profile-mobile.png", fullPage: true });
+
+  const originalMatches = matches, originalProfile = profile;
+  matches = [
+    { ...match, kills: 2, deaths: 6, assists: 4 },
+    { ...match, matchId: "NA1_7000000005", championId: 103, championName: "Ahri", win: false, kills: 2, deaths: 6, assists: 4 },
+    { ...match, matchId: "NA1_7000000006", championId: 103, championName: "Ahri", win: false, kills: 2, deaths: 6, assists: 4 },
+  ];
+  profile = { ...profile, soloRank: { ...profile.soloRank, wins: 40, losses: 60, winRate: 40 } };
+  await page.reload();
+  await expect(performance.getByText("33%", { exact: true })).toBeVisible();
+  await expect(performance.getByText("1.00:1", { exact: true })).toBeVisible();
+  await expect(solo.locator(".profile-rank__rate")).toHaveCSS("color", "rgb(227, 151, 160)");
+  await expect(performance.locator(".player-performance__ring-wins")).toHaveCSS("stroke", "rgb(227, 151, 160)");
+  await expect(performance.getByText("33%", { exact: true })).toHaveCSS("color", "rgb(227, 151, 160)");
+  await expect(performance.getByText("0%", { exact: true })).toHaveCSS("color", "rgb(227, 151, 160)");
+  await expect(performance.getByText("100%", { exact: true })).toHaveCSS("color", "rgb(163, 191, 255)");
+  await expect(performance.getByText("1.00:1", { exact: true })).toHaveCSS("color", "rgb(228, 228, 223)");
+  await page.screenshot({ path: "test-results/profile-losing-mobile.png", fullPage: true });
+  matches = originalMatches;
+  profile = originalProfile;
 
   profile = { ...profile, summoner: { ...profile.summoner, stale: true, error: "RATE_LIMITED" }, soloRank: { ...profile.soloRank, stale: true, error: "RATE_LIMITED" } };
   await page.reload();

@@ -8,7 +8,7 @@ test("player lookup", async ({ page, request }) => {
   const before = await request.get(`http://127.0.0.1:${process.env.E2E_BACKEND_PORT ?? "8080"}/api/v1/matches/${matchId}/development?focus=6`);
   expect(before.status()).toBe(404);
   await page.goto("/search");
-  await expect(page.getByRole("complementary", { name: "About this site" })).toContainText("League Match Analysis");
+  await expect(page.getByRole("complementary", { name: "About this site" })).toContainText("LoL Match Analysis");
   await expect(page.getByText("Prototype", { exact: true })).toHaveCount(0);
   await expect(page.getByText(/All supported queues/)).toHaveCount(0);
   await page.getByLabel("Game name").fill(`Lookup${id}`);

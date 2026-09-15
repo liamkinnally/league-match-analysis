@@ -32,8 +32,7 @@ it("shows the rank emblem, division LP and current record without claiming a sea
   expect(within(solo).getByText(/57.1%/)).toBeVisible();
   expect(screen.getByText("Ranked Flex", { exact: true })).toBeVisible();
   expect(screen.queryByText(/eligibility|reporting period|games.*loaded/i)).not.toBeInTheDocument();
-  fireEvent.click(within(solo).getByText("About this record"));
-  expect(within(solo).getByText(/not a verified total for the entire season/)).toBeVisible();
+  expect(screen.queryByText("About this record")).not.toBeInTheDocument();
 });
 
 it("distinguishes failed rank, successful unranked, and a ranked zero-game record", () => {
@@ -93,4 +92,46 @@ it("keeps unranked observations visible and loads older snapshots only on reques
   expect(input.loadOlder).toHaveBeenCalledOnce();
   view.rerender(<PlayerProfilePanel {...input} loadingOlder />);
   expect(screen.getByRole("button", { name: "Loading observations…" })).toBeDisabled();
+});
+
+
+it("colors the Solo record below 50 percent without changing the exact threshold or empty record", () => {
+  const input = props();
+  input.profile.soloRank = { ...input.profile.soloRank, wins: 49, losses: 51 };
+  const view = render(<PlayerProfilePanel {...input} />);
+  const rate = () => screen.getByText(/win rate/).parentElement;
+  expect(rate()).toHaveClass("profile-rank__rate--losing");
+  input.profile.soloRank = { ...input.profile.soloRank, wins: 50, losses: 50 };
+  view.rerender(<PlayerProfilePanel {...input} />);
+  expect(rate()).not.toHaveClass("profile-rank__rate--losing");
+  input.profile.soloRank = { ...input.profile.soloRank, wins: 0, losses: 0 };
+  view.rerender(<PlayerProfilePanel {...input} />);
+  expect(screen.queryByText(/win rate/)).not.toBeInTheDocument();
+});
+
+it("shows the rank's own update age and switches to an absolute date only after 24 hours", () => {
+  const input = props();
+  input.profile.soloRank.stale = true;
+  const fetched = Date.parse(input.profile.soloRank.fetchedAt!);
+  const view = render(<PlayerProfilePanel {...input} now={fetched + 2 * 3600000} />);
+  expect(screen.getByText("2 hours ago")).toHaveAttribute("dateTime", input.profile.soloRank.fetchedAt);
+  expect(screen.getByText(/Last updated:/)).toBeVisible();
+  expect(screen.queryByText(/Rank may be out of date/)).not.toBeInTheDocument();
+  view.rerender(<PlayerProfilePanel {...input} now={fetched + 24 * 3600000} />);
+  expect(screen.getByText("24 hours ago")).toBeVisible();
+  view.rerender(<PlayerProfilePanel {...input} now={fetched + 24 * 3600000 + 1} />);
+  expect(screen.queryByText(/hours ago/)).not.toBeInTheDocument();
+  const time = screen.getByText(/Last updated:/).querySelector("time")!;
+  expect(time).toHaveAttribute("dateTime", input.profile.soloRank.fetchedAt);
+  expect(time.textContent).toContain("2026");
+});
+
+it("keeps an unranked Flex result as a plain row even when the cached result is stale", () => {
+  const input = props();
+  input.profile.flexRank.stale = true;
+  render(<PlayerProfilePanel {...input} />);
+  const flex = screen.getByRole("region", { name: "Ranked Flex" });
+  expect(within(flex).getByText("Unranked")).toBeVisible();
+  expect(flex.querySelector("summary")).toBeNull();
+  expect(within(flex).queryByText(/out of date/)).not.toBeInTheDocument();
 });

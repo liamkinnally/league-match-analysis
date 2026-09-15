@@ -11,7 +11,7 @@ vi.mock("../components/sample-match-link", () => ({
 
 it("keeps player search available while the optional sample is still loading", () => {
   render(<Home />);
-  expect(screen.getByRole("link", { name: "League Match Analysis" })).toHaveAttribute("href", "/");
+  expect(screen.getByRole("link", { name: "LoL Match Analysis" })).toHaveAttribute("href", "/");
   expect(screen.getByRole("button", { name: "Find matches" })).toBeEnabled();
   expect(screen.getByText("Loading sample match…")).toBeVisible();
 });

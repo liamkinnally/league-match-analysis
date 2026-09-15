@@ -13,6 +13,8 @@
 .player-performance__ring circle { fill: none; stroke-width: 8; }
 .player-performance__ring-base { stroke: var(--development-raised); }
 .player-performance__ring-wins { stroke: var(--development-accent); transform: rotate(-90deg); transform-origin: 54px 54px; }
+.player-performance__ring--losing .player-performance__ring-wins { stroke: var(--result-defeat); }
+.player-performance__ring--losing strong { color: var(--result-defeat); }
 .player-performance__ring > div { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; gap: .1rem; }
 .player-performance__ring strong { font-size: 1.4rem; font-weight: 650; line-height: 1.1; letter-spacing: -.04em; }
 .player-performance__ring span { font-size: .68rem; color: var(--development-muted); }
@@ -22,6 +24,7 @@
 .player-performance__label { display: block; color: var(--development-muted); font-size: .73rem; }
 .player-performance__averages { font-variant-numeric: tabular-nums; }
 .player-performance__kda { display: block; margin-block: .3rem .4rem; color: var(--development-accent); font-size: clamp(1.3rem, 2.2vw, 1.8rem); line-height: 1.2; letter-spacing: -.045em; font-weight: 600; overflow-wrap: anywhere; }
+.player-performance__kda--low { color: var(--development-text); }
 .player-performance__averages p { margin: 0 0 .35rem; font-size: .9rem; }
 .player-performance__averages p > span { padding-inline: .1rem; color: var(--development-muted); }
 .player-performance__averages small { color: var(--development-muted); font-size: .73rem; }
@@ -33,6 +36,7 @@
 .player-performance__champions small { display: block; color: var(--development-muted); font-size: .69rem; }
 .player-performance__champion-result { text-align: end; font-variant-numeric: tabular-nums; }
 .player-performance__champion-result strong { color: var(--development-accent); }
+.player-performance__champion-result .player-performance__winrate--losing { color: var(--result-defeat); }
 .player-performance__empty, .player-performance__note { margin: 0; padding: .85rem 1rem; color: var(--development-muted); font-size: .74rem; line-height: 1.5; }
 .player-performance__note { padding-block: .55rem; border-block-start: 1px solid var(--development-line); }
 .player-champions table { inline-size: 100%; border-collapse: collapse; font-size: .73rem; font-variant-numeric: tabular-nums; }

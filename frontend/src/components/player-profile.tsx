@@ -32,7 +32,17 @@ export function PlayerProfileHeader({ identity, profile, loading, issue, busy, r
   </header>;
 }
 
-function RankDetails({ rank, compact = false }: { rank: SoloRank; compact?: boolean }) {
+function RankUpdatedAt({ value, now }: { value: string; now: number }) {
+  const elapsed = now - Date.parse(value);
+  if (now <= 0 || elapsed > 24 * 60 * 60 * 1000) return <ProfileTime value={value} />;
+  const minutes = Math.max(0, Math.floor(elapsed / 60000));
+  const hours = Math.floor(minutes / 60);
+  const label = hours > 0 ? `${hours} ${hours === 1 ? "hour" : "hours"} ago`
+    : minutes > 0 ? `${minutes} ${minutes === 1 ? "minute" : "minutes"} ago` : "just now";
+  return <time dateTime={value}>{label}</time>;
+}
+
+function RankDetails({ rank, now, compact = false }: { rank: SoloRank; now: number; compact?: boolean }) {
   const assets = useCurrentProfileAssets();
   const tier = rank.tier ? rank.tier[0] + rank.tier.slice(1).toLowerCase() : "";
   const division = rank.tier && ["MASTER", "GRANDMASTER", "CHALLENGER"].includes(rank.tier) ? "" : ` ${rank.division ?? ""}`;
@@ -45,25 +55,25 @@ function RankDetails({ rank, compact = false }: { rank: SoloRank; compact?: bool
       {rank.status === "unavailable" && <small>Try updating this profile.</small>}
     </div>
     {rank.status === "ranked" && total !== null && <div className="profile-rank__record">
-      <span className="profile-rank__record-label">Ranked record</span>
-      {total > 0 ? <><strong>{rank.wins}W <span>–</span> {rank.losses}L</strong><span className="profile-rank__rate">{Number((100 * rank.wins! / total).toFixed(1))}% <small>win rate</small></span></> : <span>No ranked games recorded</span>}
+      <span className="profile-rank__record-label">{compact ? "Ranked Flex" : "Ranked Solo/Duo"}</span>
+      {total > 0 ? <><strong>{rank.wins}W <span>–</span> {rank.losses}L</strong><span className={`profile-rank__rate${!compact && rank.wins! < rank.losses! ? " profile-rank__rate--losing" : ""}`}>{Number((100 * rank.wins! / total).toFixed(1))}% <small>win rate</small></span></> : <span>No ranked games recorded</span>}
     </div>}
-    {(rank.refreshing || rank.stale || rank.error) && <small className="profile-rank__freshness">{rank.refreshing ? "Updating rank…" : rank.error ? "Update unavailable · Showing saved rank" : "Rank may be out of date"}</small>}
+    {rank.fetchedAt && <small className="profile-rank__freshness">Last updated: <RankUpdatedAt value={rank.fetchedAt} now={now} /></small>}
+    {(rank.refreshing || rank.error) && <small className="profile-rank__freshness">{rank.refreshing ? "Updating rank…" : "Update unavailable · Showing saved rank"}</small>}
   </div>;
 }
 
-export function PlayerProfilePanel({ profile, loading, issue, loadingOlder, busy, loadOlder }: Pick<ProfileState, "profile" | "loading" | "issue" | "loadingOlder" | "busy" | "loadOlder">) {
+export function PlayerProfilePanel({ profile, loading, loadingOlder, busy, loadOlder, now = 0 }: Pick<ProfileState, "profile" | "loading" | "issue" | "loadingOlder" | "busy" | "loadOlder"> & { now?: number }) {
   return <div className="profile-ranks">
     <section className="profile-panel profile-panel--rank" aria-labelledby="solo-rank-title">
       <h2 id="solo-rank-title">Ranked Solo/Duo</h2>
       {profile ? <>
-        <RankDetails rank={profile.soloRank} />
-        {issue && <small className="profile-rank__freshness">Saved rank may be out of date</small>}
+        <RankDetails rank={profile.soloRank} now={now} />
         <div className="profile-lp-history"><RankHistoryChart history={profile.rankHistory} /></div>
         <RankObservations history={profile.rankHistory} busy={loadingOlder || busy} loadOlder={loadOlder} />
-        <details className="profile-record-note"><summary>About this record</summary><p>Wins and losses are the current ranked record from Riot. They are separate from the recent matches shown here and are not a verified total for the entire season.</p>{profile.soloRank.fetchedAt && <p>Rank updated <ProfileTime value={profile.soloRank.fetchedAt} />.</p>}</details>
       </> : <p className="profile-panel__empty">{loading ? "Loading rank…" : "Rank unavailable. Update this profile to try again."}</p>}
     </section>
-    {profile && <details className="profile-panel profile-flex"><summary><span>Ranked Flex</span><span>{profile.flexRank.status === "ranked" ? `${profile.flexRank.leaguePoints?.toLocaleString("en-US")} LP` : profile.flexRank.status === "unranked" ? "Unranked" : profile.flexRank.status === "loading" ? "Loading…" : "Unavailable"}</span></summary><RankDetails rank={profile.flexRank} compact /></details>}
+    {profile?.flexRank.status === "unranked" ? <section className="profile-panel profile-flex" aria-label="Ranked Flex"><div className="profile-flex__summary"><span>Ranked Flex</span><span>Unranked</span></div></section>
+      : profile && <details className="profile-panel profile-flex"><summary className="profile-flex__summary"><span>Ranked Flex</span><span>{profile.flexRank.status === "ranked" ? `${profile.flexRank.leaguePoints?.toLocaleString("en-US")} LP` : profile.flexRank.status === "loading" ? "Loading…" : "Unavailable"}</span></summary><RankDetails rank={profile.flexRank} now={now} compact /></details>}
   </div>;
 }

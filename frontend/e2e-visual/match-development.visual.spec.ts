@@ -130,7 +130,7 @@ test("player lookup", async ({ page }) => {
   const runId = "00000000-0000-0000-0000-000000000005";
   await page.route(`**/api/player-matches/${runId}`, (request) => request.fulfill({
     contentType: "application/json",
-    body: JSON.stringify({ runId, gameName: "AveryLongRecruiterLookupName", tagLine: "NA1", status: "COMPLETE", message: null, retryNotBefore: null, queueId: 0, lastUpdated: "2026-09-09T12:00:00Z", nextRefreshAt: null, previousRunId: null, hasMore: true, matches: [{ matchId: "NA1_7000000002", queueId: 420, participantId: 6, championName: "Garen", championId: 86, gameVersion: "16.17.1", endItemIds: [6655, 3047, 3071, 3053, 0, 0, 3340], position: "TOP", win: true, startedAtMs: 1788890400000, durationSeconds: 1800, kills: 7, deaths: 2, assists: 9, cs: 180, gold: 12500, timelineAvailable: true }, { matchId: "NA1_7000000003", queueId: 480, participantId: 6, championName: "Garen", championId: 86, gameVersion: "16.17.1", endItemIds: [3071, 3047, 0, 0, 0, 0, 3340], position: "TOP", win: false, startedAtMs: 1788888400000, durationSeconds: 1600, kills: 4, deaths: 5, assists: 3, cs: 150, gold: 10000, timelineAvailable: false }] }),
+    body: JSON.stringify({ runId, gameName: "AveryLongRecruiterLookupName", tagLine: "NA1", status: "COMPLETE", message: null, retryNotBefore: null, queueId: 0, lastUpdated: "2026-09-09T12:00:00Z", nextRefreshAt: null, previousRunId: null, hasMore: true, matches: [{ matchId: "NA1_7000000002", queueId: 420, participantId: 6, championName: "Garen", championId: 86, gameVersion: "16.17.1", endItemIds: [6655, 3047, 3071, 3053, 0, 0, 3340], position: "TOP", win: true, remake: false, startedAtMs: 1788890400000, durationSeconds: 1800, kills: 7, deaths: 2, assists: 9, cs: 180, gold: 12500, timelineAvailable: true }, { matchId: "NA1_7000000003", queueId: 480, participantId: 6, championName: "Garen", championId: 86, gameVersion: "16.17.1", endItemIds: [3071, 3047, 0, 0, 0, 0, 3340], position: "TOP", win: false, remake: false, startedAtMs: 1788888400000, durationSeconds: 1600, kills: 4, deaths: 5, assists: 3, cs: 150, gold: 10000, timelineAvailable: false }] }),
   }));
   const errors = await openStableDevelopment(page, `/search?runId=${runId}`);
   await expect(page.getByTitle("Luden's Companion — long item label")).toBeVisible();
@@ -166,8 +166,8 @@ test("failed lookup", async ({ page }) => {
 test("home narrow", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const errors = await openStableDevelopment(page, "/", false);
-  await expect(page.getByRole("heading", { name: "Find a player" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "League Match Analysis" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Find a player", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "LoL Match Analysis" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect(errors).toEqual([]);
   await expect(page).toHaveScreenshot("home-narrow.png", { animations: "disabled", fullPage: true });

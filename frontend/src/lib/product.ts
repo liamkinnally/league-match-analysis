@@ -1,1 +1,1 @@
-export const PRODUCT_NAME = "League Match Analysis";
+export const PRODUCT_NAME = "LoL Match Analysis";
