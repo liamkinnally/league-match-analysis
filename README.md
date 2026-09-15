@@ -45,6 +45,30 @@ The browser talks to Next.js, and server-side requests authenticate to the Sprin
 
 ## Run locally
 
+### Source development
+
+Install Java 21, Node.js 24, Docker with Compose, and Git. Keep Docker running, then run the one-time setup:
+
+```sh
+git clone https://github.com/liamkinnally/league-match-analysis.git
+cd league-match-analysis
+./scripts/setup
+```
+
+Put your development `RIOT_API_KEY` in the ignored root `.env`, then start the live application:
+
+```sh
+./scripts/dev
+```
+
+Open [localhost:3000](http://127.0.0.1:3000). The command starts a dedicated local PostgreSQL database, Spring backend and Next.js frontend. The key is passed only to the backend. Frontend edits reload automatically; restart the command after backend or environment changes. Ctrl+C stops the processes and PostgreSQL started by the command and preserves the database.
+
+Use `./scripts/dev app` for the real backend with live lookup disabled, or `./scripts/dev fixture` for deterministic browser fixtures on [localhost:3100](http://127.0.0.1:3100). Both modes run without a Riot key. To add the synthetic match to the live/offline development database, run `./scripts/seed-demo` from a second terminal after the app starts.
+
+See the [development guide](docs/developer-guide.md) for ports, focused checks, live lookup checks and troubleshooting.
+
+### Packaged application
+
 The packaged app needs Docker with Compose and Git:
 
 ```sh
@@ -57,25 +81,23 @@ docker compose --project-name league-analysis-app --file compose.app.yaml --env-
 
 Open [localhost:3416](http://127.0.0.1:3416) and choose **Explore sample match**. Keep `RIOT_API_KEY` blank and `RIOT_PUBLIC_LOOKUP_ENABLED=false` to use only the synthetic sample.
 
-For source development, install Java 21 and Node.js 24 in addition to Docker:
+## Tests
+
+Use focused checks during development:
 
 ```sh
-./scripts/setup
-./scripts/dev app
-# In a second terminal after PostgreSQL is ready:
-./scripts/seed-demo
+./scripts/verify focused backend '-Dtest=PublicMatchLookupServiceTest' test
+./scripts/verify focused frontend src/components/player-search.test.tsx
 ```
 
-Open [localhost:3000](http://127.0.0.1:3000). See the [development guide](docs/developer-guide.md) for focused test commands and local ingestion.
-
-## Tests
+For a release, run the complete checks described in the [deployment guide](docs/deployment.md):
 
 ```sh
 ./scripts/verify full
 ./scripts/package-smoke
 ```
 
-CI runs backend tests, frontend lint/type checks and tests, production builds, browser behavior tests, visual regression tests and a packaged-container smoke test.
+Automated verification disables live Riot lookup. CI runs backend tests, frontend lint/type checks and tests, production builds, browser behavior tests, visual regression tests and a packaged-container smoke test.
 
 ## Limits and data handling
 

@@ -100,6 +100,24 @@ for (const [vercel, expected] of [[undefined, "standalone"], ["0", "standalone"]
   const { default: config } = await import(`./frontend/next.config.ts?vercel=${vercel ?? "unset"}`);
   assert.equal(config.output, expected, `Unexpected Next.js output for VERCEL=${vercel ?? "unset"}`);
 }
+for (const [front, back, database] of [[undefined, undefined, undefined], ["3200", "8280", "5559"]]) {
+  for (const [key, value] of [["E2E_FRONTEND_PORT", front], ["E2E_BACKEND_PORT", back], ["E2E_POSTGRES_PORT", database]]) {
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+  const { default: config } = await import(`./frontend/playwright.config.ts?ports=${front ?? "default"}`);
+  assert.equal(process.env.E2E_BACKEND_PORT, back ?? "8180", "Direct API checks must use the fixture backend");
+  assert.equal(process.env.E2E_FRONTEND_PORT, front ?? "3100");
+  assert.equal(process.env.E2E_POSTGRES_PORT, database ?? "5549");
+  assert.equal(config.use.baseURL, `http://127.0.0.1:${front ?? "3100"}`);
+  assert.equal(config.webServer[0].reuseExistingServer, false);
+  assert.equal(config.webServer[0].env.DEV_BACKEND_PORT, process.env.E2E_BACKEND_PORT);
+}
+const { ESLint } = await import('./frontend/node_modules/eslint/lib/api.js');
+const lint = new ESLint({ cwd: `${process.cwd()}/frontend` });
+for (const directory of ['.next', '.next-local', '.next-fixture']) {
+  assert.equal(await lint.isPathIgnored(`${directory}/server/app/page.js`), true, 'Generated bundles must not enter source lint');
+}
 NODE
 assert_file_contains compose.app.yaml "SPRING_DATASOURCE_URL"
 assert_file_contains compose.app.yaml 'RIOT_API_KEY: ${RIOT_API_KEY:-}'
