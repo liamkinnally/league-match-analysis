@@ -69,7 +69,7 @@ export function parseLookup(value: unknown): PlayerLookup {
       if (!/^NA1_\d+$/.test(matchId) || participantId < 1) throw new Error("INVALID_LOOKUP");
       if (!Array.isArray(m.endItemIds) || m.endItemIds.length > 7) throw new Error("INVALID_LOOKUP");
       return { matchId, queueId: m.queueId, participantId, championName: text(m.championName), championId: number(m.championId),
-        gameVersion: text(m.gameVersion), endItemIds: m.endItemIds.map((id) => number(id, 100000)),
+        gameVersion: text(m.gameVersion), endItemIds: m.endItemIds.map((id) => number(id)),
         position: text(m.position || "UNKNOWN"), win: boolean(m.win), remake: m.remake == null ? null : boolean(m.remake), startedAtMs: number(m.startedAtMs),
         durationSeconds: number(m.durationSeconds), kills: number(m.kills), deaths: number(m.deaths),
         assists: number(m.assists), cs: number(m.cs), gold: number(m.gold), timelineAvailable: boolean(m.timelineAvailable) };

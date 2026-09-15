@@ -7,7 +7,13 @@ test("player lookup", async ({ page, request }) => {
   const matchId = `NA1_${id}`;
   const before = await request.get(`http://127.0.0.1:${process.env.E2E_BACKEND_PORT ?? "8080"}/api/v1/matches/${matchId}/development?focus=6`);
   expect(before.status()).toBe(404);
-  await page.goto("/search");
+  await page.goto("/");
+  await page.getByRole("navigation", { name: "Product navigation" }).getByRole("link", { name: "Match history", exact: true }).click();
+  await expect(page).toHaveURL(/\/search$/);
+  const search = page.locator(".player-search");
+  const emptySearch = await search.boundingBox();
+  expect(emptySearch).not.toBeNull();
+  expect(Math.abs(emptySearch!.x + emptySearch!.width / 2 - page.viewportSize()!.width / 2)).toBeLessThan(2);
   await expect(page.getByRole("complementary", { name: "About this site" })).toContainText("LoL Match Analysis");
   await expect(page.getByText("Prototype", { exact: true })).toHaveCount(0);
   await expect(page.getByText(/All supported queues/)).toHaveCount(0);
@@ -18,6 +24,12 @@ test("player lookup", async ({ page, request }) => {
   const runId = new URL(page.url()).searchParams.get("runId");
   const row = page.getByRole("link", { name: "Garen victory match development" });
   await expect(row).toBeVisible({ timeout: 20000 });
+  const populatedSearch = await search.boundingBox();
+  const profile = await page.locator(".profile-header").boundingBox();
+  expect(populatedSearch).not.toBeNull();
+  expect(profile).not.toBeNull();
+  expect(Math.abs(populatedSearch!.x + populatedSearch!.width - profile!.x - profile!.width)).toBeLessThan(2);
+  expect(populatedSearch!.x).toBeGreaterThan(emptySearch!.x);
   await expect(row).toHaveAttribute("href", `/matches/${matchId}/development?focus=6&historyRunId=${runId}`);
   const champion = row.getByRole("img", { name: "Garen" });
   await expect(champion).toBeVisible();

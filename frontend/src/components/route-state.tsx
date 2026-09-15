@@ -4,8 +4,8 @@ import { HistorySkeleton, LoadingStatus } from "./loading-state";
 
 export function PageLoading({ search = false }: { search?: boolean }) {
   return <EntryShell active={search ? "search" : undefined} compact={!search}>
-    <header className="entry-heading"><p className="development-kicker">Match review</p><h1>{search ? "Player search" : "Loading page…"}</h1></header>
-    <LoadingStatus title={search ? "Opening player search…" : "Opening the page…"} description="You can use the navigation above while this loads." />
+    <header className="entry-heading"><p className="development-kicker">Match history</p><h1>{search ? "Loading match history…" : "Loading page…"}</h1></header>
+    <LoadingStatus title={search ? "Opening match history…" : "Opening the page…"} description="You can use the navigation above while this loads." />
     <HistorySkeleton />
   </EntryShell>;
 }

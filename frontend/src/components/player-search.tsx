@@ -63,7 +63,7 @@ export default function PlayerSearch({ initialRunId }: { initialRunId?: string }
 
   return <section className="player-lookup" aria-label="Player lookup">
     {!identityKnown && <h1 className="profile-sr-only">Find a player’s match history</h1>}
-    <form className="player-search" onSubmit={(event) => {
+    <form className={`player-search${identityKnown ? " player-search--profile" : ""}`} onSubmit={(event) => {
       event.preventDefault(); void submit({ gameName: gameName.trim(), tagLine: tagLine.trim(), queueId: 0 });
     }}>
       <label>Game name<input name="gameName" placeholder="ex. Doublelift" maxLength={64} required autoComplete="off"

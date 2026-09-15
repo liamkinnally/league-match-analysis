@@ -52,12 +52,13 @@ public class PlayerProfileService {
             private int stage;
             public boolean step(){
                 var subject=store.subject(run).orElse(null);if(subject==null)return true;
-                if(stage++==0){
+                if(stage==0){
                     var refreshId=UUID.randomUUID();
                     if(store.claimSummoner(subject.platform(),subject.puuid(),clock.instant(),refreshId)) {
                         try{var result=summoner.fetch(subject.platform(),subject.puuid());store.summonerSuccess(subject,result.iconId(),result.level(),result.revisionAt(),clock.instant(),refreshId);}
                         catch(RiotGatewayException failure){var retry=failure.retryNotBefore()==null?clock.instant().plusSeconds(60):failure.retryNotBefore();store.summonerFailure(subject,failure.code()==RiotFailureCode.RATE_LIMITED?"RATE_LIMITED":"UPSTREAM_UNAVAILABLE",retry,refreshId);if(failure.code()==RiotFailureCode.RATE_LIMITED)throw failure;}
                     }
+                    stage++;
                     return false;
                 }
                 ranks.refresh(subject.platform(),subject.puuid(),"RANKED_SOLO_5x5");return true;

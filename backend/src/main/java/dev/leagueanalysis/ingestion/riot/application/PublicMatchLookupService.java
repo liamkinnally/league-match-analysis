@@ -140,26 +140,30 @@ public class PublicMatchLookupService {
         private final Instant deadline;
         private boolean historyComplete;
         private boolean pendingRegistered;
+        private boolean profileComplete;
+        private boolean profileTurn;
         private PublicIngestionWork profile;
         private HistoryWithProfile(UUID id,PublicIngestionWork history,Instant deadline) {
             this.id=id;this.history=history;this.deadline=deadline;
         }
         public boolean step() {
-            if(!historyComplete) {
+            if(pendingRegistered&&!profileComplete&&(profileTurn||historyComplete)) {
+                if(profile==null)profile=profiles.refreshWork(id);
+                try {profileComplete=profile.step();}
+                catch(RiotGatewayException failure) {
+                    if(failure.code()==RiotFailureCode.RATE_LIMITED)throw failure;
+                    profileComplete=true;
+                }
+                catch(RuntimeException unavailable) {profileComplete=true;}
+                profileTurn=false;
+                if(profileComplete)profiles.finishWork(id);
+            } else if(!historyComplete) {
                 historyComplete=history.step();
                 if(!pendingRegistered)pendingRegistered=profiles.markPending(id,deadline);
-                return false;
+                // Alternate admitted profile and history stages after Account verification.
+                profileTurn=pendingRegistered;
             }
-            if(profile==null)profile=profiles.refreshWork(id);
-            boolean complete;
-            try {complete=profile.step();}
-            catch(RiotGatewayException failure) {
-                if(failure.code()==RiotFailureCode.RATE_LIMITED)throw failure;
-                complete=true;
-            }
-            catch(RuntimeException unavailable) {complete=true;}
-            if(complete)profiles.finishWork(id);
-            return complete;
+            return historyComplete&&(!pendingRegistered||profileComplete);
         }
     }
 

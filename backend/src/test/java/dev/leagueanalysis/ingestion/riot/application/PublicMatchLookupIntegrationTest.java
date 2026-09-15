@@ -50,36 +50,77 @@ class PublicMatchLookupIntegrationTest {
         var unavailable = new CurrentRankProvider.State(null, null, false, false, null, null);
         when(ranks.peek(anyString(), anyString(), anyString())).thenReturn(unavailable);
         when(ranks.refresh(anyString(), anyString(), anyString())).thenReturn(unavailable);
+        return attachProfiles(summoner, ranks);
+    }
+
+    PlayerProfileService attachProfiles(SummonerProfileClient summoner, CurrentRankProvider ranks) {
         var profiles = new PlayerProfileService(profileStore, ranks, summoner, clock);
         service.profileService(profiles);
         return profiles;
     }
 
-    @Test void profileRemainsPendingAcrossQueuedStagesAndUsesVerifiedLookupAlias() {
+    @Test void firstLookupFetchesProfileAndRankWhileRecentHistoryIsStillLoading() {
+        gateway.totalMatches = 20;
         var summoner = mock(SummonerProfileClient.class);
         when(summoner.fetch(anyString(), anyString())).thenReturn(new SummonerProfileClient.Profile(29, 180L, null));
-        var profiles = attachProfiles(summoner);
+        var ranks = mock(CurrentRankProvider.class);
+        when(ranks.peek(anyString(), anyString(), anyString())).thenReturn(new CurrentRankProvider.State(null, null, false, false, null, null));
+        var profiles = attachProfiles(summoner, ranks);
         var id = service.submit("CurrentAlias", "NA1", 440, "peer").lookup().runId();
         work.remove().run(); // Account verified; list/details are still queued.
         assertThat(profiles.load(id, null).summoner().refreshing()).isTrue();
         assertThat(profiles.load(id, null).soloRank().refreshing()).isTrue();
-        for (int i = 0; i < 3; i++) work.remove().run(); // List, detail, history completion.
-        assertThat(service.get(id).status()).isEqualTo("COMPLETE");
-        var beforeSummoner = profiles.load(id, null);
-        assertThat(beforeSummoner.identity().gameName()).isEqualTo("CurrentAlias");
-        assertThat(beforeSummoner.summoner().refreshing()).isTrue();
-        assertThat(beforeSummoner.soloRank().refreshing()).isTrue();
-        work.remove().run(); // Summoner succeeded; rank stage still waits for its turn.
+        verifyNoInteractions(summoner);
+        work.remove().run(); // Summoner gets its turn before the match batch.
         var beforeRank = profiles.load(id, null);
+        assertThat(beforeRank.identity().gameName()).isEqualTo("CurrentAlias");
         assertThat(beforeRank.summoner().status()).isEqualTo("available");
+        assertThat(beforeRank.summoner().profileIconId()).isEqualTo(29);
+        assertThat(beforeRank.summoner().summonerLevel()).isEqualTo(180L);
         assertThat(beforeRank.soloRank().refreshing()).isTrue();
-        work.remove().run();
+        assertThat(service.get(id).status()).isEqualTo("RUNNING");
+        work.remove().run(); // History also advances between profile stages.
+        assertThat(gateway.calls).containsExactly("account", "list");
+        work.remove().run(); // Rank is admitted before match details finish.
+        verify(ranks).refresh("NA1", PublicLookupGatewayFixture.PUUID, "RANKED_SOLO_5x5");
+        assertThat(service.get(id).status()).isEqualTo("RUNNING");
+        assertThat(service.submit("CurrentAlias", "NA1", 440, "other-peer").lookup().runId()).isEqualTo(id);
+        drain();
+        assertThat(service.get(id).matches()).hasSize(20);
+        assertThat(service.get(id).status()).isEqualTo("COMPLETE");
         assertThat(work).isEmpty();
         assertThat(profiles.load(id, null).summoner().refreshing()).isFalse();
         assertThat(profiles.load(id, null).soloRank().refreshing()).isFalse();
+        assertThat(service.submit("CurrentAlias", "NA1", 440, "peer").httpStatus()).isEqualTo(200);
+        verify(summoner, times(1)).fetch("NA1", PublicLookupGatewayFixture.PUUID);
+        verify(ranks, times(1)).refresh(anyString(), anyString(), anyString());
+        assertThat(work).isEmpty();
     }
 
-    @Test void completedHistorySurvivesProfileCooldownPastItsDeadline() {
+    @Test void profileRateLimitRetriesTheSameStageAndFinishesHistoryAfterCooldown() {
+        var delayed = new ArrayList<Runnable>();
+        service = new PublicMatchLookupService(new RiotIngestionService(gateway, new MatchV5Decoder(), store, clock),
+                store, clock, true, work::add, (task, delay) -> delayed.add(task));
+        var summoner = mock(SummonerProfileClient.class);
+        when(summoner.fetch(anyString(), anyString())).thenThrow(new RiotGatewayException(
+                RiotFailureCode.RATE_LIMITED, "sanitized", clock.instant().plusSeconds(120)))
+                .thenReturn(new SummonerProfileClient.Profile(29, 180L, null));
+        var profiles = attachProfiles(summoner);
+        var id = service.submit("CurrentAlias", "NA1", 440, "peer").lookup().runId();
+        work.remove().run();
+        work.remove().run();
+        assertThat(delayed).hasSize(1);
+        assertThat(work).isEmpty();
+        assertThat(service.get(id).status()).isEqualTo("RUNNING");
+        clock.now = clock.now.plusSeconds(120);
+        delayed.removeFirst().run();
+        drain();
+        assertThat(service.get(id).status()).isEqualTo("COMPLETE");
+        assertThat(profiles.load(id, null).summoner().status()).isEqualTo("available");
+        verify(summoner, times(2)).fetch("NA1", PublicLookupGatewayFixture.PUUID);
+    }
+
+    @Test void profileCooldownPastDeadlineStopsUnfinishedLookupAndClearsPendingState() {
         var delayed = new ArrayList<Runnable>();
         service = new PublicMatchLookupService(new RiotIngestionService(gateway, new MatchV5Decoder(), store, clock),
                 store, clock, true, work::add, (task, delay) -> delayed.add(task));
@@ -88,22 +129,55 @@ class PublicMatchLookupIntegrationTest {
                 RiotFailureCode.RATE_LIMITED, "sanitized", clock.instant().plusSeconds(1000)));
         var profiles = attachProfiles(summoner);
         var id = service.submit("CurrentAlias", "NA1", 440, "peer").lookup().runId();
-        for (int i = 0; i < 4; i++) work.remove().run();
-        assertThat(service.get(id).status()).isEqualTo("COMPLETE");
         work.remove().run();
+        work.remove().run();
+        assertThat(service.get(id).status()).isEqualTo("RUNNING");
         assertThat(delayed).hasSize(1);
         clock.now = clock.now.plusSeconds(901);
         delayed.removeFirst().run();
-        assertThat(service.get(id).status()).isEqualTo("COMPLETE");
-        assertThat(service.submit("CurrentAlias", "NA1", 440, "peer").httpStatus()).isEqualTo(200);
+        assertThat(service.get(id).status()).isEqualTo("FAILED");
         assertThat(profiles.load(id, null).summoner().refreshing()).isFalse();
         assertThat(profiles.load(id, null).soloRank().refreshing()).isFalse();
+        assertThat(work).isEmpty();
+        assertThat(delayed).isEmpty();
+    }
+
+    @Test void unavailableProfileDoesNotPreventRecentHistoryFromFinishing() {
+        var summoner = mock(SummonerProfileClient.class);
+        when(summoner.fetch(anyString(), anyString())).thenThrow(new RiotGatewayException(
+                RiotFailureCode.UPSTREAM_UNAVAILABLE, "sanitized"));
+        var profiles = attachProfiles(summoner);
+        var id = service.submit("CurrentAlias", "NA1", "peer").lookup().runId();
+        for (int i = 0; i < 4; i++) work.remove().run(); // Account, failed Summoner, list, rank.
+        assertThat(service.get(id).status()).isEqualTo("RUNNING");
+        var resolvedProfile = profiles.load(id, null);
+        assertThat(resolvedProfile.summoner().status()).isEqualTo("unavailable");
+        assertThat(resolvedProfile.summoner().refreshing()).isFalse();
+        assertThat(resolvedProfile.soloRank().status()).isEqualTo("unavailable");
+        assertThat(resolvedProfile.soloRank().refreshing()).isFalse();
+        drain();
+        var result = service.get(id);
+        assertThat(result.status()).isEqualTo("COMPLETE");
+        assertThat(result.matches()).hasSize(1);
+        assertThat(profiles.load(result.runId(), null).summoner().status()).isEqualTo("unavailable");
+        assertThat(profiles.load(result.runId(), null).summoner().refreshing()).isFalse();
+        assertThat(profiles.load(result.runId(), null).summoner().retryNotBefore()).isAfter(clock.instant());
+    }
+
+    @Test void failedAccountVerificationNeverStartsProfileRequests() {
+        gateway.accountFailure = RiotFailureCode.NOT_FOUND;
+        var summoner = mock(SummonerProfileClient.class);
+        var ranks = mock(CurrentRankProvider.class);
+        attachProfiles(summoner, ranks);
+        var result = run("CurrentAlias");
+        assertThat(result.status()).isEqualTo("FAILED");
+        verifyNoInteractions(summoner, ranks);
     }
 
     @Test void publicProfileIdentityIsNotReplacedByHistoricalParticipantName() {
         var profiles = attachProfiles(mock(SummonerProfileClient.class));
         var id = service.submit("CurrentAlias", "NA1", 440, "peer").lookup().runId();
-        for (int i = 0; i < 4; i++) work.remove().run();
+        drain();
         assertThat(jdbc.queryForObject("select game_name from league_analysis.riot_identity where puuid=?",
                 String.class, PublicLookupGatewayFixture.PUUID)).isNotEqualTo("CurrentAlias");
         assertThat(profiles.load(id, null).identity().gameName()).isEqualTo("CurrentAlias");
