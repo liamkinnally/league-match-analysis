@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { PlayerSearchForm } from "./player-search-form";
+import { regionFor, type PlayerIdentity } from "../lib/player-lookup/regions";
 import { PlayerProfileHeader, PlayerProfilePanel } from "./player-profile";
 import { usePlayerProfile } from "../lib/player-lookup/use-player-profile";
 import { useEffect, useState } from "react";
@@ -18,10 +20,8 @@ import { historyQueues } from "../lib/player-lookup/types";
 
 const formatNumber = (n: number) => n.toLocaleString("en-US");
 
-export default function PlayerSearch({ initialRunId }: { initialRunId?: string }) {
-  const { lookup, issue, submitting, loading, retryNotBefore, submit, retry, older, refresh, filter, busy: operation, restoreCursor, restoreMore } = usePlayerLookup(initialRunId);
-  const [editedName, setEditedName] = useState<string | null>(null);
-  const [editedTag, setEditedTag] = useState<string | null>(null);
+export default function PlayerSearch({ initialRunId, initialIdentity }: { initialRunId?: string; initialIdentity?: PlayerIdentity }) {
+  const { lookup, issue, submitting, loading, retryNotBefore, submit, retry, older, refresh, filter, busy: operation, restoreCursor, restoreMore } = usePlayerLookup(initialRunId, initialIdentity);
   const [now, setNow] = useState(0);
   useEffect(() => {
     const tick = () => setNow(Date.now());
@@ -30,14 +30,12 @@ export default function PlayerSearch({ initialRunId }: { initialRunId?: string }
   }, []);
   const nextRefresh = Math.max(Date.parse(lookup?.nextRefreshAt ?? "") || 0, Date.parse(retryNotBefore ?? "") || 0);
   const remaining = Math.max(0, Math.ceil((nextRefresh - now) / 1000));
-  const gameName = editedName ?? lookup?.gameName ?? "";
-  const tagLine = editedTag ?? lookup?.tagLine ?? "";
   const catalogs = useGameAssetCatalogs(lookup?.matches.map((match) => match.gameVersion) ?? []);
   const running = !issue && lookup?.status === "RUNNING";
   const count = lookup?.matches.length ?? 0;
   const busy = Boolean(operation) || submitting || loading || running;
   const identityKnown = Boolean(lookup?.gameName && lookup?.tagLine);
-  const profileState = usePlayerProfile(identityKnown && lookup ? { runId: lookup.runId, gameName: lookup.gameName, tagLine: lookup.tagLine, updatedAt: lookup.lastUpdated, historyStatus: lookup.status } : null);
+  const profileState = usePlayerProfile(identityKnown && lookup ? { runId: lookup.runId, gameName: lookup.gameName, tagLine: lookup.tagLine, platform: lookup.platform, updatedAt: lookup.lastUpdated, historyStatus: lookup.status } : null);
   const failed = !issue && lookup?.status === "FAILED";
   const showIssueBySearch = count === 0 && Boolean(failed || issue);
 
@@ -52,7 +50,7 @@ export default function PlayerSearch({ initialRunId }: { initialRunId?: string }
           : lookup?.status === "EMPTY" && count === 0 ? <div className="entry-notice" role="status">
             <strong>{lookup.hasMore ? "No supported matches on this page" : "No recent matches"}</strong>
             <p>{lookup.hasMore ? "Load older matches to continue through this player's history."
-              : lookup.queueId === 0 ? "No supported matches found in this history snapshot." : `No ${queueLabel(lookup.queueId)} matches found on NA1.`}</p>
+              : lookup.queueId === 0 ? "No supported matches found in this history snapshot." : `No ${queueLabel(lookup.queueId)} matches found in ${regionFor(lookup.platform).name}.`}</p>
             {!lookup.hasMore && <p>Check the Riot ID or search for another player.</p>}
           </div> : failed || lookup?.status === "PARTIAL" ? <div className="entry-notice" role="status">
             <strong>{failed ? "Lookup could not finish" : "Some matches are unavailable"}</strong>
@@ -63,19 +61,11 @@ export default function PlayerSearch({ initialRunId }: { initialRunId?: string }
 
   return <section className="player-lookup" aria-label="Player lookup">
     {!identityKnown && <h1 className="profile-sr-only">Find a player’s match history</h1>}
-    <form className={`player-search${identityKnown ? " player-search--profile" : ""}`} onSubmit={(event) => {
-      event.preventDefault(); void submit({ gameName: gameName.trim(), tagLine: tagLine.trim(), queueId: 0 });
-    }}>
-      <label>Game name<input name="gameName" placeholder="ex. Doublelift" maxLength={64} required autoComplete="off"
-        autoCapitalize="none" spellCheck={false} value={gameName} onChange={event => setEditedName(event.target.value)} /></label>
-      <label className="player-search__tag">Tag line<input name="tagLine" placeholder="NA01" maxLength={16} required autoComplete="off"
-        autoCapitalize="none" spellCheck={false} value={tagLine} onChange={event => setEditedTag(event.target.value)} /></label>
-      <button type="submit" disabled={submitting}>{submitting ? "Finding matches…" : "Find matches"}<span aria-hidden="true">→</span></button>
-    </form>
+    <PlayerSearchForm identity={lookup?.gameName ? lookup : initialIdentity} submitting={submitting} profile={identityKnown} onSubmit={submit} />
     {showIssueBySearch && historyStatus}
 
     {(lookup || busy || issue) && <div className="player-lookup__results">
-      {lookup && identityKnown && <PlayerProfileHeader identity={{ gameName: lookup.gameName, tagLine: lookup.tagLine }} {...profileState}>
+      {lookup && identityKnown && <PlayerProfileHeader identity={{ gameName: lookup.gameName, tagLine: lookup.tagLine, platform: lookup.platform }} {...profileState}>
         <button className="entry-button profile-update" type="button" disabled={busy || profileState.loadingRecent || remaining > 0} onClick={refresh}>{operation === "refresh" ? "Updating…" : "Update"}</button>
         {remaining > 0 ? <small>Update in {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}</small> : lookup.lastUpdated && <small>Updated <time dateTime={lookup.lastUpdated}>{new Date(lookup.lastUpdated).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</time></small>}
       </PlayerProfileHeader>}

@@ -28,6 +28,35 @@ class RiotApiClientTest {
     private static final String TEST_SECRET = "test-secret";
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-09-03T12:00:00Z"), ZoneOffset.UTC);
 
+    @Test void sharedRegionalListsCanContainTransferredMatchesWithoutPermittingTheirDetailLookup() {
+        var transport=new FakeTransport(ok("[\"EUW1_123\",\"TR1_456\",\"EUN1_789\"]"));
+        var client=client(properties(TEST_SECRET),transport,ignored->{}).forPlatform("EUW1");
+        assertThat(client.listMatchIds("invented",0,0,20,null).matchIds()).containsExactly("EUW1_123","TR1_456","EUN1_789");
+        assertCode(()->client.fetchMatchDetail("TR1_456"),RiotFailureCode.INVALID_INPUT);
+        assertCode(()->client.fetchMatchDetail("EUN1_789"),RiotFailureCode.INVALID_INPUT);
+        assertThat(transport.requests).hasSize(1);
+    }
+
+    @Test void selectedPlatformRoutesAccountHistoryDetailAndTimelineToItsOfficialCluster() {
+        for (var route : Map.of("NA1", "americas", "EUW1", "europe", "EUN1", "europe", "KR", "asia").entrySet()) {
+            String id = route.getKey() + "_123";
+            var transport = new FakeTransport(ok("{\"puuid\":\"invented\",\"gameName\":\"선수\",\"tagLine\":\"tag\"}"),
+                    ok("[\"" + id + "\"]"), ok("{\"info\":{\"gameVersion\":\"16.18.1\"}}"), ok("{}"));
+            var client = client(properties(TEST_SECRET), transport, ignored -> {}).forPlatform(route.getKey()).forPublicLookup();
+            var account = client.resolveAccount(new RiotId("선수", "tag"));
+            assertThat(account.source().platformRoute()).isEqualTo(route.getKey());
+            assertThat(client.listMatchIds("invented", 0, 0, 20, null).matchIds()).containsExactly(id);
+            client.fetchMatchDetail(id);
+            client.fetchMatchTimeline(id);
+            assertThat(transport.requests).allSatisfy(request ->
+                    assertThat(request.uri().getHost()).isEqualTo(route.getValue() + ".api.riotgames.com"));
+            assertCode(() -> client.fetchMatchDetail("ZZ1_123"), RiotFailureCode.INVALID_INPUT);
+        }
+        var wrongRegion = new FakeTransport(ok("[\"NA1_123\"]"));
+        assertCode(() -> client(properties(TEST_SECRET), wrongRegion, ignored -> {}).forPlatform("KR")
+                .listMatchIds("invented", 0, 0, 20, null), RiotFailureCode.INVALID_RESPONSE);
+    }
+
     @Test
     void publicLookupStopsOnFirst429AndRetainsFullRetryAfterWithoutParsingErrorBody() {
         var transport = new FakeTransport(response(429, "not-json-private-body",

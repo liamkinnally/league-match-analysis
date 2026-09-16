@@ -10,8 +10,8 @@ export default function PrivacyPage() {
     <p>{PRODUCT_NAME} is a League of Legends match-analysis app. This policy describes the data it retrieves and stores.</p>
 
     <h2>Information the app uses</h2>
-    <p>When you search for a player, the app sends the game name and tag line you enter to its server and queries Riot’s APIs. It retrieves account identifiers, in-game names, recent match details and timelines, and current queue-specific ranks. Match records include information about all ten participants.</p>
-    <p>The server stores Riot account identifiers, observed names, match records, captured API responses and lookup status in PostgreSQL. Public pages show selected match and player information. They do not expose PUUIDs, raw provider responses or API credentials. Anyone with a match or search URL may be able to view the displayed results.</p>
+    <p>As you type a player name, the app sends your search text and selected region to its server to suggest previously cached profiles. Suggestions do not query Riot’s APIs. When you submit a Riot ID, the app sends the game name, tag line and selected region to its server and queries Riot’s APIs as needed. It retrieves account identifiers, in-game names, recent match details and timelines, and current queue-specific ranks. Match records include information about all ten participants.</p>
+    <p>The server stores Riot account identifiers, observed names and regions, profile icons and levels, match records, captured API responses and lookup status in PostgreSQL. Public pages and search suggestions show selected match and player information. They do not expose PUUIDs, raw provider responses or API credentials. Player profile URLs include the region, game name and tag line. Anyone with a match or profile URL may be able to view the displayed results.</p>
 
     <h2>Why this information is used</h2>
     <p>Data is used to find recent matches, display final results and recorded changes over time, show current ranks, reuse previously retrieved games, and diagnose failures. Current ranks are not historical ranks or MMR.</p>

@@ -28,9 +28,12 @@ public final class CurrentRankProvider {
     private final LongSupplier clock;
     private final Executor executor;
     private final Map<Key, Entry> cache = new LinkedHashMap<>(16, .75f, true);
-    private final ArrayDeque<Long> requestTimes = new ArrayDeque<>();
-    private long blockedUntil;
-    private String blockedError;
+    private final Map<String, PlatformBudget> budgets = new HashMap<>();
+    private static final class PlatformBudget {
+        final ArrayDeque<Long> requestTimes = new ArrayDeque<>();
+        long blockedUntil;
+        String blockedError;
+    }
 
     @Autowired
     public CurrentRankProvider(RankSnapshotStore store, RiotProperties properties, RiotHttpTransport transport,
@@ -50,10 +53,11 @@ public final class CurrentRankProvider {
     public State peek(String platform,String puuid,String queue) { return lookup(platform,puuid,queue,false); }
     private synchronized State lookup(String platform,String puuid,String queue,boolean admit) {
         if(store!=null) store.requireHealthy();
-        String unavailable = !platform.equals(properties.platformRoute()) ? "UNSUPPORTED_PLATFORM"
+        String unavailable = !dev.leagueanalysis.ingestion.riot.domain.RiotPlatform.supported(platform) ? "UNSUPPORTED_PLATFORM"
                 : puuid==null || puuid.isBlank() ? "MISSING_IDENTITY" : null;
         if(unavailable!=null)return new State(null,null,false,false,null,unavailable);
         long now = clock.getAsLong();
+        var budget = budgets.computeIfAbsent(platform, ignored -> new PlatformBudget());
         var key = new Key(platform, puuid);
         if(store!=null&&!store.isAllowed(puuid)){cache.remove(key);return new State(null,null,false,false,null,"ACCOUNT_UNAVAILABLE");}
         var entry = cache.get(key);
@@ -78,8 +82,8 @@ public final class CurrentRankProvider {
         if(properties.apiKey().isBlank()) {entry.error="MISSING_CREDENTIALS";admit=false;}
         var refreshId=UUID.randomUUID();
         if (admit && !entry.pending && now >= entry.retryAt && (entry.values == null || now-entry.fetchedAt >= TTL)) {
-            if (now < blockedUntil) {
-                entry.error = blockedError; entry.retryAt=blockedUntil;
+            if (now < budget.blockedUntil) {
+                entry.error = budget.blockedError; entry.retryAt=budget.blockedUntil;
             } else if(store==null || store.claim(platform,puuid,Instant.ofEpochMilli(now),refreshId)) {
                 entry.pending=true;entry.refreshId=refreshId;
                 try { executor.execute(() -> fetch(key,refreshId)); }
@@ -94,10 +98,12 @@ public final class CurrentRankProvider {
     private void fetch(Key key,UUID refreshId) {
         synchronized(this) {
             long now=clock.getAsLong();
+            var budget=budgets.computeIfAbsent(key.platform(), ignored -> new PlatformBudget());
+            var requestTimes=budget.requestTimes;
             while(!requestTimes.isEmpty() && requestTimes.getFirst() <= now-120_000) requestTimes.removeFirst();
             // Conservative local budget leaves capacity for ingestion, which shares the credential.
-            if (now < blockedUntil) {
-                fail(key, blockedError, blockedUntil);
+            if (now < budget.blockedUntil) {
+                fail(key, budget.blockedError, budget.blockedUntil);
                 return;
             }
             if (requestTimes.size() >= 80) {
@@ -121,10 +127,11 @@ public final class CurrentRankProvider {
                 if(response.statusCode()==429) { error="RATE_LIMITED";retry=retryAfter(response); }
                 if(response.statusCode()==401 || response.statusCode()==403) { error="AUTH_UNAVAILABLE";retry=clock.getAsLong()+60_000; }
                 synchronized(this) {
+                    var budget=budgets.computeIfAbsent(key.platform(), ignored -> new PlatformBudget());
                     if ((response.statusCode()==429 || response.statusCode()==401 || response.statusCode()==403)
-                            && retry >= blockedUntil) {
-                        blockedUntil = retry;
-                        blockedError = error;
+                            && retry >= budget.blockedUntil) {
+                        budget.blockedUntil = retry;
+                        budget.blockedError = error;
                     }
                     fail(key,error,retry);
                 }

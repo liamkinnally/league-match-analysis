@@ -8,7 +8,7 @@ const id = (n: number) => `00000000-0000-0000-0000-${String(n).padStart(12, "0")
 const match = (n: number) => ({ matchId: `NA1_${n}`, queueId: 420, participantId: 6, championName: "Garen", championId: 86,
   gameVersion: "16.17.1", endItemIds: [], position: "TOP", win: true, remake: false, startedAtMs: n, durationSeconds: 1800,
   kills: 1, deaths: 2, assists: 3, cs: 100, gold: 10000, timelineAvailable: false });
-const page = (n: number, ids: number[], extra: Partial<PlayerLookup> = {}): PlayerLookup => ({ runId: id(n), gameName: "Invented", tagLine: "NA1", queueId: 420,
+const page = (n: number, ids: number[], extra: Partial<PlayerLookup> = {}): PlayerLookup => ({ platform: "NA1", runId: id(n), gameName: "Invented", tagLine: "NA1", queueId: 420,
   status: "COMPLETE", message: null, retryNotBefore: null, lastUpdated: "2026-09-12T00:00:00Z", nextRefreshAt: null,
   previousRunId: null, hasMore: true, matches: ids.map(id => ({ ...match(id), queueId: extra.queueId ?? 420 })), ...extra });
 afterEach(() => { vi.useRealTimers(); push.mockClear(); });
@@ -25,7 +25,7 @@ it("appends and deduplicates older results, retries against the original parent,
   await act(async () => hook.result.current.retry());
   expect(fetcher.mock.calls.slice(1).map(([url]) => url)).toEqual([`/api/player-matches/${id(1)}/older`, `/api/player-matches/${id(1)}/older`]);
   expect(hook.result.current.lookup?.matches.map(m => m.matchId)).toEqual(["NA1_1", "NA1_2", "NA1_3"]);
-  expect(push).toHaveBeenCalledWith(`/search?runId=${id(2)}`);
+  expect(push).toHaveBeenCalledWith(`/summoners/na/Invented-NA1?runId=${id(2)}`);
 });
 it("restores linked pages in chronological page order without requesting provider pagination", async () => {
   const fetcher = vi.fn().mockResolvedValueOnce(Response.json(page(3, [3], { previousRunId: id(2), hasMore: false })))
@@ -78,6 +78,7 @@ it("retains rows during refresh and replaces the history only after completion",
   await act(async () => vi.advanceTimersByTime(2000));
   expect(hook.result.current.lookup?.matches.map(m => m.matchId)).toEqual(["NA1_2"]);
   expect(hook.result.current.busy).toBeNull();
+  expect(push).toHaveBeenLastCalledWith(`/summoners/na/Invented-NA1?runId=${id(2)}`);
 });
 it("aborts superseded history requests without publishing their results", async () => {
   let firstSignal: AbortSignal | undefined;
@@ -114,4 +115,35 @@ it("restores forward navigation after a cached search on the same URL", async ()
   expect(hook.result.current.lookup?.runId).toBe(id(2));
   expect(hook.result.current.lookup?.matches[0].matchId).toBe("NA1_2");
   expect(push).toHaveBeenCalledTimes(1);
+});
+
+it("opens a Korean profile directly without a prior lookup handle", async () => {
+  const fetcher = vi.fn().mockResolvedValue(Response.json(page(1, [], { platform: "KR", gameName: "다른 이름", tagLine: "KR1", queueId: 0 })));
+  vi.stubGlobal("fetch", fetcher);
+  const hook = renderHook(() => usePlayerLookup(undefined, { platform: "KR", gameName: "다른 이름", tagLine: "KR1" }));
+  await act(async () => {});
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  expect(JSON.parse(fetcher.mock.calls[0][1].body)).toEqual({ platform: "KR", gameName: "다른 이름", tagLine: "KR1", queueId: 0 });
+  expect(hook.result.current.lookup?.platform).toBe("KR");
+});
+
+it("rejects a profile handle belonging to another region before showing its matches", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(page(1, [1]))));
+  const hook = renderHook(() => usePlayerLookup(id(1), { platform: "KR", gameName: "Invented", tagLine: "NA1" }));
+  await act(async () => {});
+  expect(hook.result.current.lookup).toBeNull();
+  expect(hook.result.current.issue).not.toBeNull();
+});
+
+
+it("rejects a different identity when an unresolved profile finishes polling", async () => {
+  vi.useFakeTimers();
+  const fetcher = vi.fn().mockResolvedValueOnce(Response.json(page(1, [], { status: "RUNNING", gameName: "", tagLine: "", platform: "KR", queueId: 0 })))
+    .mockResolvedValueOnce(Response.json(page(1, [], { gameName: "Someone else", tagLine: "KR1", platform: "KR", queueId: 0 })));
+  vi.stubGlobal("fetch", fetcher);
+  const hook = renderHook(() => usePlayerLookup(undefined, { gameName: "Expected", tagLine: "KR1", platform: "KR" }));
+  await act(async () => {});
+  await act(async () => vi.advanceTimersByTime(2000));
+  expect(hook.result.current.lookup?.gameName).not.toBe("Someone else");
+  expect(hook.result.current.issue).not.toBeNull();
 });

@@ -1,6 +1,7 @@
+import { isPlatform, type Platform } from "./regions";
 import { runIdPattern } from "./types";
 
-export type ProfileIdentity = { gameName: string; tagLine: string };
+export type ProfileIdentity = { gameName: string; tagLine: string; platform?: Platform };
 type Freshness = { fetchedAt: string | null; refreshing: boolean; stale: boolean; retryNotBefore: string | null; error: string | null };
 export type SummonerProfile = Freshness & { status: "available" | "loading" | "unavailable"; profileIconId: number | null; summonerLevel: number | null; revisionAt: string | null };
 export type SoloRank = Freshness & { status: "ranked" | "unranked" | "loading" | "unavailable"; tier: string | null; division: string | null; leaguePoints: number | null; wins: number | null; losses: number | null; winRate: number | null; period: "unknown" };
@@ -26,7 +27,7 @@ function freshness(value: Record<string, unknown>): Freshness {
 function rankValues(value: Record<string, unknown>) {
   return { tier: nullableChoice(value.tier, tiers), division: nullableChoice(value.division, divisions), leaguePoints: nullableInteger(value.leaguePoints), wins: nullableInteger(value.wins), losses: nullableInteger(value.losses) };
 }
-export const sameProfileIdentity = (a: ProfileIdentity, b: ProfileIdentity) => a.gameName.toLocaleLowerCase() === b.gameName.toLocaleLowerCase() && a.tagLine.toLocaleLowerCase() === b.tagLine.toLocaleLowerCase();
+export const sameProfileIdentity = (a: ProfileIdentity, b: ProfileIdentity) => (a.platform ?? "NA1") === (b.platform ?? "NA1") && a.gameName.toLocaleLowerCase() === b.gameName.toLocaleLowerCase() && a.tagLine.toLocaleLowerCase() === b.tagLine.toLocaleLowerCase();
 export const profileNeedsPolling = (profile: PlayerProfile) => profile.summoner.refreshing || profile.summoner.status === "loading" || profile.soloRank.refreshing || profile.soloRank.status === "loading" || profile.flexRank.refreshing || profile.flexRank.status === "loading" || profile.recentSolo.completeness === "loading";
 function parseRank(value: unknown): SoloRank {
   const row = record(value), values = rankValues(row), status = choice(row.status, ["ranked", "unranked", "loading", "unavailable"] as const);
@@ -50,8 +51,10 @@ export function parsePlayerProfile(value: unknown): PlayerProfile {
   if (recent.queueId !== 420 || recent.target !== 20 || sampleSize > 20 || wins + losses !== sampleSize) fail();
   const completeness = choice(recent.completeness, ["complete_target", "complete_checked_range", "incomplete_budget", "incomplete_missing", "loading", "unverified"] as const);
   if (completeness === "complete_target" && sampleSize !== 20) fail();
+  const platform = identity.platform ?? "NA1";
+  if (!isPlatform(platform)) return fail();
   return {
-    identity: { gameName: text(identity.gameName, 64), tagLine: text(identity.tagLine, 16) },
+    identity: { platform, gameName: text(identity.gameName, 64), tagLine: text(identity.tagLine, 16) },
     summoner: { ...freshness(summoner), status: choice(summoner.status, ["available", "loading", "unavailable"] as const), profileIconId: nullableInteger(summoner.profileIconId), summonerLevel: nullableInteger(summoner.summonerLevel), revisionAt: nullableDate(summoner.revisionAt) },
     soloRank: parseRank(root.soloRank),
     flexRank: root.flexRank === undefined ? { ...unavailableRank } : parseRank(root.flexRank),

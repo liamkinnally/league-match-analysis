@@ -23,11 +23,14 @@ public final class CurrentRankService {
     public Optional<Result> load(String matchId) {
         return rosters.load(matchId).map(roster->{
             String queue=switch(roster.queueId()){case 420->"RANKED_SOLO_5x5";case 440->"RANKED_FLEX_SR";default->null;};
+            String platform;
+            try { platform=dev.leagueanalysis.ingestion.riot.domain.RiotPlatform.fromMatchId(matchId).name(); }
+            catch(IllegalArgumentException invalid) { platform=null; }
             var players=new ArrayList<PlayerRank>();boolean refreshing=false;
             for(var player:roster.players()) {
-                String error=queue==null?"UNSUPPORTED_QUEUE":!matchId.startsWith(properties.platformRoute()+"_")?"UNSUPPORTED_PLATFORM":null;
+                String error=queue==null?"UNSUPPORTED_QUEUE":platform==null?"UNSUPPORTED_PLATFORM":null;
                 if(error!=null){players.add(new PlayerRank(player.participantId(),"unavailable",null,null,null,null,false,false,error));continue;}
-                var state=provider.refresh(properties.platformRoute(),player.puuid(),queue);var v=state.value();
+                var state=provider.refresh(platform,player.puuid(),queue);var v=state.value();
                 players.add(new PlayerRank(player.participantId(),v==null?state.refreshing()?"loading":"unavailable":v.status(),
                     v==null?null:v.tier(),v==null?null:v.division(),v==null?null:v.lp(),state.fetchedAt()==null?null:state.fetchedAt().toString(),v!=null,state.stale(),state.error()));
                 refreshing|=state.refreshing();

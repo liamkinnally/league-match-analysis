@@ -1,3 +1,4 @@
+import type { Platform } from "./regions";
 import { parseLookup, retryDate } from "./types";
 import { backendFetch } from "../backend-transport";
 import { isSamplePreview } from "../preview-mode";
@@ -12,7 +13,7 @@ export function lookupError(status: number, retryNotBefore: string | null = null
     ...headers, ...(retryAfter && /^\d{1,15}$/.test(retryAfter) ? { "Retry-After": retryAfter } : {}),
   } });
 }
-export async function proxyLookup(path: string, input?: { gameName: string; tagLine: string; queueId: number }, method: "GET" | "POST" = input ? "POST" : "GET"): Promise<Response> {
+export async function proxyLookup(path: string, input?: { gameName: string; tagLine: string; queueId: number; platform: Platform }, method: "GET" | "POST" = input ? "POST" : "GET"): Promise<Response> {
   if (isSamplePreview()) return Response.json({ message: "Live player search is unavailable in this sample preview. Explore the synthetic match.",
     retryNotBefore: null }, { status: 503, headers });
   if (!process.env.BACKEND_URL) return lookupError(503);

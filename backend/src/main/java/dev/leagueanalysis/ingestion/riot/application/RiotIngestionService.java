@@ -31,11 +31,11 @@ public class RiotIngestionService {
     }
 
     public PublicIngestionWork historyWork(UUID runId, RiotIngestionCommand command, PublicMatchLookupStore pages) {
-        return new PublicHistoryWork(runId, command, gateway.forPublicLookup(), store, pages, decoder, clock);
+        return new PublicHistoryWork(runId, command, gateway.forPlatform(command.platform()).forPublicLookup(), store, pages, decoder, clock);
     }
 
     public PublicIngestionWork timelineWork(UUID runId, String matchId, PublicMatchLookupStore pages) {
-        return new PublicTimelineWork(runId, matchId, gateway.forPublicLookup(), store, pages, decoder, clock);
+        return new PublicTimelineWork(runId, matchId, gateway.forPlatform(dev.leagueanalysis.ingestion.riot.domain.RiotPlatform.fromMatchId(matchId).name()).forPublicLookup(), store, pages, decoder, clock);
     }
 
     public void recordPublicCooldown(UUID runId, java.time.Instant retry) {
@@ -44,11 +44,11 @@ public class RiotIngestionService {
 
     public RiotIngestionResult ingest(RiotIngestionCommand command) {
         var runId = store.startRun(command, clock.instant());
-        return execute(runId, command, gateway, false);
+        return execute(runId, command, gateway.forPlatform(command.platform()), false);
     }
 
     public RiotIngestionResult executePublic(UUID runId, RiotIngestionCommand command) {
-        return execute(runId, command, gateway.forPublicLookup(), true);
+        return execute(runId, command, gateway.forPlatform(command.platform()).forPublicLookup(), true);
     }
 
     private RiotIngestionResult execute(UUID runId, RiotIngestionCommand command, RiotGateway gateway, boolean publicLookup) {
@@ -68,9 +68,14 @@ public class RiotIngestionService {
         }
 
         try {
+            var profile = gateway.verifyPlatformAccount(accountLookup.account().puuid());
             var accountCapture = store.saveCapture(runId, accountLookup.source());
             store.recordResolvedAccount(runId, accountLookup.account(), accountCapture);
             store.recordVerifiedRequestedIdentity(runId, command);
+            if (profile != null) store.recordVerifiedProfile(runId, profile, clock.instant());
+        } catch (RiotGatewayException exception) {
+            recordCooldown(runId, exception, publicLookup);
+            return failSetup(runId, exception.code());
         } catch (RuntimeException exception) {
             return failPersistenceSetup(runId, "SOURCE_PERSISTENCE_FAILED",
                     "Source evidence persistence failed");
@@ -90,7 +95,7 @@ public class RiotIngestionService {
         final List<String> matchIds;
         boolean retainRawMatchList;
         try {
-            matchIds = new ArrayList<>(matchList.matchIds().stream().filter(id -> !store.isExcludedMatch(id)).toList());
+            matchIds = new ArrayList<>(matchList.matchIds().stream().filter(id -> id.startsWith(command.platform() + "_")).filter(id -> !store.isExcludedMatch(id)).toList());
             retainRawMatchList = matchIds.size() == matchList.matchIds().size()
                     && !store.isExcludedDocument(matchList.source());
             store.addItems(runId, matchIds);

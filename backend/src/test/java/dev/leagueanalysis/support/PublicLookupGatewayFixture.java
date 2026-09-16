@@ -31,6 +31,35 @@ public class PublicLookupGatewayFixture implements RiotGateway {
     private final Clock clock;
     public PublicLookupGatewayFixture(ObjectMapper json, Clock clock) { this.json = json; this.clock = clock; }
 
+    @Override public RiotGateway forPlatform(String selectedPlatform) {
+        var platform = RiotPlatform.parse(selectedPlatform);
+        if (platform == RiotPlatform.NA1) return this;
+        var source = this;
+        return new RiotGateway() {
+            public RiotAccountLookup resolveAccount(RiotId id) {
+                var result = source.resolveAccount(id);
+                return new RiotAccountLookup(result.account(), routed(result.source()));
+            }
+            public RiotMatchList listRankedMatchIds(String puuid,int count) { return listMatchIds(puuid,420,0,count,null); }
+            public RiotMatchList listMatchIds(String puuid,int queue,int start,int count,Long end) {
+                var result=source.listMatchIds(puuid,queue,start,count,end);
+                return new RiotMatchList(result.matchIds().stream().map(id->id.replace("NA1_",platform.name()+"_")).toList(),routed(result.source()));
+            }
+            public ProviderDocument fetchMatchDetail(String id) { return routed(source.fetchMatchDetail("NA1_"+id.substring(id.indexOf('_')+1))); }
+            public ProviderDocument fetchMatchTimeline(String id) { return routed(source.fetchMatchTimeline("NA1_"+id.substring(id.indexOf('_')+1))); }
+            private ProviderDocument routed(ProviderDocument doc) {
+                try {
+                    String body=doc.payload().toString().replace("NA1_",platform.name()+"_");
+                    byte[] bytes=body.getBytes(StandardCharsets.UTF_8);
+                    return new ProviderDocument(doc.kind(),doc.resourceKey().replace("NA1_",platform.name()+"_"),doc.capturedAt(),doc.httpStatus(),
+                            platform.regionalRoute(),platform.name(),doc.providerGameVersion(),
+                            HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes)),bytes.length,
+                            json.readTree(body),doc.responseMetadata(),doc.parserVersion(),doc.attempt());
+                } catch(Exception invalid) { throw new IllegalStateException(invalid); }
+            }
+        };
+    }
+
     public RiotAccountLookup resolveAccount(RiotId id) {
         calls.add("account");
         if (id.gameName().matches("History[0-9]{1,13}")) {

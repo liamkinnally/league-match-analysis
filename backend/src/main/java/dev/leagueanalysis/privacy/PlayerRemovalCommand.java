@@ -220,7 +220,7 @@ public final class PlayerRemovalCommand {
             if(command.equals("remove")) {
                 if(!Set.of("exclude","erase-only").contains(mode)) throw new IllegalArgumentException("EXPLICIT_REMOVAL_MODE_REQUIRED");
                 if((file!=null)==(match!=null) || file!=null && participant!=0) throw new IllegalArgumentException("EXACTLY_ONE_VERIFIED_IDENTIFIER_REQUIRED");
-                if(match!=null && (!match.matches("NA1_[0-9]+") || participant<1 || participant>10))
+                if(match!=null && (!match.matches("(NA1|EUW1|EUN1|KR)_[0-9]+") || participant<1 || participant>10))
                     throw new IllegalArgumentException("UNSUPPORTED_MATCH_PARTICIPANT");
             } else if(file!=null || match!=null || participant!=0 || !mode.isEmpty()) throw new IllegalArgumentException("UNSUPPORTED_OPTION_FOR_COMMAND");
             String confirm=values.get("--confirm");

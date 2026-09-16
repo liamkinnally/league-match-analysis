@@ -13,7 +13,6 @@ export function EntryShell({ children, active, compact = false }: {
         <Link href="/" aria-current={active === "home" ? "page" : undefined}>Home</Link>
         <Link href="/search" aria-current={active === "search" ? "page" : undefined}>Match history</Link>
       </nav>
-      <span className="development-region">NA1</span>
     </header>
     <div className={`development-page entry-page${compact ? " entry-page--compact" : ""}`}>{children}</div>
     <DevelopmentFooter />

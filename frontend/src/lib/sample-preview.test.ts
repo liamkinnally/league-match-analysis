@@ -89,7 +89,7 @@ it("reports sample readiness and unavailable live APIs without contacting a back
   const status = await health();
   expect(status.status).toBe(200);
   expect(await status.json()).toEqual({ status: "UP", dataSource: "sample", backend: "NOT_USED" });
-  const lookup = await proxyLookup("", { gameName: "Invented", tagLine: "DEMO", queueId: 420 });
+  const lookup = await proxyLookup("", { platform: "NA1", gameName: "Invented", tagLine: "DEMO", queueId: 420 });
   expect(lookup.status).toBe(503);
   expect(await lookup.text()).toContain("sample preview");
   expect((await ranks(new Request("https://preview.example.test"), { params: Promise.resolve({ matchId: "NA1_7000000001" }) })).status).toBe(503);

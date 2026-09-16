@@ -7,6 +7,13 @@ test("packaged application serves the persisted sample through the browser", asy
   await page.goto("/");
   await expect(page.getByRole("link", { name: "LoL Match Analysis" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Find matches" })).toBeEnabled();
+  await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute("content", "summary_large_image");
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute("content", "https://lolmatchanalysis.app/social-card.png");
+  for (const path of ["/favicon.ico", "/favicon.png", "/apple-touch-icon.png", "/social-card.png"]) {
+    const asset = await page.request.get(path);
+    expect(asset.ok(), `${path} is included in the packaged application`).toBe(true);
+    expect(asset.headers()["content-type"]).toMatch(/^image\//);
+  }
 
   await page.getByRole("link", { name: "Explore sample match" }).click();
   await expect(page.getByText("Sample match — synthetic data")).toBeVisible();

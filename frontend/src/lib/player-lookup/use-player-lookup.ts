@@ -2,10 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { profileHref, type PlayerIdentity, type Platform } from "./regions";
 import { parseLookup, retryDate, runIdPattern, type PlayerLookup } from "./types";
 
 const unavailable = "Live lookup is unavailable. Explore the sample match.";
-type Input = { gameName: string; tagLine: string; queueId: number };
+type Input = { gameName: string; tagLine: string; queueId: number; platform?: Platform };
 type LookupIssue = { message: string; retryNotBefore?: string | null; retryable?: boolean };
 type Command = { kind: "search" | "filter" | "restore" | "older" | "refresh"; runId?: string; input?: Input };
 class LookupRequestError extends Error {
@@ -45,7 +46,7 @@ async function requestLookup(url: string, signal: AbortSignal, method: "GET" | "
 }
 const sameId = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 function assertHistory(a: PlayerLookup, b: PlayerLookup) {
-  if (a.queueId !== b.queueId || (a.gameName && b.gameName &&
+  if (a.platform !== b.platform || a.queueId !== b.queueId || (a.gameName && b.gameName &&
       (a.gameName.toLowerCase() !== b.gameName.toLowerCase() || a.tagLine.toLowerCase() !== b.tagLine.toLowerCase())))
     throw new Error("HISTORY_MISMATCH");
 }
@@ -67,7 +68,8 @@ function pause(signal: AbortSignal) {
   });
 }
 
-export function usePlayerLookup(initialRunId?: string) {
+export function usePlayerLookup(initialRunId?: string, initialIdentity?: PlayerIdentity) {
+  const identityKey = initialIdentity ? JSON.stringify(initialIdentity) : "";
   const router = useRouter();
   const [pages, setPages] = useState<PlayerLookup[]>([]);
   const pagesRef = useRef<PlayerLookup[]>([]);
@@ -76,7 +78,8 @@ export function usePlayerLookup(initialRunId?: string) {
   const [restoreCursor, setRestoreCursor] = useState<string | null>(null);
   const controllerRef = useRef<AbortController | null>(null);
   const retryCommand = useRef<{ command: Command; continueRestore: boolean } | null>(null);
-  const ownNavigation = useRef<string | null>(null);
+  const ownNavigation = useRef<{ runId: string; identityPath: string; preserveRun: boolean } | null>(null);
+  const currentIdentity = useRef(initialIdentity);
   const currentRunId = useRef(initialRunId);
   const routerRef = useRef(router);
   useEffect(() => { routerRef.current = router; }, [router]);
@@ -91,13 +94,22 @@ export function usePlayerLookup(initialRunId?: string) {
       if (signal.aborted) return;
       pagesRef.current = next; setPages(next);
     };
-    const navigate = (runId: string) => {
-      if (currentRunId.current && sameId(currentRunId.current, runId)) {
+    const navigate = (result: PlayerLookup) => {
+      const identity = result.gameName ? result : command.input ? { ...command.input, platform: command.input.platform ?? "NA1" } : null;
+      if (!identity) return;
+      const identityPath = profileHref(identity);
+      const preserveRun = command.kind === "older" || result.queueId !== 0;
+      const sameRoute = currentIdentity.current && profileHref(currentIdentity.current).toLowerCase() === identityPath.toLowerCase();
+      if ((currentRunId.current && sameId(currentRunId.current, result.runId)) || (sameRoute && !currentRunId.current && !preserveRun)) {
         ownNavigation.current = null;
         return;
       }
-      ownNavigation.current = runId;
-      routerRef.current.push(`/search?runId=${runId}`);
+      ownNavigation.current = { runId: result.runId, identityPath, preserveRun };
+      routerRef.current.push(profileHref(identity, preserveRun ? result.runId : undefined));
+    };
+    const assertIdentity = (result: PlayerLookup, identity: Input | PlayerIdentity) => {
+      if (result.platform !== (identity.platform ?? "NA1") || (result.gameName &&
+          (!sameId(result.gameName, identity.gameName) || !sameId(result.tagLine, identity.tagLine)))) throw new Error("IDENTITY_MISMATCH");
     };
     const read = async (runId: string) => {
       const result = await requestLookup(`/api/player-matches/${runId}`, signal);
@@ -114,11 +126,14 @@ export function usePlayerLookup(initialRunId?: string) {
           if (visited.has(cursor.toLowerCase())) throw new Error("HISTORY_CYCLE");
           visited.add(cursor.toLowerCase());
           let result = await read(cursor);
+          if (currentIdentity.current) assertIdentity(result, currentIdentity.current);
           if (chain.length) assertHistory(chain[0], result);
           if (!chain.length) {
             publish([result]);
             while (result.status === "RUNNING") {
-              await pause(signal); const next = await read(cursor); assertHistory(result, next); result = next; publish([result]);
+              await pause(signal); const next = await read(cursor); assertHistory(result, next);
+              if (currentIdentity.current) assertIdentity(next, currentIdentity.current);
+              result = next; publish([result]);
             }
           } else if (result.status === "RUNNING") throw new Error("INCOMPLETE_PARENT");
           chain = [result, ...chain];
@@ -131,6 +146,7 @@ export function usePlayerLookup(initialRunId?: string) {
         const searching = command.kind === "search" || command.kind === "filter";
         const path = searching ? "" : `/${command.runId}/${command.kind}`;
         let result = await requestLookup(`/api/player-matches${path}`, signal, "POST", command.input);
+        if (searching) assertIdentity(result, command.input!);
         if (searching && result.queueId !== command.input!.queueId) throw new Error("QUEUE_MISMATCH");
         if (!searching && parent) assertHistory(parent, result);
         const validateOlder = (page: PlayerLookup) => {
@@ -147,17 +163,19 @@ export function usePlayerLookup(initialRunId?: string) {
         };
         // Keep existing results during a new lookup or refresh. A new, empty view can expose completed rows immediately.
         let navigated = false;
-        if (!base.length) { adopt(result); navigate(result.runId); navigated = true; }
+        if (!base.length) { adopt(result); navigate(result); navigated = true; }
         while (result.status === "RUNNING") {
           const run = result.runId;
-          await pause(signal); const next = await read(run); assertHistory(result, next); result = next;
+          await pause(signal); const next = await read(run); assertHistory(result, next);
+          if (command.input) assertIdentity(next, command.input);
+          result = next;
           if (!base.length) adopt(result);
         }
         if (result.status === "FAILED" && base.length) throw new LookupRequestError({ message: result.message ?? "Lookup could not finish. Retry loading to try again.", retryable: true, retryNotBefore: result.retryNotBefore });
         // Cached search may point to an older page; the search endpoint normally returns the newest page.
         if (command.kind !== "older" && result.previousRunId) throw new Error("UNEXPECTED_HISTORY_PARENT");
         adopt(result); setRestoreCursor(null);
-        if (!navigated) navigate(result.runId);
+        if (!navigated) navigate(result);
       }
     } catch (error) {
       if (!signal.aborted) setIssue(error instanceof LookupRequestError ? error.issue : { message: unavailable, retryable: true });
@@ -170,18 +188,26 @@ export function usePlayerLookup(initialRunId?: string) {
     const expectedNavigation = ownNavigation.current;
     ownNavigation.current = null;
     currentRunId.current = initialRunId;
-    if (initialRunId && expectedNavigation && sameId(expectedNavigation, initialRunId)) return;
-    if (!initialRunId || !runIdPattern.test(initialRunId)) return;
+    const identity = identityKey ? JSON.parse(identityKey) as PlayerIdentity : undefined;
+    currentIdentity.current = identity;
+    if (expectedNavigation && ((initialRunId && sameId(expectedNavigation.runId, initialRunId)) ||
+        (!initialRunId && !expectedNavigation.preserveRun && identity && profileHref(identity).toLowerCase() === expectedNavigation.identityPath.toLowerCase()))) return;
+    if (initialRunId && !runIdPattern.test(initialRunId)) return;
+    if (!initialRunId && !identity) return;
     const previousController = controllerRef.current;
     let cancelled = false;
     let controller: AbortController | null = null;
     void Promise.resolve().then(() => {
       if (cancelled || controllerRef.current !== previousController) return;
-      void execute({ kind: "restore", runId: initialRunId });
+      if (identity && pagesRef.current.some(page => page.platform !== identity.platform || (page.gameName &&
+          (!sameId(page.gameName, identity.gameName) || !sameId(page.tagLine, identity.tagLine))))) {
+        pagesRef.current = []; setPages([]); setRestoreCursor(null);
+      }
+      void execute(initialRunId ? { kind: "restore", runId: initialRunId } : { kind: "search", input: { ...identity!, queueId: 0 } });
       controller = controllerRef.current;
     });
     return () => { cancelled = true; controller?.abort(); };
-  }, [initialRunId, execute]);
+  }, [initialRunId, identityKey, execute]);
   useEffect(() => () => controllerRef.current?.abort(), []);
   const lookup = mergeHistory(pages);
   const visibleIssue = issue ?? (initialRunId && !runIdPattern.test(initialRunId) ? { message: "Lookup not found. Search again." } : null);
@@ -190,7 +216,7 @@ export function usePlayerLookup(initialRunId?: string) {
     busy, restoreCursor, retryNotBefore: visibleIssue?.retryNotBefore ?? lookup?.retryNotBefore,
     retry: () => { if (retryCommand.current) void execute(retryCommand.current.command, retryCommand.current.continueRestore); },
     submit: (input: Input) => execute({ kind: "search", input }),
-    filter: (queueId: number) => { if (lookup && !busy && queueId !== lookup.queueId) void execute({ kind: "filter", input: { gameName: lookup.gameName, tagLine: lookup.tagLine, queueId } }); },
+    filter: (queueId: number) => { if (lookup && !busy && queueId !== lookup.queueId) void execute({ kind: "filter", input: { gameName: lookup.gameName, tagLine: lookup.tagLine, platform: lookup.platform, queueId } }); },
     older: () => { if (lookup && !busy) void execute({ kind: "older", runId: lookup.runId }); },
     refresh: () => { if (lookup && !busy) void execute({ kind: "refresh", runId: lookup.runId }); },
     restoreMore: () => { if (restoreCursor && !busy) void execute({ kind: "restore", runId: restoreCursor }, true); },

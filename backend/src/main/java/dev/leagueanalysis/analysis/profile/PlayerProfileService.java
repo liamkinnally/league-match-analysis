@@ -25,7 +25,7 @@ public class PlayerProfileService {
         var profile=store.summoner(subject,now);
         if(pending&&(profile.fetchedAt()==null||profile.stale()))
             profile=new PlayerProfile.Summoner(profile.fetchedAt()==null?"loading":profile.status(),profile.profileIconId(),profile.summonerLevel(),profile.revisionAt(),profile.fetchedAt(),true,profile.stale(),profile.retryNotBefore(),profile.error());
-        return new PlayerProfile(new PlayerProfile.Identity(subject.gameName(),subject.tagLine()),profile,solo,flex,store.recent(subject,run,now),store.history(subject,cursor));
+        return new PlayerProfile(new PlayerProfile.Identity(subject.gameName(),subject.tagLine(),subject.platform()),profile,solo,flex,store.recent(subject,run,now),store.history(subject,cursor));
     }
     private PlayerProfile.Rank rank(JdbcPlayerProfileStore.Subject subject,String queue,boolean pending) {
         var state=ranks.peek(subject.platform(),subject.puuid(),queue);var v=state.value();

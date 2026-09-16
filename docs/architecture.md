@@ -13,7 +13,9 @@ Browser -> Next.js API route -> Spring Boot -> Riot Games API
                               PostgreSQL
 ```
 
-The backend resolves the Riot account, pages through match IDs across supported Summoner’s Rift and ARAM queues by default, or for a specific Queue Type filter, and imports Match-V5 detail summaries. Timeline evidence is fetched on demand when opening a match. Source captures and normalized rows remain separate. Public polling returns lookup status and match summaries without exposing PUUIDs or raw provider responses.
+The backend resolves the Riot account in the selected region, pages through match IDs across supported Summoner’s Rift and ARAM queues by default, or for a specific Queue Type filter, and imports Match-V5 detail summaries. NA1 uses AMERICAS; EUW1 and EUN1 use EUROPE; KR uses ASIA. Timeline evidence is fetched on demand when opening a match. Source captures and normalized rows remain separate. Public polling returns lookup status and match summaries without exposing PUUIDs or raw provider responses.
+
+Player profiles have shareable `/summoners/{region}/{gameName}-{tagLine}` routes. Search suggestions use stored identities in the selected platform and return at most five results without contacting Riot. Empty suggestions mean no cached match, not that the submitted Riot ID is invalid.
 
 The match-development route reads normalized data and returns final results, the roster, timestamped samples, recorded events and selectable comparison windows. Participant, opponent, interval, metric, final-state tab and inspected rune participant selections are encoded in the URL so the view is shareable and restorable.
 
@@ -38,7 +40,7 @@ Next.js keeps `BACKEND_URL` and the backend service token server-side. Riot cred
 
 The frontend replaces caller authorization with its own backend service credential. The Railway profile requires backend authentication while leaving the health endpoint available for provider checks. Application containers run as unprivileged users.
 
-Live lookup admits five jobs to a single worker and interleaves small work units. Identical active requests share work; completed pages remain cached until an explicit refresh, subject to an account cooldown. A shared transport budgets provider calls, and persisted cooldowns survive backend restart. Cached summaries are reused only when the queue and the PUUID resolved for the current Riot ID match. See [public match lookup](public-match-lookup.md) for pagination and single-instance limits.
+Live lookup admits five jobs to a single worker and interleaves small work units. Identical active requests share work; completed pages remain cached until an explicit refresh, subject to an account cooldown. A shared transport budgets provider calls by host, and persisted cooldowns survive backend restart. Lookup reuse includes platform; cached summaries are reused only when the platform, queue and the PUUID resolved for the current Riot ID match. See [public match lookup](public-match-lookup.md) for pagination and single-instance limits.
 
 ## Persistence and evidence boundaries
 

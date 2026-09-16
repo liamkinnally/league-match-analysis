@@ -1,6 +1,7 @@
 package dev.leagueanalysis.ingestion.riot.adapter.out.persistence;
 
 import dev.leagueanalysis.privacy.PrivacyHash;
+import dev.leagueanalysis.ingestion.riot.domain.RiotPlatform;
 import dev.leagueanalysis.privacy.PrivacyRuntimeGuard;
 import dev.leagueanalysis.ingestion.riot.application.IngestionItemStatus;
 import dev.leagueanalysis.ingestion.riot.application.IngestionRunStatus;
@@ -39,14 +40,14 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
                     select r.resolved_puuid puuid, c.captured_at observed_at, r.started_at, 1 priority
                     from league_analysis.ingestion_run r
                     join league_analysis.source_capture c on c.ingestion_run_id = r.id and c.source_kind = 'ACCOUNT'
-                    where r.resolved_puuid is not null
+                    where r.resolved_puuid is not null and r.platform_route = ?
                         and lower(r.requested_game_name) = lower(?) and lower(r.requested_tag_line) = lower(?)
                     union all
                     select r.resolved_puuid, c.captured_at, r.started_at, 1
                     from league_analysis.ingestion_run r
                     join league_analysis.source_capture c on c.ingestion_run_id = r.id and c.source_kind = 'ACCOUNT'
                     join league_analysis.source_payload p on p.id = c.source_payload_id and p.source_kind = 'ACCOUNT'
-                    where r.resolved_puuid = p.payload_json->>'puuid'
+                    where r.resolved_puuid = p.payload_json->>'puuid' and r.platform_route = ?
                         and lower(p.payload_json->>'gameName') = lower(?)
                         and lower(p.payload_json->>'tagLine') = lower(?)
                     union all
@@ -54,7 +55,7 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
                     from league_analysis.riot_identity i
                     join league_analysis.source_capture c on c.id = i.last_source_capture_id and c.source_kind = 'ACCOUNT'
                     join league_analysis.ingestion_run r on r.id = c.ingestion_run_id and r.resolved_puuid = i.puuid
-                    where lower(i.game_name) = lower(?) and lower(i.tag_line) = lower(?)
+                    where r.platform_route = ? and lower(i.game_name) = lower(?) and lower(i.tag_line) = lower(?)
                 ), latest_identity as (
                     select puuid from identity_evidence
                     order by observed_at desc, started_at desc, priority desc, puuid limit 1
@@ -166,8 +167,8 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
                 insert into league_analysis.ingestion_run
                     (id, requested_game_name, requested_tag_line, platform_route,
                      regional_route, queue_id, match_limit, status, started_at, page_start, page_end_time, previous_run_id)
-                values (?, '', '', 'NA1', 'AMERICAS', ?, ?, 'RUNNING', ?, ?, ?, ?)
-                """, runId, command.queueId(), command.matchLimit(), timestamp(startedAt),
+                values (?, '', '', ?, ?, ?, ?, 'RUNNING', ?, ?, ?, ?)
+                """, runId, command.platform(), RiotPlatform.parse(command.platform()).regionalRoute(), command.queueId(), command.matchLimit(), timestamp(startedAt),
                 command.start(), command.endTime(), command.previousRunId());
         return runId;
     }
@@ -218,16 +219,78 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
     }
 
     @Override
-    public Optional<Instant> latestCooldown() {
+    public Optional<Instant> latestCooldown() { return latestCooldown("NA1"); }
+
+    @Override
+    public Optional<Instant> latestCooldown(String platform) {
         requireHealthy();
         var value = jdbc.queryForObject("""
                 select max(retry_at) from (
-                    select retry_not_before retry_at from league_analysis.ingestion_run where public_request
-                    union all select retry_at from league_analysis.rank_refresh_state where error='RATE_LIMITED'
-                    union all select retry_at from league_analysis.player_profile_current where error='RATE_LIMITED'
+                    select retry_not_before retry_at from league_analysis.ingestion_run
+                        where public_request and regional_route = ?
+                    union all select retry_at from league_analysis.rank_refresh_state where error='RATE_LIMITED' and platform = ?
+                    union all select retry_at from league_analysis.player_profile_current where error='RATE_LIMITED' and platform = ?
                 ) cooldowns
-                """, OffsetDateTime.class);
+                """, OffsetDateTime.class, RiotPlatform.parse(platform).regionalRoute(), platform, platform);
         return Optional.ofNullable(value).map(OffsetDateTime::toInstant);
+    }
+
+    public record PlayerSuggestion(String gameName, String tagLine, String platform, Integer profileIconId, Long summonerLevel) {}
+
+    /** Cached observations only. Empty results never establish that an account does not exist. */
+    public List<PlayerSuggestion> suggestions(String platform, String query) {
+        requireHealthy();
+        platform = RiotPlatform.parse(platform).name();
+        query = query == null ? "" : query.strip();
+        if (query.length() > 81 || query.codePoints().anyMatch(Character::isISOControl))
+            throw new IllegalArgumentException("INVALID_QUERY");
+        if (query.isEmpty()) return List.of();
+        int separator = query.indexOf('#');
+        String name = separator < 0 ? query : query.substring(0, separator).strip();
+        String tag = separator < 0 ? "" : query.substring(separator + 1).strip();
+        String namePredicate = separator < 0 ? "lower(i.game_name) like lower(?) escape '!'" : "lower(i.game_name) = lower(?)";
+        String prefix = separator < 0 ? literalPrefix(name) : name;
+        return jdbc.query("""
+                with verified_accounts as (
+                    select distinct on (r.resolved_puuid)
+                        r.resolved_puuid puuid, r.platform_route,
+                        coalesce(nullif(payload.payload_json->>'gameName', ''), r.requested_game_name) game_name,
+                        coalesce(nullif(payload.payload_json->>'tagLine', ''), r.requested_tag_line) tag_line,
+                        c.captured_at last_observed_at
+                    from league_analysis.ingestion_run r
+                    join league_analysis.source_capture c on c.ingestion_run_id = r.id and c.source_kind = 'ACCOUNT'
+                    join league_analysis.source_payload payload on payload.id = c.source_payload_id and payload.source_kind = 'ACCOUNT'
+                    where r.platform_route = ? and r.lookup_kind = 'HISTORY' and r.status in ('COMPLETE', 'PARTIAL')
+                        and r.resolved_puuid = payload.payload_json->>'puuid'
+                        and r.requested_game_name <> '' and r.requested_tag_line <> ''
+                    order by r.resolved_puuid, c.captured_at desc, r.started_at desc, r.id desc, c.id desc
+                ), identities as (
+                    select puuid, platform_route, game_name, tag_line, last_observed_at from verified_accounts
+                    union all
+                    select i.puuid, i.platform_route, i.game_name, i.tag_line, i.last_observed_at
+                    from league_analysis.riot_identity i
+                    join league_analysis.source_capture c on c.id = i.last_source_capture_id
+                    join league_analysis.ingestion_run r on r.id = c.ingestion_run_id
+                    where i.platform_route = ? and r.status in ('COMPLETE', 'PARTIAL')
+                        and c.source_kind = 'MATCH_DETAIL'
+                        and not league_analysis.privacy_blocked('match', c.resource_key)
+                        and not exists(select 1 from verified_accounts a where a.puuid = i.puuid)
+                )
+                select distinct on (lower(i.game_name), lower(i.tag_line))
+                    i.game_name, i.tag_line, i.platform_route, p.profile_icon_id, p.summoner_level
+                from identities i
+                left join league_analysis.player_profile_current p on p.puuid = i.puuid and p.platform = i.platform_route
+                where i.game_name is not null and i.game_name <> '' and i.tag_line is not null and i.tag_line <> ''
+                    and not league_analysis.privacy_blocked('puuid', i.puuid)
+                    and """ + " " + namePredicate + " and lower(i.tag_line) like lower(?) escape '!' " + """
+                order by lower(i.game_name), lower(i.tag_line), i.last_observed_at desc, i.puuid
+                limit 5
+                """, (rs, row) -> new PlayerSuggestion(rs.getString(1), rs.getString(2), rs.getString(3),
+                    rs.getObject(4, Integer.class), rs.getObject(5, Long.class)), platform, platform, prefix, literalPrefix(tag));
+    }
+
+    private static String literalPrefix(String value) {
+        return value.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
     }
 
     @Override
@@ -235,15 +298,15 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
         requireHealthy();
         return jdbc.query(LATEST_VERIFIED_IDENTITY + """
                 select id from league_analysis.ingestion_run
-                where public_request and lookup_kind = 'HISTORY' and page_start = 0 and queue_id = ?
+                where public_request and lookup_kind = 'HISTORY' and page_start = 0 and platform_route = ? and queue_id = ?
                     and status = 'COMPLETE' and completed_at > ?
                     and resolved_puuid is not null and not league_analysis.privacy_blocked('puuid', resolved_puuid)
                     and lower(requested_game_name) = lower(?) and lower(requested_tag_line) = lower(?)
                     and resolved_puuid = coalesce((select puuid from latest_identity), resolved_puuid)
                 order by completed_at desc limit 1
                 """, (rs, row) -> rs.getObject("id", UUID.class),
-                command.gameName(), command.tagLine(), command.gameName(), command.tagLine(),
-                command.gameName(), command.tagLine(), command.queueId(), timestamp(since),
+                command.platform(), command.gameName(), command.tagLine(), command.platform(), command.gameName(), command.tagLine(),
+                command.platform(), command.gameName(), command.tagLine(), command.platform(), command.queueId(), timestamp(since),
                 command.gameName(), command.tagLine()).stream().findFirst().flatMap(this::readPublicRun);
     }
 
@@ -251,7 +314,7 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
     public Optional<PublicMatchLookup> readPublicRun(UUID runId) {
         requireHealthy();
         return jdbc.query("""
-                select id, requested_game_name, requested_tag_line, status, failure_code, retry_not_before,
+                select id, platform_route, requested_game_name, requested_tag_line, status, failure_code, retry_not_before,
                     queue_id, completed_at, case when page_start > 0 then previous_run_id end as previous_run_id, has_more
                 from league_analysis.ingestion_run r where id = ? and public_request and lookup_kind = 'HISTORY'
                     and not league_analysis.privacy_blocked('puuid', resolved_puuid)
@@ -266,7 +329,7 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
                             rs.getString("requested_tag_line"), status, publicMessage(rs.getString("failure_code")),
                             retry == null ? null : retry.toInstant(), matches, rs.getInt("queue_id"),
                             "RUNNING".equals(status) || completed == null ? null : completed.toInstant(), nextRefresh,
-                            rs.getObject("previous_run_id", UUID.class), rs.getBoolean("has_more"));
+                            rs.getObject("previous_run_id", UUID.class), rs.getBoolean("has_more"), rs.getString("platform_route"));
                 }, runId).stream().findFirst();
     }
 
@@ -274,7 +337,7 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
     public Optional<RiotIngestionCommand> readPageCommand(UUID runId) {
         requireHealthy();
         return jdbc.query("""
-                select requested_game_name, requested_tag_line, match_limit, queue_id,
+                select platform_route, requested_game_name, requested_tag_line, match_limit, queue_id,
                     page_start, page_end_time, previous_run_id
                 from league_analysis.ingestion_run r
                 where id = ? and public_request and lookup_kind = 'HISTORY'
@@ -286,7 +349,7 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
                 """, (rs, row) -> new RiotIngestionCommand(rs.getString("requested_game_name"),
                 rs.getString("requested_tag_line"), rs.getInt("match_limit"), rs.getInt("queue_id"),
                 rs.getInt("page_start"), rs.getObject("page_end_time", Long.class),
-                rs.getObject("previous_run_id", UUID.class)), runId).stream().findFirst();
+                rs.getObject("previous_run_id", UUID.class), rs.getString("platform_route")), runId).stream().findFirst();
     }
 
     @Override
@@ -306,7 +369,7 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
                 join league_analysis.ingestion_run p on p.id = r.previous_run_id
                 where r.previous_run_id = ? and r.public_request and r.lookup_kind = 'HISTORY'
                     and r.status = 'COMPLETE' and r.queue_id = p.queue_id
-                    and r.resolved_puuid = p.resolved_puuid
+                    and r.resolved_puuid = p.resolved_puuid and r.platform_route = p.platform_route
                     and r.page_start = p.page_start + p.match_limit
                     and r.page_end_time is not distinct from p.page_end_time
                 order by r.completed_at desc, r.id desc limit 1
@@ -319,14 +382,14 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
         requireHealthy();
         var value = jdbc.queryForObject(LATEST_VERIFIED_IDENTITY + """
                 select max(r.started_at) from league_analysis.ingestion_run r, latest_identity t
-                where r.public_request and r.lookup_kind = 'HISTORY' and r.page_start = 0
+                where r.public_request and r.lookup_kind = 'HISTORY' and r.page_start = 0 and r.platform_route = ?
                     and r.status in ('RUNNING', 'COMPLETE') and r.resolved_puuid = t.puuid
                     and not league_analysis.privacy_blocked('puuid', r.resolved_puuid)
                     and exists(select 1 from league_analysis.riot_identity p where p.puuid = r.resolved_puuid)
                     and exists(select 1 from league_analysis.source_capture c
                         where c.ingestion_run_id = r.id and c.source_kind = 'ACCOUNT')
-                """, OffsetDateTime.class, command.gameName(), command.tagLine(), command.gameName(), command.tagLine(),
-                command.gameName(), command.tagLine());
+                """, OffsetDateTime.class, command.platform(), command.gameName(), command.tagLine(), command.platform(), command.gameName(), command.tagLine(),
+                command.platform(), command.gameName(), command.tagLine(), command.platform());
         return Optional.ofNullable(value).map(OffsetDateTime::toInstant);
     }
 
@@ -386,9 +449,9 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
                     insert into league_analysis.ingestion_run
                         (id, requested_game_name, requested_tag_line, platform_route, regional_route,
                          queue_id, match_limit, status, started_at, public_request, lookup_kind)
-                    select ?, '', '', 'NA1', 'AMERICAS', queue_id, 1, 'RUNNING', ?, true, 'TIMELINE'
+                    select ?, '', '', ?, ?, queue_id, 1, 'RUNNING', ?, true, 'TIMELINE'
                     from league_analysis.riot_match where match_id = ?
-                    """, id, timestamp(now), matchId);
+                    """, id, RiotPlatform.fromMatchId(matchId).name(), RiotPlatform.fromMatchId(matchId).regionalRoute(), timestamp(now), matchId);
             addItems(id, List.of(matchId));
             return id;
         }));
@@ -582,7 +645,7 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
                 insert into league_analysis.riot_identity
                     (puuid, game_name, tag_line, platform_route, first_observed_at,
                      last_observed_at, last_source_capture_id)
-                values (?, ?, ?, 'NA1', ?, ?, ?)
+                values (?, ?, ?, ?, ?, ?, ?)
                 on conflict (puuid) do update set
                     game_name = case
                         when excluded.last_observed_at >= league_analysis.riot_identity.last_observed_at
@@ -614,9 +677,24 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
                 account.puuid(),
                 account.gameName(),
                 account.tagLine(),
+                jdbc.queryForObject("select platform_route from league_analysis.ingestion_run where id = ?", String.class, runId),
                 timestamp(source.document().capturedAt()),
                 timestamp(source.document().capturedAt()),
                 source.captureId());
+    }
+
+    @Override
+    public void recordVerifiedProfile(UUID runId, dev.leagueanalysis.ingestion.riot.domain.PlatformAccountProfile profile, Instant now) {
+        requireHealthy();
+        jdbc.update("""
+                insert into league_analysis.player_profile_current(puuid, platform, profile_icon_id, summoner_level, revision_at, fetched_at)
+                select resolved_puuid, platform_route, ?, ?, ?, ? from league_analysis.ingestion_run where id = ?
+                on conflict(puuid, platform) do update set profile_icon_id=excluded.profile_icon_id,
+                    summoner_level=excluded.summoner_level, revision_at=excluded.revision_at,
+                    fetched_at=excluded.fetched_at, retry_at=null, error=null, lease_until=null, lease_id=null
+                where league_analysis.player_profile_current.fetched_at is null
+                    or league_analysis.player_profile_current.fetched_at <= excluded.fetched_at
+                """, profile.profileIconId(), profile.summonerLevel(), profile.revisionAt() == null ? null : timestamp(profile.revisionAt()), timestamp(now), runId);
     }
 
     @Override
@@ -892,7 +970,7 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
                     insert into league_analysis.riot_identity
                         (puuid, game_name, tag_line, platform_route, first_observed_at,
                          last_observed_at, last_source_capture_id)
-                    values (?, ?, ?, 'NA1',
+                    values (?, ?, ?, ?,
                         (select captured_at from league_analysis.source_capture where id = ?),
                         (select captured_at from league_analysis.source_capture where id = ?), ?)
                     on conflict (puuid) do update set
@@ -926,6 +1004,7 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
                     participant.puuid(),
                     participant.gameName(),
                     participant.tagLine(),
+                    RiotPlatform.fromMatchId(match.matchId()).name(),
                     match.detailSourceCaptureId(),
                     match.detailSourceCaptureId(),
                     match.detailSourceCaptureId());

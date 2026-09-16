@@ -8,7 +8,8 @@ Live lookup is subject to Riot API availability and request limits. The included
 
 ## Match review
 
-- Look up an NA1 player across Summoner’s Rift and ARAM queues, filter by Queue Type, and load older history in pages of up to twenty matches.
+- Look up players in North America, Europe West, Europe Nordic & East, and Korea across Summoner’s Rift and ARAM queues, filter by Queue Type, and load older history in pages of up to twenty matches.
+- Open shareable player profiles and find previously cached players with region-specific search suggestions.
 - Review team results, objectives, builds, KDA, CS, gold and current queue-specific ranks when available.
 - Compare gold, CS or XP differences over time with player, opponent and interval selections preserved in the URL.
 - Inspect timestamped kills, objectives, item changes and ward events alongside sampled values.
@@ -101,7 +102,7 @@ Automated verification disables live Riot lookup. CI runs backend tests, fronten
 
 ## Limits and data handling
 
-- Live lookup supports NA1 / AMERICAS Summoner’s Rift queues with pages of up to twenty matches, explicit refresh cooldowns, and timelines loaded when a match is opened. Arena and other regions remain unsupported.
+- Live lookup supports NA, EUW, EUNE and KR with pages of up to twenty matches, explicit refresh cooldowns, and timelines loaded when a match is opened. Arena and regions outside those four remain unsupported. Search suggestions cover cached profiles, not a complete player directory.
 - Current ranks are current queue-specific snapshots, not historical ranks or MMR.
 - Timeline samples describe recorded points in time rather than continuous game state. Missing source data remains unavailable instead of being inferred.
 - Suggested intervals highlight recorded changes in gold difference; they do not claim why a change happened.

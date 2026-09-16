@@ -23,6 +23,9 @@ public interface RiotIngestionStore {
         throw new UnsupportedOperationException("Discard unavailable");
     }
 
+    default void recordVerifiedProfile(java.util.UUID runId,
+            dev.leagueanalysis.ingestion.riot.domain.PlatformAccountProfile profile, java.time.Instant now) {}
+
     UUID startRun(RiotIngestionCommand command, Instant startedAt);
 
     boolean isCompleteMatch(String matchId);

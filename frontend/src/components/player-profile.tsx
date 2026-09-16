@@ -1,3 +1,4 @@
+import { regionFor } from "../lib/player-lookup/regions";
 import type { ReactNode } from "react";
 import { GameAssetIcon } from "./game-asset-icon";
 import { ProfileTime, RankObservations } from "./rank-observations";
@@ -14,6 +15,7 @@ type ProfileState = {
 export function PlayerProfileHeader({ identity, profile, loading, issue, busy, reload, children }: Pick<ProfileState, "identity" | "profile" | "loading" | "issue" | "busy" | "reload"> & { children?: ReactNode }) {
   const assets = useCurrentProfileAssets();
   const player = profile?.identity ?? identity;
+  const region = regionFor(player.platform);
   const iconId = profile?.summoner.profileIconId;
   const level = profile?.summoner.summonerLevel;
   return <header className="profile-header" aria-label="Searched player profile">
@@ -22,7 +24,7 @@ export function PlayerProfileHeader({ identity, profile, loading, issue, busy, r
       {level != null && <span className="profile-header__level" aria-label={`Level ${level}`}>{level.toLocaleString("en-US")}</span>}
     </div>
     <div className="profile-header__identity"><h1>{player.gameName}<span>#{player.tagLine}</span></h1>
-      <p>North America <span className="profile-header__region">NA</span></p>
+      <p>{region.name} <span className="profile-header__region">{region.label}</span></p>
       {!profile && <small>{loading ? "Loading profile…" : "Profile details unavailable"}</small>}
       {profile?.summoner.refreshing && <small>Updating profile…</small>}
       {profile && (profile.summoner.stale || profile.summoner.error) && <small>Profile may be out of date</small>}

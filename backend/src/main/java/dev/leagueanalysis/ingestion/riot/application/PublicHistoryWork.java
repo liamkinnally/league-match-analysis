@@ -15,6 +15,7 @@ final class PublicHistoryWork implements PublicIngestionWork {
     private final MatchV5Decoder decoder;
     private final Clock clock;
     private RiotAccount account;
+    private RiotAccountLookup pendingAccount;
     private RiotMatchList list;
     private List<String> ids;
     private boolean retainList;
@@ -49,17 +50,24 @@ final class PublicHistoryWork implements PublicIngestionWork {
     }
 
     private boolean resolve() {
-        var response = gateway.resolveAccount(new RiotId(command.gameName(), command.tagLine()));
+        boolean resolvedNow = pendingAccount == null;
+        if (resolvedNow) pendingAccount = gateway.resolveAccount(new RiotId(command.gameName(), command.tagLine()));
+        var response = pendingAccount;
         if (store.isExcludedAccount(response.account()) || store.isExcludedDocument(response.source())) {
             store.discardRun(runId);
             done = true;
             return true;
         }
+        // Exclusion must take effect before yielding a known account back to the scheduler.
+        // Recheck on the next turn as the exclusion ledger can change between provider calls.
+        if (resolvedNow) return false;
         if (command.previousRunId() != null && !pages.matchesPageIdentity(command.previousRunId(), response.account().puuid()))
             return fail("ACCOUNT_CHANGED");
+        var profile = gateway.verifyPlatformAccount(response.account().puuid());
         var capture = store.saveCapture(runId, response.source());
         store.recordResolvedAccount(runId, response.account(), capture);
         store.recordVerifiedRequestedIdentity(runId, command);
+        if (profile != null) store.recordVerifiedProfile(runId, profile, clock.instant());
         account = response.account();
         return false;
     }
@@ -67,7 +75,8 @@ final class PublicHistoryWork implements PublicIngestionWork {
     private boolean list() {
         var response = gateway.listMatchIds(account.puuid(), command.queueId(), command.start(), command.matchLimit(), command.endTime());
         if (response.matchIds().size() > command.matchLimit()) return fail("INVALID_RESPONSE");
-        ids = response.matchIds().stream().distinct().filter(id -> !store.isExcludedMatch(id)).toList();
+        ids = response.matchIds().stream().distinct().filter(id -> id.startsWith(command.platform() + "_"))
+                .filter(id -> !store.isExcludedMatch(id)).toList();
         retainList = ids.size() == response.matchIds().size() && !store.isExcludedDocument(response.source());
         store.addItems(runId, ids);
         pages.recordPageSize(runId, response.matchIds().size());

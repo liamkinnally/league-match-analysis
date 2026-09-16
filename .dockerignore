@@ -4,6 +4,7 @@
 !backend/pom.xml
 !backend/src/**
 !frontend/src/**
+!frontend/public/**
 !frontend/e2e/**
 !frontend/e2e-package/**
 !frontend/e2e-visual/**

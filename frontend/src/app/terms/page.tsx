@@ -10,7 +10,7 @@ export default function TermsPage() {
     <p>{PRODUCT_NAME} is a free League of Legends match-analysis app. It is not an official Riot Games service.</p>
 
     <h2>Using the app</h2>
-    <p>You may use the site to inspect the included sample and supported League of Legends match records. Live lookup supports NA1 players in Ranked Solo/Duo, Ranked Flex, Draft Pick, Swiftplay and ARAM. Match history loads in pages of up to 20 matches; timelines load when a match is opened. No Riot account sign-in is required.</p>
+    <p>You may use the site to inspect the included sample and supported League of Legends match records. Live lookup supports players in North America (NA), Europe West (EUW), Europe Nordic &amp; East (EUNE), and Korea (KR) in Ranked Solo/Duo, Ranked Flex, Draft Pick, Swiftplay and ARAM. Match history loads in pages of up to 20 matches; timelines load when a match is opened. Search suggestions show previously cached players in the selected region and are not a complete player directory. No Riot account sign-in is required.</p>
     <p>The app is accessible by direct link and uses search-engine directives to request that its pages not be indexed.</p>
     <p>Do not bypass request limits, attempt unauthorized access, disrupt the service, harvest data in bulk, or use displayed player information to harass others. Access may be limited to protect the app and its API allowance.</p>
 
