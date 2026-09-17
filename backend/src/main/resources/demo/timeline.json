@@ -854,7 +854,41 @@
             "jungleMinionsKilled": 0
           }
         },
-        "events": []
+        "events": [
+          {
+            "timestamp": 670000,
+            "type": "ELITE_MONSTER_KILL",
+            "killerId": 7,
+            "killerTeamId": 200,
+            "monsterType": "HORDE",
+            "position": {
+              "x": 5007,
+              "y": 10471
+            }
+          },
+          {
+            "timestamp": 680000,
+            "type": "ELITE_MONSTER_KILL",
+            "killerId": 7,
+            "killerTeamId": 200,
+            "monsterType": "HORDE",
+            "position": {
+              "x": 5007,
+              "y": 10471
+            }
+          },
+          {
+            "timestamp": 690000,
+            "type": "ELITE_MONSTER_KILL",
+            "killerId": 7,
+            "killerTeamId": 200,
+            "monsterType": "HORDE",
+            "position": {
+              "x": 5007,
+              "y": 10471
+            }
+          }
+        ]
       },
       {
         "timestamp": 840000,
@@ -990,7 +1024,36 @@
             "jungleMinionsKilled": 0
           }
         },
-        "events": []
+        "events": [
+          {
+            "timestamp": 760000,
+            "type": "BUILDING_KILL",
+            "killerId": 9,
+            "killerTeamId": 200,
+            "teamId": 100,
+            "buildingType": "TOWER_BUILDING",
+            "laneType": "BOT_LANE",
+            "towerType": "OUTER_TURRET",
+            "position": {
+              "x": 10504,
+              "y": 1029
+            }
+          },
+          {
+            "timestamp": 830000,
+            "type": "BUILDING_KILL",
+            "killerId": 1,
+            "killerTeamId": 100,
+            "teamId": 200,
+            "buildingType": "TOWER_BUILDING",
+            "laneType": "TOP_LANE",
+            "towerType": "OUTER_TURRET",
+            "position": {
+              "x": 4318,
+              "y": 13875
+            }
+          }
+        ]
       },
       {
         "timestamp": 960000,
@@ -1126,7 +1189,20 @@
             "jungleMinionsKilled": 0
           }
         },
-        "events": []
+        "events": [
+          {
+            "timestamp": 920000,
+            "type": "ELITE_MONSTER_KILL",
+            "killerId": 2,
+            "killerTeamId": 100,
+            "monsterType": "DRAGON",
+            "monsterSubType": "WATER_DRAGON",
+            "position": {
+              "x": 9866,
+              "y": 4414
+            }
+          }
+        ]
       },
       {
         "timestamp": 1080000,
@@ -1262,7 +1338,33 @@
             "jungleMinionsKilled": 0
           }
         },
-        "events": []
+        "events": [
+          {
+            "timestamp": 990000,
+            "type": "ELITE_MONSTER_KILL",
+            "killerId": 7,
+            "killerTeamId": 200,
+            "monsterType": "RIFTHERALD",
+            "position": {
+              "x": 5007,
+              "y": 10471
+            }
+          },
+          {
+            "timestamp": 1030000,
+            "type": "BUILDING_KILL",
+            "killerId": 8,
+            "killerTeamId": 200,
+            "teamId": 100,
+            "buildingType": "TOWER_BUILDING",
+            "laneType": "MID_LANE",
+            "towerType": "OUTER_TURRET",
+            "position": {
+              "x": 5846,
+              "y": 6396
+            }
+          }
+        ]
       },
       {
         "timestamp": 1200000,
@@ -1398,7 +1500,36 @@
             "jungleMinionsKilled": 0
           }
         },
-        "events": []
+        "events": [
+          {
+            "timestamp": 1090000,
+            "type": "BUILDING_KILL",
+            "killerId": 6,
+            "killerTeamId": 200,
+            "teamId": 100,
+            "buildingType": "TOWER_BUILDING",
+            "laneType": "TOP_LANE",
+            "towerType": "OUTER_TURRET",
+            "position": {
+              "x": 981,
+              "y": 10441
+            }
+          },
+          {
+            "timestamp": 1180000,
+            "type": "BUILDING_KILL",
+            "killerId": 3,
+            "killerTeamId": 100,
+            "teamId": 200,
+            "buildingType": "TOWER_BUILDING",
+            "laneType": "MID_LANE",
+            "towerType": "OUTER_TURRET",
+            "position": {
+              "x": 8955,
+              "y": 8510
+            }
+          }
+        ]
       },
       {
         "timestamp": 1320000,
@@ -1534,7 +1665,20 @@
             "jungleMinionsKilled": 0
           }
         },
-        "events": []
+        "events": [
+          {
+            "timestamp": 1270000,
+            "type": "ELITE_MONSTER_KILL",
+            "killerId": 7,
+            "killerTeamId": 200,
+            "monsterType": "DRAGON",
+            "monsterSubType": "FIRE_DRAGON",
+            "position": {
+              "x": 9866,
+              "y": 4414
+            }
+          }
+        ]
       },
       {
         "timestamp": 1440000,
@@ -1670,7 +1814,22 @@
             "jungleMinionsKilled": 0
           }
         },
-        "events": []
+        "events": [
+          {
+            "timestamp": 1385000,
+            "type": "BUILDING_KILL",
+            "killerId": 4,
+            "killerTeamId": 100,
+            "teamId": 200,
+            "buildingType": "TOWER_BUILDING",
+            "laneType": "BOT_LANE",
+            "towerType": "OUTER_TURRET",
+            "position": {
+              "x": 13866,
+              "y": 4505
+            }
+          }
+        ]
       },
       {
         "timestamp": 1560000,
@@ -1806,7 +1965,33 @@
             "jungleMinionsKilled": 0
           }
         },
-        "events": []
+        "events": [
+          {
+            "timestamp": 1450000,
+            "type": "BUILDING_KILL",
+            "killerId": 6,
+            "killerTeamId": 200,
+            "teamId": 100,
+            "buildingType": "TOWER_BUILDING",
+            "laneType": "MID_LANE",
+            "towerType": "INNER_TURRET",
+            "position": {
+              "x": 5048,
+              "y": 4812
+            }
+          },
+          {
+            "timestamp": 1500000,
+            "type": "ELITE_MONSTER_KILL",
+            "killerId": 7,
+            "killerTeamId": 200,
+            "monsterType": "BARON_NASHOR",
+            "position": {
+              "x": 5007,
+              "y": 10471
+            }
+          }
+        ]
       },
       {
         "timestamp": 1680000,
@@ -1942,7 +2127,20 @@
             "jungleMinionsKilled": 0
           }
         },
-        "events": []
+        "events": [
+          {
+            "timestamp": 1620000,
+            "type": "ELITE_MONSTER_KILL",
+            "killerId": 7,
+            "killerTeamId": 200,
+            "monsterType": "DRAGON",
+            "monsterSubType": "FIRE_DRAGON",
+            "position": {
+              "x": 9866,
+              "y": 4414
+            }
+          }
+        ]
       },
       {
         "timestamp": 1800000,
@@ -2078,7 +2276,63 @@
             "jungleMinionsKilled": 0
           }
         },
-        "events": []
+        "events": [
+          {
+            "timestamp": 1685000,
+            "type": "BUILDING_KILL",
+            "killerId": 6,
+            "killerTeamId": 200,
+            "teamId": 100,
+            "buildingType": "TOWER_BUILDING",
+            "laneType": "MID_LANE",
+            "towerType": "BASE_TURRET",
+            "position": {
+              "x": 3651,
+              "y": 3696
+            }
+          },
+          {
+            "timestamp": 1705000,
+            "type": "BUILDING_KILL",
+            "killerId": 6,
+            "killerTeamId": 200,
+            "teamId": 100,
+            "buildingType": "INHIBITOR_BUILDING",
+            "laneType": "MID_LANE",
+            "position": {
+              "x": 3452,
+              "y": 3584
+            }
+          },
+          {
+            "timestamp": 1750000,
+            "type": "BUILDING_KILL",
+            "killerId": 9,
+            "killerTeamId": 200,
+            "teamId": 100,
+            "buildingType": "TOWER_BUILDING",
+            "laneType": "MID_LANE",
+            "towerType": "NEXUS_TURRET",
+            "position": {
+              "x": 2177,
+              "y": 1807
+            }
+          },
+          {
+            "timestamp": 1775000,
+            "type": "BUILDING_KILL",
+            "killerId": 6,
+            "killerTeamId": 200,
+            "teamId": 100,
+            "buildingType": "TOWER_BUILDING",
+            "laneType": "MID_LANE",
+            "towerType": "NEXUS_TURRET",
+            "position": {
+              "x": 1748,
+              "y": 2270
+            }
+          }
+        ]
       }
     ]
   }

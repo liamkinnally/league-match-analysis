@@ -60,10 +60,11 @@ export function PlayerSearchForm({ identity, submitting, profile = false, onSubm
             setActive(-1); setDismissed(false); setError(null);
           }}>{regions.map(region => <option value={region.platform} key={region.platform}>{region.label}</option>)}</select>
         </label>
+        <div className="player-search__identity-input">
         <input ref={inputRef} id={`${id}-riot`} name="riotId" role="combobox" aria-autocomplete="list" aria-expanded={open}
           aria-controls={open ? listId : undefined} aria-activedescendant={open && active >= 0 && suggestions[active] ? `${id}-option-${active}` : undefined}
           aria-describedby={error ? `${id}-error` : undefined} aria-invalid={error ? true : undefined}
-          placeholder="Game name#tag" maxLength={81} required autoComplete="off" autoCapitalize="none" spellCheck={false} value={value}
+          placeholder={`Game name + #${regionFor(platform).exampleTag}`} maxLength={81} required autoComplete="off" autoCapitalize="none" spellCheck={false} value={value}
           onFocus={() => { setFocused(true); setDismissed(false); }}
           onChange={event => { setEditedValue(event.target.value); setDismissed(false); setActive(-1); setError(null); }}
           onKeyDown={event => {
@@ -74,6 +75,8 @@ export function PlayerSearchForm({ identity, submitting, profile = false, onSubm
             }
             if (event.key === "Enter" && open && active >= 0 && suggestions[active]) { event.preventDefault(); submit(suggestions[active]); }
           }} />
+        {!value && <span className="player-search__placeholder" aria-hidden="true">Game name + <span>#{regionFor(platform).exampleTag}</span></span>}
+        </div>
       </div>
       {open && <div className="player-search__suggestions">
         <p className="player-search__suggestions-label">Cached profiles · {regionFor(platform).label}</p>

@@ -27,10 +27,10 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
   icons: {
     icon: [
-      { url: "/favicon.ico", sizes: "16x16 32x32 48x48", type: "image/x-icon" },
-      { url: "/favicon.png", sizes: "256x256", type: "image/png" },
+      { url: "/favicon.ico?v=bc5ac15a", sizes: "16x16 32x32 48x48", type: "image/x-icon" },
+      { url: "/favicon.png?v=bc5ac15a", sizes: "256x256", type: "image/png" },
     ],
-    apple: { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    apple: { url: "/apple-touch-icon.png?v=bc5ac15a", sizes: "180x180", type: "image/png" },
   },
   openGraph: {
     type: "website",

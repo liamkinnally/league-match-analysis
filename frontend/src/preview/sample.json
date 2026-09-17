@@ -1200,11 +1200,11 @@
       "goldEarned": 59000,
       "objectives": {
         "tower": 3,
-        "inhibitor": null,
+        "inhibitor": 0,
         "dragon": 1,
-        "baron": null,
-        "riftHerald": null,
-        "horde": null
+        "baron": 0,
+        "riftHerald": 0,
+        "horde": 0
       }
     },
     {
@@ -1216,11 +1216,11 @@
       "goldEarned": 63400,
       "objectives": {
         "tower": 7,
-        "inhibitor": null,
+        "inhibitor": 1,
         "dragon": 3,
-        "baron": null,
-        "riftHerald": null,
-        "horde": null
+        "baron": 1,
+        "riftHerald": 1,
+        "horde": 3
       }
     }
   ],
@@ -2321,6 +2321,763 @@
       },
       "x": 9866,
       "y": 4414
+    },
+    {
+      "timestampMs": 670000,
+      "label": "Epic monster secured",
+      "type": "ELITE_MONSTER_KILL",
+      "presentation": {
+        "actorTeam": {
+          "teamId": 200,
+          "basis": "known"
+        },
+        "objectTeam": {
+          "teamId": null,
+          "basis": "missing"
+        }
+      },
+      "participantIds": [
+        7
+      ],
+      "itemId": null,
+      "actorParticipantId": 7,
+      "targetParticipantId": null,
+      "assisterParticipantIds": [],
+      "assistersObserved": false,
+      "frameAtMs": 720000,
+      "frameEventIndex": 0,
+      "fields": {
+        "type": "ELITE_MONSTER_KILL",
+        "timestamp": 670000,
+        "killerId": 7,
+        "killerTeamId": 200,
+        "position": {
+          "x": 5007,
+          "y": 10471
+        },
+        "monsterType": "HORDE"
+      },
+      "x": 5007,
+      "y": 10471
+    },
+    {
+      "timestampMs": 680000,
+      "label": "Epic monster secured",
+      "type": "ELITE_MONSTER_KILL",
+      "presentation": {
+        "actorTeam": {
+          "teamId": 200,
+          "basis": "known"
+        },
+        "objectTeam": {
+          "teamId": null,
+          "basis": "missing"
+        }
+      },
+      "participantIds": [
+        7
+      ],
+      "itemId": null,
+      "actorParticipantId": 7,
+      "targetParticipantId": null,
+      "assisterParticipantIds": [],
+      "assistersObserved": false,
+      "frameAtMs": 720000,
+      "frameEventIndex": 1,
+      "fields": {
+        "type": "ELITE_MONSTER_KILL",
+        "timestamp": 680000,
+        "killerId": 7,
+        "killerTeamId": 200,
+        "position": {
+          "x": 5007,
+          "y": 10471
+        },
+        "monsterType": "HORDE"
+      },
+      "x": 5007,
+      "y": 10471
+    },
+    {
+      "timestampMs": 690000,
+      "label": "Epic monster secured",
+      "type": "ELITE_MONSTER_KILL",
+      "presentation": {
+        "actorTeam": {
+          "teamId": 200,
+          "basis": "known"
+        },
+        "objectTeam": {
+          "teamId": null,
+          "basis": "missing"
+        }
+      },
+      "participantIds": [
+        7
+      ],
+      "itemId": null,
+      "actorParticipantId": 7,
+      "targetParticipantId": null,
+      "assisterParticipantIds": [],
+      "assistersObserved": false,
+      "frameAtMs": 720000,
+      "frameEventIndex": 2,
+      "fields": {
+        "type": "ELITE_MONSTER_KILL",
+        "timestamp": 690000,
+        "killerId": 7,
+        "killerTeamId": 200,
+        "position": {
+          "x": 5007,
+          "y": 10471
+        },
+        "monsterType": "HORDE"
+      },
+      "x": 5007,
+      "y": 10471
+    },
+    {
+      "timestampMs": 760000,
+      "label": "Structure destroyed",
+      "type": "BUILDING_KILL",
+      "presentation": {
+        "actorTeam": {
+          "teamId": 200,
+          "basis": "known"
+        },
+        "objectTeam": {
+          "teamId": null,
+          "basis": "unsupported"
+        }
+      },
+      "participantIds": [
+        9
+      ],
+      "itemId": null,
+      "actorParticipantId": 9,
+      "targetParticipantId": null,
+      "assisterParticipantIds": [],
+      "assistersObserved": false,
+      "frameAtMs": 840000,
+      "frameEventIndex": 0,
+      "fields": {
+        "type": "BUILDING_KILL",
+        "timestamp": 760000,
+        "killerId": 9,
+        "killerTeamId": 200,
+        "position": {
+          "x": 10504,
+          "y": 1029
+        },
+        "teamId": 100,
+        "buildingType": "TOWER_BUILDING",
+        "towerType": "OUTER_TURRET",
+        "laneType": "BOT_LANE"
+      },
+      "x": 10504,
+      "y": 1029
+    },
+    {
+      "timestampMs": 830000,
+      "label": "Structure destroyed",
+      "type": "BUILDING_KILL",
+      "presentation": {
+        "actorTeam": {
+          "teamId": 100,
+          "basis": "known"
+        },
+        "objectTeam": {
+          "teamId": null,
+          "basis": "unsupported"
+        }
+      },
+      "participantIds": [
+        1
+      ],
+      "itemId": null,
+      "actorParticipantId": 1,
+      "targetParticipantId": null,
+      "assisterParticipantIds": [],
+      "assistersObserved": false,
+      "frameAtMs": 840000,
+      "frameEventIndex": 1,
+      "fields": {
+        "type": "BUILDING_KILL",
+        "timestamp": 830000,
+        "killerId": 1,
+        "killerTeamId": 100,
+        "position": {
+          "x": 4318,
+          "y": 13875
+        },
+        "teamId": 200,
+        "buildingType": "TOWER_BUILDING",
+        "towerType": "OUTER_TURRET",
+        "laneType": "TOP_LANE"
+      },
+      "x": 4318,
+      "y": 13875
+    },
+    {
+      "timestampMs": 920000,
+      "label": "Dragon secured",
+      "type": "ELITE_MONSTER_KILL",
+      "presentation": {
+        "actorTeam": {
+          "teamId": 100,
+          "basis": "known"
+        },
+        "objectTeam": {
+          "teamId": null,
+          "basis": "missing"
+        }
+      },
+      "participantIds": [
+        2
+      ],
+      "itemId": null,
+      "actorParticipantId": 2,
+      "targetParticipantId": null,
+      "assisterParticipantIds": [],
+      "assistersObserved": false,
+      "frameAtMs": 960000,
+      "frameEventIndex": 0,
+      "fields": {
+        "type": "ELITE_MONSTER_KILL",
+        "timestamp": 920000,
+        "killerId": 2,
+        "killerTeamId": 100,
+        "position": {
+          "x": 9866,
+          "y": 4414
+        },
+        "monsterType": "DRAGON",
+        "monsterSubType": "WATER_DRAGON"
+      },
+      "x": 9866,
+      "y": 4414
+    },
+    {
+      "timestampMs": 990000,
+      "label": "Rift Herald secured",
+      "type": "ELITE_MONSTER_KILL",
+      "presentation": {
+        "actorTeam": {
+          "teamId": 200,
+          "basis": "known"
+        },
+        "objectTeam": {
+          "teamId": null,
+          "basis": "missing"
+        }
+      },
+      "participantIds": [
+        7
+      ],
+      "itemId": null,
+      "actorParticipantId": 7,
+      "targetParticipantId": null,
+      "assisterParticipantIds": [],
+      "assistersObserved": false,
+      "frameAtMs": 1080000,
+      "frameEventIndex": 0,
+      "fields": {
+        "type": "ELITE_MONSTER_KILL",
+        "timestamp": 990000,
+        "killerId": 7,
+        "killerTeamId": 200,
+        "position": {
+          "x": 5007,
+          "y": 10471
+        },
+        "monsterType": "RIFTHERALD"
+      },
+      "x": 5007,
+      "y": 10471
+    },
+    {
+      "timestampMs": 1030000,
+      "label": "Structure destroyed",
+      "type": "BUILDING_KILL",
+      "presentation": {
+        "actorTeam": {
+          "teamId": 200,
+          "basis": "known"
+        },
+        "objectTeam": {
+          "teamId": null,
+          "basis": "unsupported"
+        }
+      },
+      "participantIds": [
+        8
+      ],
+      "itemId": null,
+      "actorParticipantId": 8,
+      "targetParticipantId": null,
+      "assisterParticipantIds": [],
+      "assistersObserved": false,
+      "frameAtMs": 1080000,
+      "frameEventIndex": 1,
+      "fields": {
+        "type": "BUILDING_KILL",
+        "timestamp": 1030000,
+        "killerId": 8,
+        "killerTeamId": 200,
+        "position": {
+          "x": 5846,
+          "y": 6396
+        },
+        "teamId": 100,
+        "buildingType": "TOWER_BUILDING",
+        "towerType": "OUTER_TURRET",
+        "laneType": "MID_LANE"
+      },
+      "x": 5846,
+      "y": 6396
+    },
+    {
+      "timestampMs": 1090000,
+      "label": "Structure destroyed",
+      "type": "BUILDING_KILL",
+      "presentation": {
+        "actorTeam": {
+          "teamId": 200,
+          "basis": "known"
+        },
+        "objectTeam": {
+          "teamId": null,
+          "basis": "unsupported"
+        }
+      },
+      "participantIds": [
+        6
+      ],
+      "itemId": null,
+      "actorParticipantId": 6,
+      "targetParticipantId": null,
+      "assisterParticipantIds": [],
+      "assistersObserved": false,
+      "frameAtMs": 1200000,
+      "frameEventIndex": 0,
+      "fields": {
+        "type": "BUILDING_KILL",
+        "timestamp": 1090000,
+        "killerId": 6,
+        "killerTeamId": 200,
+        "position": {
+          "x": 981,
+          "y": 10441
+        },
+        "teamId": 100,
+        "buildingType": "TOWER_BUILDING",
+        "towerType": "OUTER_TURRET",
+        "laneType": "TOP_LANE"
+      },
+      "x": 981,
+      "y": 10441
+    },
+    {
+      "timestampMs": 1180000,
+      "label": "Structure destroyed",
+      "type": "BUILDING_KILL",
+      "presentation": {
+        "actorTeam": {
+          "teamId": 100,
+          "basis": "known"
+        },
+        "objectTeam": {
+          "teamId": null,
+          "basis": "unsupported"
+        }
+      },
+      "participantIds": [
+        3
+      ],
+      "itemId": null,
+      "actorParticipantId": 3,
+      "targetParticipantId": null,
+      "assisterParticipantIds": [],
+      "assistersObserved": false,
+      "frameAtMs": 1200000,
+      "frameEventIndex": 1,
+      "fields": {
+        "type": "BUILDING_KILL",
+        "timestamp": 1180000,
+        "killerId": 3,
+        "killerTeamId": 100,
+        "position": {
+          "x": 8955,
+          "y": 8510
+        },
+        "teamId": 200,
+        "buildingType": "TOWER_BUILDING",
+        "towerType": "OUTER_TURRET",
+        "laneType": "MID_LANE"
+      },
+      "x": 8955,
+      "y": 8510
+    },
+    {
+      "timestampMs": 1270000,
+      "label": "Dragon secured",
+      "type": "ELITE_MONSTER_KILL",
+      "presentation": {
+        "actorTeam": {
+          "teamId": 200,
+          "basis": "known"
+        },
+        "objectTeam": {
+          "teamId": null,
+          "basis": "missing"
+        }
+      },
+      "participantIds": [
+        7
+      ],
+      "itemId": null,
+      "actorParticipantId": 7,
+      "targetParticipantId": null,
+      "assisterParticipantIds": [],
+      "assistersObserved": false,
+      "frameAtMs": 1320000,
+      "frameEventIndex": 0,
+      "fields": {
+        "type": "ELITE_MONSTER_KILL",
+        "timestamp": 1270000,
+        "killerId": 7,
+        "killerTeamId": 200,
+        "position": {
+          "x": 9866,
+          "y": 4414
+        },
+        "monsterType": "DRAGON",
+        "monsterSubType": "FIRE_DRAGON"
+      },
+      "x": 9866,
+      "y": 4414
+    },
+    {
+      "timestampMs": 1385000,
+      "label": "Structure destroyed",
+      "type": "BUILDING_KILL",
+      "presentation": {
+        "actorTeam": {
+          "teamId": 100,
+          "basis": "known"
+        },
+        "objectTeam": {
+          "teamId": null,
+          "basis": "unsupported"
+        }
+      },
+      "participantIds": [
+        4
+      ],
+      "itemId": null,
+      "actorParticipantId": 4,
+      "targetParticipantId": null,
+      "assisterParticipantIds": [],
+      "assistersObserved": false,
+      "frameAtMs": 1440000,
+      "frameEventIndex": 0,
+      "fields": {
+        "type": "BUILDING_KILL",
+        "timestamp": 1385000,
+        "killerId": 4,
+        "killerTeamId": 100,
+        "position": {
+          "x": 13866,
+          "y": 4505
+        },
+        "teamId": 200,
+        "buildingType": "TOWER_BUILDING",
+        "towerType": "OUTER_TURRET",
+        "laneType": "BOT_LANE"
+      },
+      "x": 13866,
+      "y": 4505
+    },
+    {
+      "timestampMs": 1450000,
+      "label": "Structure destroyed",
+      "type": "BUILDING_KILL",
+      "presentation": {
+        "actorTeam": {
+          "teamId": 200,
+          "basis": "known"
+        },
+        "objectTeam": {
+          "teamId": null,
+          "basis": "unsupported"
+        }
+      },
+      "participantIds": [
+        6
+      ],
+      "itemId": null,
+      "actorParticipantId": 6,
+      "targetParticipantId": null,
+      "assisterParticipantIds": [],
+      "assistersObserved": false,
+      "frameAtMs": 1560000,
+      "frameEventIndex": 0,
+      "fields": {
+        "type": "BUILDING_KILL",
+        "timestamp": 1450000,
+        "killerId": 6,
+        "killerTeamId": 200,
+        "position": {
+          "x": 5048,
+          "y": 4812
+        },
+        "teamId": 100,
+        "buildingType": "TOWER_BUILDING",
+        "towerType": "INNER_TURRET",
+        "laneType": "MID_LANE"
+      },
+      "x": 5048,
+      "y": 4812
+    },
+    {
+      "timestampMs": 1500000,
+      "label": "Baron secured",
+      "type": "ELITE_MONSTER_KILL",
+      "presentation": {
+        "actorTeam": {
+          "teamId": 200,
+          "basis": "known"
+        },
+        "objectTeam": {
+          "teamId": null,
+          "basis": "missing"
+        }
+      },
+      "participantIds": [
+        7
+      ],
+      "itemId": null,
+      "actorParticipantId": 7,
+      "targetParticipantId": null,
+      "assisterParticipantIds": [],
+      "assistersObserved": false,
+      "frameAtMs": 1560000,
+      "frameEventIndex": 1,
+      "fields": {
+        "type": "ELITE_MONSTER_KILL",
+        "timestamp": 1500000,
+        "killerId": 7,
+        "killerTeamId": 200,
+        "position": {
+          "x": 5007,
+          "y": 10471
+        },
+        "monsterType": "BARON_NASHOR"
+      },
+      "x": 5007,
+      "y": 10471
+    },
+    {
+      "timestampMs": 1620000,
+      "label": "Dragon secured",
+      "type": "ELITE_MONSTER_KILL",
+      "presentation": {
+        "actorTeam": {
+          "teamId": 200,
+          "basis": "known"
+        },
+        "objectTeam": {
+          "teamId": null,
+          "basis": "missing"
+        }
+      },
+      "participantIds": [
+        7
+      ],
+      "itemId": null,
+      "actorParticipantId": 7,
+      "targetParticipantId": null,
+      "assisterParticipantIds": [],
+      "assistersObserved": false,
+      "frameAtMs": 1680000,
+      "frameEventIndex": 0,
+      "fields": {
+        "type": "ELITE_MONSTER_KILL",
+        "timestamp": 1620000,
+        "killerId": 7,
+        "killerTeamId": 200,
+        "position": {
+          "x": 9866,
+          "y": 4414
+        },
+        "monsterType": "DRAGON",
+        "monsterSubType": "FIRE_DRAGON"
+      },
+      "x": 9866,
+      "y": 4414
+    },
+    {
+      "timestampMs": 1685000,
+      "label": "Structure destroyed",
+      "type": "BUILDING_KILL",
+      "presentation": {
+        "actorTeam": {
+          "teamId": 200,
+          "basis": "known"
+        },
+        "objectTeam": {
+          "teamId": null,
+          "basis": "unsupported"
+        }
+      },
+      "participantIds": [
+        6
+      ],
+      "itemId": null,
+      "actorParticipantId": 6,
+      "targetParticipantId": null,
+      "assisterParticipantIds": [],
+      "assistersObserved": false,
+      "frameAtMs": 1800000,
+      "frameEventIndex": 0,
+      "fields": {
+        "type": "BUILDING_KILL",
+        "timestamp": 1685000,
+        "killerId": 6,
+        "killerTeamId": 200,
+        "position": {
+          "x": 3651,
+          "y": 3696
+        },
+        "teamId": 100,
+        "buildingType": "TOWER_BUILDING",
+        "towerType": "BASE_TURRET",
+        "laneType": "MID_LANE"
+      },
+      "x": 3651,
+      "y": 3696
+    },
+    {
+      "timestampMs": 1705000,
+      "label": "Structure destroyed",
+      "type": "BUILDING_KILL",
+      "presentation": {
+        "actorTeam": {
+          "teamId": 200,
+          "basis": "known"
+        },
+        "objectTeam": {
+          "teamId": null,
+          "basis": "unsupported"
+        }
+      },
+      "participantIds": [
+        6
+      ],
+      "itemId": null,
+      "actorParticipantId": 6,
+      "targetParticipantId": null,
+      "assisterParticipantIds": [],
+      "assistersObserved": false,
+      "frameAtMs": 1800000,
+      "frameEventIndex": 1,
+      "fields": {
+        "type": "BUILDING_KILL",
+        "timestamp": 1705000,
+        "killerId": 6,
+        "killerTeamId": 200,
+        "position": {
+          "x": 3452,
+          "y": 3584
+        },
+        "teamId": 100,
+        "buildingType": "INHIBITOR_BUILDING",
+        "laneType": "MID_LANE"
+      },
+      "x": 3452,
+      "y": 3584
+    },
+    {
+      "timestampMs": 1750000,
+      "label": "Structure destroyed",
+      "type": "BUILDING_KILL",
+      "presentation": {
+        "actorTeam": {
+          "teamId": 200,
+          "basis": "known"
+        },
+        "objectTeam": {
+          "teamId": null,
+          "basis": "unsupported"
+        }
+      },
+      "participantIds": [
+        9
+      ],
+      "itemId": null,
+      "actorParticipantId": 9,
+      "targetParticipantId": null,
+      "assisterParticipantIds": [],
+      "assistersObserved": false,
+      "frameAtMs": 1800000,
+      "frameEventIndex": 2,
+      "fields": {
+        "type": "BUILDING_KILL",
+        "timestamp": 1750000,
+        "killerId": 9,
+        "killerTeamId": 200,
+        "position": {
+          "x": 2177,
+          "y": 1807
+        },
+        "teamId": 100,
+        "buildingType": "TOWER_BUILDING",
+        "towerType": "NEXUS_TURRET",
+        "laneType": "MID_LANE"
+      },
+      "x": 2177,
+      "y": 1807
+    },
+    {
+      "timestampMs": 1775000,
+      "label": "Structure destroyed",
+      "type": "BUILDING_KILL",
+      "presentation": {
+        "actorTeam": {
+          "teamId": 200,
+          "basis": "known"
+        },
+        "objectTeam": {
+          "teamId": null,
+          "basis": "unsupported"
+        }
+      },
+      "participantIds": [
+        6
+      ],
+      "itemId": null,
+      "actorParticipantId": 6,
+      "targetParticipantId": null,
+      "assisterParticipantIds": [],
+      "assistersObserved": false,
+      "frameAtMs": 1800000,
+      "frameEventIndex": 3,
+      "fields": {
+        "type": "BUILDING_KILL",
+        "timestamp": 1775000,
+        "killerId": 6,
+        "killerTeamId": 200,
+        "position": {
+          "x": 1748,
+          "y": 2270
+        },
+        "teamId": 100,
+        "buildingType": "TOWER_BUILDING",
+        "towerType": "NEXUS_TURRET",
+        "laneType": "MID_LANE"
+      },
+      "x": 1748,
+      "y": 2270
     }
   ]
 }

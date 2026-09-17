@@ -5,7 +5,7 @@ import { PlayerSearchForm } from "./player-search-form";
 import { regionFor, type PlayerIdentity } from "../lib/player-lookup/regions";
 import { PlayerProfileHeader, PlayerProfilePanel } from "./player-profile";
 import { usePlayerProfile } from "../lib/player-lookup/use-player-profile";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { GameAssetIcon } from "./game-asset-icon";
 import { FinalItemSlots } from "./final-item-slots";
 import { HistorySkeleton, LoadingStatus } from "./loading-state";
@@ -20,7 +20,7 @@ import { historyQueues } from "../lib/player-lookup/types";
 
 const formatNumber = (n: number) => n.toLocaleString("en-US");
 
-export default function PlayerSearch({ initialRunId, initialIdentity }: { initialRunId?: string; initialIdentity?: PlayerIdentity }) {
+export default function PlayerSearch({ initialRunId, initialIdentity, children }: { initialRunId?: string; initialIdentity?: PlayerIdentity; children?: ReactNode }) {
   const { lookup, issue, submitting, loading, retryNotBefore, submit, retry, older, refresh, filter, busy: operation, restoreCursor, restoreMore } = usePlayerLookup(initialRunId, initialIdentity);
   const [now, setNow] = useState(0);
   useEffect(() => {
@@ -59,7 +59,7 @@ export default function PlayerSearch({ initialRunId, initialIdentity }: { initia
         {retryNotBefore && <p>Try again after <time dateTime={retryNotBefore}>{new Date(retryNotBefore).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" })}</time>.</p>}
       </div>);
 
-  return <section className="player-lookup" aria-label="Player lookup">
+  return <><section className="player-lookup" aria-label="Player lookup">
     {!identityKnown && <h1 className="profile-sr-only">Find a player’s match history</h1>}
     <PlayerSearchForm identity={lookup?.gameName ? lookup : initialIdentity} submitting={submitting} profile={identityKnown} onSubmit={submit} />
     {showIssueBySearch && historyStatus}
@@ -121,5 +121,5 @@ export default function PlayerSearch({ initialRunId, initialIdentity }: { initia
       </div>
     </div>}
 
-  </section>;
+  </section>{count === 0 ? children : null}</>;
 }

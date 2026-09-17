@@ -200,7 +200,9 @@ it("keeps an empty raw page scoped to that page when older supported matches may
 it("uses a full Riot ID example and never relabels loaded identity from edited inputs", async () => {
   vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => Response.json({ ...running, status: "EMPTY", hasMore: false })));
   const empty = render(<PlayerSearch />);
-  expect(screen.getByLabelText("Riot ID")).toHaveAttribute("placeholder", "Game name#tag");
+  expect(screen.getByLabelText("Riot ID")).toHaveAttribute("placeholder", "Game name + #NA1");
+  fireEvent.change(screen.getByRole("combobox", { name: "Region" }), { target: { value: "KR" } });
+  expect(screen.getByLabelText("Riot ID")).toHaveAttribute("placeholder", "Game name + #KR1");
   expect(screen.getByLabelText("Riot ID")).toHaveValue("");
   empty.unmount();
   await act(async () => render(<PlayerSearch initialRunId={runId} />));

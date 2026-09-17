@@ -1,8 +1,8 @@
 export const regions = [
-  { platform: "NA1", slug: "na", label: "NA", name: "North America" },
-  { platform: "EUW1", slug: "euw", label: "EUW", name: "Europe West" },
-  { platform: "EUN1", slug: "eune", label: "EUNE", name: "Europe Nordic & East" },
-  { platform: "KR", slug: "kr", label: "KR", name: "Korea" },
+  { platform: "NA1", slug: "na", label: "NA", name: "North America", exampleTag: "NA1" },
+  { platform: "EUW1", slug: "euw", label: "EUW", name: "Europe West", exampleTag: "EUW" },
+  { platform: "EUN1", slug: "eune", label: "EUNE", name: "Europe Nordic & East", exampleTag: "EUNE" },
+  { platform: "KR", slug: "kr", label: "KR", name: "Korea", exampleTag: "KR1" },
 ] as const;
 export type Platform = typeof regions[number]["platform"];
 export type PlayerIdentity = { platform: Platform; gameName: string; tagLine: string };

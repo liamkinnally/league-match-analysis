@@ -61,6 +61,7 @@ function EventSymbol({ row, assets }: { row: DisplayEvent; assets: GameAssetCata
     ITEM_PURCHASED: "M10 3v14M3 10h14",
     ITEM_SOLD: "M3 3v14h9M7 10h11m-4-4 4 4-4 4",
     ITEM_DESTROYED: "M4 10h12",
+    ROLE_QUEST_COMPLETED: "m3 10 5 5L17 5",
     ITEM_UNDO: "m7 3-4 4 4 4M3 7h8a5 5 0 0 1 0 10H8",
     WARD_KILL: "m5 5 10 10M15 5 5 15",
     BUILDING_KILL: "m5 5 10 10M15 5 5 15",
@@ -87,8 +88,8 @@ export function EventFeed({
   assets: GameAssetCatalog | null;
 }) {
   const allRows = useMemo(
-    () => eventDisplayRows(data.events, data.roster, assets, data.summary.focusParticipantId),
-    [data.events, data.roster, assets, data.summary.focusParticipantId],
+    () => eventDisplayRows(data.events, data.roster, assets, data.summary.focusParticipantId, data.summary.gameVersion),
+    [data.events, data.roster, assets, data.summary.focusParticipantId, data.summary.gameVersion],
   );
   const rows = allRows.filter(
     (e) => e.timestampMs >= interval.from && e.timestampMs <= interval.to,
@@ -213,7 +214,9 @@ export function EventFeed({
                   </summary>
                   <p>Exact recorded time: {timeLabel(row.timestampMs, true)}</p>
                   {row.records.length > 1 ? (
-                    <p>Ward placement and its matching inventory update.</p>
+                    <p>{row.type === "ROLE_QUEST_COMPLETED"
+                      ? "Support quest completion and its matching role-slot update."
+                      : "Ward placement and its matching inventory update."}</p>
                   ) : null}
                   <pre>
                     {JSON.stringify(

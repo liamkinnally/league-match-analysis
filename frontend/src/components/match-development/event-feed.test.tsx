@@ -7,15 +7,19 @@ import type { GameAssetCatalog } from "../../lib/game-assets/types";
 
 const asset = (name: string) => ({ name, imageUrl: `/test-assets/${name.replaceAll(" ", "-")}.svg` });
 const assets: GameAssetCatalog = {
-  assetVersion: "16.17.1", champions: {}, spells: {}, items: { "3071": asset("Black Cleaver") },
+  assetVersion: "16.17.1", champions: {}, spells: {}, items: {
+    "3071": asset("Black Cleaver"), "1201": asset("Mid Lane Quest"), "1203": asset("Support Quest"),
+    "1206": asset("Mid Lane Quest Reward"), "2055": asset("Control Ward"), "3866": asset("Runic Compass"),
+  },
   events: { WARD_EYE: asset("Ward eye"), WARD_SIGHT: asset("Sight ward"), TOWER_BUILDING: asset("Turret") },
   abilities: { "86": { Q: asset("Decisive Strike") } },
 };
 const event = (type: string, fields: Record<string, unknown> = {}, changes: Partial<MatchDevelopmentEvent> = {}): MatchDevelopmentEvent => ({
   ...developmentFixture.events[0], type, fields, itemId: null, frameAtMs: 600000, frameEventIndex: 0, ...changes,
 });
-function feed(events: MatchDevelopmentEvent[], focus = 6, catalog: GameAssetCatalog | null = assets) {
-  const result = render(<EventFeed data={{ ...developmentFixture, events, summary: { ...developmentFixture.summary, focusParticipantId: focus } }} interval={{ from: 505210, to: 600000 }} assets={catalog} />);
+function feed(events: MatchDevelopmentEvent[], focus = 6, catalog: GameAssetCatalog | null = assets, options: { role?: string; gameVersion?: string } = {}) {
+  const roster = developmentFixture.roster.map(person => person.participantId === focus && options.role ? { ...person, teamPosition: options.role } : person);
+  const result = render(<EventFeed data={{ ...developmentFixture, events, roster, summary: { ...developmentFixture.summary, gameVersion: options.gameVersion ?? developmentFixture.summary.gameVersion, focusParticipantId: focus } }} interval={{ from: 505210, to: 600000 }} assets={catalog} />);
   fireEvent.click(screen.getByText("Events in interval"));
   return result;
 }
@@ -61,6 +65,58 @@ describe("event feed", () => {
     expect(screen.getByText("Unknown destroyer")).toBeVisible();
     expect(screen.getByText("Structure owner unverified.")).toBeVisible();
     expect(screen.getByText("Future event")).toBeVisible();
+  });
+  it.each([
+    [1200, "TOP"], [1222, "TOP"], [1201, "MIDDLE"], [1202, "BOTTOM"],
+    [1204, "JUNGLE"], [3866, "UTILITY"],
+  ])("shows a completed role quest for removal %s in role %s, retaining its recorded event", (itemId, role) => {
+    feed([event("ITEM_DESTROYED", { itemId })], 6, null, { role: String(role), gameVersion: "16.18.817.5716" });
+    expect(screen.getByText("Completed role quest", { exact: true })).toBeVisible();
+    expect(screen.queryByText(/from inventory|Reason not recorded/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("Record details"));
+    expect(screen.getByText(/"type": "ITEM_DESTROYED"/)).toBeVisible();
+  });
+  it("distinguishes support ward-slot bookkeeping from the final quest upgrade and preserves both completion records", () => {
+    feed([
+      event("ITEM_DESTROYED", { itemId: 2055 }),
+      event("ITEM_DESTROYED", { itemId: 1203 }, { frameEventIndex: 1 }),
+      event("ITEM_PURCHASED", { itemId: 2055 }, { frameEventIndex: 2 }),
+      event("ITEM_DESTROYED", { itemId: 3866 }, { timestampMs: 550000, frameEventIndex: 3 }),
+      event("ITEM_DESTROYED", { itemId: 1203 }, { timestampMs: 550000, frameEventIndex: 4 }),
+    ], 6, assets, { role: "UTILITY" });
+    expect(screen.getAllByText("Completed role quest", { exact: true })).toHaveLength(1);
+    expect(screen.getAllByText("Removed Support Quest from inventory")).toHaveLength(1);
+    expect(screen.getByRole("list", { name: "4 interval events, 5 complete source records" })).toBeVisible();
+    fireEvent.click(screen.getByText("2 source records"));
+    expect(screen.getByText("Support quest completion and its matching role-slot update.")).toBeVisible();
+    expect(screen.getByText(/"itemId": 3866/)).toHaveTextContent('"itemId": 1203');
+  });
+  it.each([
+    { actorParticipantId: 7 },
+    { timestampMs: 505211 },
+    { frameAtMs: 600001 },
+  ])("keeps a support role-slot update separate when its source context differs: %j", (changes) => {
+    feed([
+      event("ITEM_DESTROYED", { itemId: 3866 }),
+      event("ITEM_DESTROYED", { itemId: 1203 }, { frameEventIndex: 1, ...changes }),
+    ], 6, assets, { role: "UTILITY" });
+    expect(screen.getByRole("list", { name: "2 interval events, 2 complete source records" })).toBeVisible();
+    expect(screen.getByText("Completed role quest", { exact: true })).toBeVisible();
+    expect(screen.getByText("Removed Support Quest from inventory")).toBeVisible();
+  });
+  it.each([
+    ["ITEM_DESTROYED", 1201, "MIDDLE", "15.24.1"],
+    ["ITEM_DESTROYED", 1201, "MIDDLE", "17.1.1"],
+    ["ITEM_DESTROYED", 1201, "TOP", "16.18.1"],
+    ["ITEM_DESTROYED", 1206, "MIDDLE", "16.18.1"],
+    ["ITEM_DESTROYED", 1203, "UTILITY", "16.18.1"],
+    ["ITEM_DESTROYED", 3865, "UTILITY", "16.18.1"],
+    ["ITEM_PURCHASED", 1201, "MIDDLE", "16.18.1"],
+    ["ITEM_SOLD", 1201, "MIDDLE", "16.18.1"],
+  ])("does not infer quest completion from %s %s for %s on patch %s", (type, itemId, role, gameVersion) => {
+    feed([event(String(type), { itemId })], 6, assets, { role: String(role), gameVersion: String(gameVersion) });
+    expect(screen.queryByText("Completed role quest", { exact: true })).not.toBeInTheDocument();
+    expect(screen.getByRole("listitem")).toBeVisible();
   });
   it("keeps ward ownership unknown and does not suggest Oracle Lens detection", () => {
     feed([event("WARD_KILL", { wardType: "SIGHT_WARD" })]);

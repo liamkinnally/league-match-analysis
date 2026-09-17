@@ -125,3 +125,33 @@ it("preserves individual rune counters and distinct participant totals from the 
   expect(player.runes?.styles[0].selections[1]).toMatchObject({ counters: { var1: null, var2: null, var3: null } });
   expect(player.participantTotals?.totalHeal).toBe(2000);
 });
+
+it("keeps synthetic objective totals consistent with the recorded captures and preview events", async () => {
+  const data = await getMatchDevelopment("NA1_7000000001", 6, 1);
+  const objectives = { dragon: "DRAGON", baron: "BARON_NASHOR", riftHerald: "RIFTHERALD", horde: "HORDE",
+    tower: "TOWER_BUILDING", inhibitor: "INHIBITOR_BUILDING" } as const;
+  const capturedEvents = timeline.info.frames.flatMap((frame: { events: Record<string, unknown>[] }) => frame.events);
+  expect(data.teams).toHaveLength(2);
+  for (const team of data.teams!) {
+    const capturedTeam = match.info.teams.find((candidate: { teamId: number }) => candidate.teamId === team.teamId);
+    for (const [key, kind] of Object.entries(objectives)) {
+      const captured = capturedEvents.filter((event: Record<string, unknown>) => {
+        const actor = match.info.participants.find((player: { participantId: number }) => player.participantId === event.killerId);
+        return actor?.teamId === team.teamId && (event.monsterType === kind || event.buildingType === kind);
+      });
+      expect(capturedTeam.objectives[key]?.kills, `${team.teamId} ${key} total`).toBe(captured.length);
+      expect(team.objectives[key], `${team.teamId} ${key} preview`).toBe(captured.length);
+      const projected = data.events.filter(event => event.presentation?.actorTeam.teamId === team.teamId
+        && (event.fields?.monsterType === kind || event.fields?.buildingType === kind));
+      expect(projected.map(event => event.timestampMs)).toEqual(captured.map((event: { timestamp: number }) => event.timestamp));
+      const label = ({ dragon: "Dragon secured", baron: "Baron secured", riftHerald: "Rift Herald secured",
+        horde: "Epic monster secured", tower: "Structure destroyed", inhibitor: "Structure destroyed" } as Record<string, string>)[key];
+      for (const event of projected) expect(event.label).toBe(label);
+    }
+  }
+  const walkthrough = data.events.filter(event => event.timestampMs >= 480_000 && event.timestampMs <= 600_000);
+  expect(walkthrough.map(event => event.timestampMs)).toEqual([505_210, 552_430, 589_775]);
+  expect(walkthrough[2]).toMatchObject({ fields: { monsterType: "DRAGON", monsterSubType: "AIR_DRAGON", killerTeamId: 200 } });
+  expect(data.samples.find(sample => sample.timestampMs === 480_000)?.goldDifference).toBe(100);
+  expect(data.samples.find(sample => sample.timestampMs === 600_000)?.goldDifference).toBe(510);
+});

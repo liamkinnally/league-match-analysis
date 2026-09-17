@@ -76,6 +76,11 @@ export function PlayerProfilePanel({ profile, loading, loadingOlder, busy, loadO
       </> : <p className="profile-panel__empty">{loading ? "Loading rank…" : "Rank unavailable. Update this profile to try again."}</p>}
     </section>
     {profile?.flexRank.status === "unranked" ? <section className="profile-panel profile-flex" aria-label="Ranked Flex"><div className="profile-flex__summary"><span>Ranked Flex</span><span>Unranked</span></div></section>
-      : profile && <details className="profile-panel profile-flex"><summary className="profile-flex__summary"><span>Ranked Flex</span><span>{profile.flexRank.status === "ranked" ? `${profile.flexRank.leaguePoints?.toLocaleString("en-US")} LP` : profile.flexRank.status === "loading" ? "Loading…" : "Unavailable"}</span></summary><RankDetails rank={profile.flexRank} now={now} compact /></details>}
+      : profile && <details className="profile-panel profile-flex" open={profile.flexRank.status === "ranked"}>
+        <summary className="profile-flex__summary"><span>Ranked Flex</span>
+          {profile.flexRank.status !== "ranked" && <span>{profile.flexRank.status === "loading" ? "Loading…" : "Unavailable"}</span>}
+        </summary>
+        <RankDetails rank={profile.flexRank} now={now} compact />
+      </details>}
   </div>;
 }

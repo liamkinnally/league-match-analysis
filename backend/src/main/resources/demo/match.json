@@ -809,6 +809,22 @@
           "tower": {
             "first": false,
             "kills": 3
+          },
+          "inhibitor": {
+            "first": false,
+            "kills": 0
+          },
+          "baron": {
+            "first": false,
+            "kills": 0
+          },
+          "riftHerald": {
+            "first": false,
+            "kills": 0
+          },
+          "horde": {
+            "first": false,
+            "kills": 0
           }
         }
       },
@@ -827,6 +843,22 @@
           "tower": {
             "first": true,
             "kills": 7
+          },
+          "inhibitor": {
+            "first": true,
+            "kills": 1
+          },
+          "baron": {
+            "first": true,
+            "kills": 1
+          },
+          "riftHerald": {
+            "first": true,
+            "kills": 1
+          },
+          "horde": {
+            "first": true,
+            "kills": 3
           }
         }
       }

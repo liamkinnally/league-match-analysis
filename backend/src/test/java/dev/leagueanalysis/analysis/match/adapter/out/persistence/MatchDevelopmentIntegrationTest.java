@@ -123,6 +123,8 @@ class MatchDevelopmentIntegrationTest {
     @Test
     void ordersByExactTimeWithSourceTiesFiltersOldCaptureAndKeepsMissingTotalsNull() throws Exception {
         seedCommand.seed();
+        int seededEvents = jdbc.queryForObject("select count(*) from league_analysis.match_event where match_id=?",
+                Integer.class, DemoSeedCommand.MATCH_ID);
         jdbc.update("""
                 update league_analysis.riot_team set objectives='{"dragon":{"kills":2},"atakhan":{"kills":0}}'::jsonb
                 where match_id=? and team_id=100
@@ -153,7 +155,7 @@ class MatchDevelopmentIntegrationTest {
                 """, DemoSeedCommand.MATCH_ID);
         var response=mockMvc.perform(get("/api/v1/matches/{matchId}/development", DemoSeedCommand.MATCH_ID)
                         .param("focus", "6").param("compare", "1"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.events.length()").value(5))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.events.length()").value(seededEvents + 2))
                 .andExpect(jsonPath("$.events[4].type").value("CHAMPION_SPECIAL_KILL"))
                 .andExpect(jsonPath("$.events[3].type").value("WARD_PLACED"))
                 .andExpect(jsonPath("$.events[4].frameEventIndex").value(99))
@@ -255,6 +257,32 @@ class MatchDevelopmentIntegrationTest {
         assertThat(jdbc.queryForObject("""
                 select count(*) from league_analysis.riot_match where match_id = ?
                 """, Integer.class, P3SanitizedMatchFixture.MATCH_ID)).isEqualTo(1);
+    }
+
+    @Test
+    void syntheticObjectiveTotalsMatchTheirRecordedTimelineEvents() throws Exception {
+        seedCommand.seed();
+        var body = mockMvc.perform(get("/api/v1/matches/{matchId}/development", DemoSeedCommand.MATCH_ID)
+                        .param("focus", "6").param("compare", "1"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        var result = json.readTree(body);
+        var objectives = Map.of("dragon", "DRAGON", "baron", "BARON_NASHOR", "riftHerald", "RIFTHERALD",
+                "horde", "HORDE", "tower", "TOWER_BUILDING", "inhibitor", "INHIBITOR_BUILDING");
+        for (var team : result.path("teams")) {
+            int teamId = team.path("teamId").intValue();
+            for (var objective : objectives.entrySet()) {
+                int recorded = 0;
+                for (var event : result.path("events")) {
+                    var fields = event.path("fields");
+                    if (event.path("presentation").path("actorTeam").path("teamId").asInt() == teamId
+                            && (objective.getValue().equals(fields.path("monsterType").asText())
+                                || objective.getValue().equals(fields.path("buildingType").asText()))) recorded++;
+                }
+                var total = team.path("objectives").path(objective.getKey());
+                assertThat(total.isIntegralNumber()).as("team %s %s availability", teamId, objective.getKey()).isTrue();
+                assertThat(total.intValue()).as("team %s %s count", teamId, objective.getKey()).isEqualTo(recorded);
+            }
+        }
     }
 
     @Test

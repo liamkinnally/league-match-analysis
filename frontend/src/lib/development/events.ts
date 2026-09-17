@@ -5,6 +5,7 @@ import type {
 } from "./types";
 import { participantName } from "./results";
 import { eventAssetCatalog } from "../game-assets/event-assets";
+import { isRoleQuestCompletionItem } from "../game-assets/role-quests";
 
 const WARDS: Record<string, string> = {
   SIGHT_WARD: "Sight ward",
@@ -79,6 +80,7 @@ export function eventDisplayRows(
   roster: MatchDevelopmentParticipant[],
   assets: GameAssetCatalog | null,
   focusParticipantId?: number,
+  gameVersion?: string,
 ): DisplayEvent[] {
   // Preserve exact chronology, using source order only to break equal timestamps.
   events = events.toSorted((a, b) => a.timestampMs - b.timestampMs ||
@@ -93,8 +95,8 @@ export function eventDisplayRows(
       ? "Item unavailable"
       : (assets?.items[String(id)]?.name ?? "Unresolved item");
   const rows: DisplayEvent[] = events.map((event, index) => {
-    const type = eventType(event),
-      fields = event.fields ?? {},
+    let type = eventType(event);
+    const fields = event.fields ?? {},
       identity = people.get(event.actorParticipantId ?? -1),
       target = people.get(event.targetParticipantId ?? -1);
     let itemId =
@@ -169,6 +171,9 @@ export function eventDisplayRows(
             BLUE_TRINKET: 3363,
           } as Record<string, number>
         )[String(fields.wardType)] ?? null;
+    } else if (event.type === "ITEM_DESTROYED" && isRoleQuestCompletionItem(itemId, identity?.teamPosition, gameVersion)) {
+      type = "ROLE_QUEST_COMPLETED";
+      action = "Completed role quest";
     } else if (
       ["ITEM_PURCHASED", "ITEM_DESTROYED", "ITEM_SOLD"].includes(type)
     ) {
@@ -286,7 +291,7 @@ export function eventDisplayRows(
   });
   const candidates = new Map<
     string,
-    { removals: number[]; placements: number[] }
+    { supporting: number[]; primary: number[] }
   >();
   rows.forEach((row, index) => {
     const event = row.records[0];
@@ -297,21 +302,23 @@ export function eventDisplayRows(
       !Number.isInteger(event.frameEventIndex)
     )
       return;
-    const removal = row.type === "ITEM_DESTROYED" && row.itemId === 2055,
-      placement =
-        row.type === "WARD_PLACED" && event.fields?.wardType === "CONTROL_WARD";
-    if (!removal && !placement) return;
-    const key = `${event.actorParticipantId}:${event.timestampMs}:${event.frameAtMs}`,
-      group = candidates.get(key) ?? { removals: [], placements: [] };
-    group[removal ? "removals" : "placements"].push(index);
+    const questCompletion = row.type === "ROLE_QUEST_COMPLETED" && row.itemId === 3866;
+    const questUpdate = row.type === "ITEM_DESTROYED" && row.itemId === 1203;
+    const supporting = (row.type === "ITEM_DESTROYED" && row.itemId === 2055) || questUpdate;
+    const primary = (row.type === "WARD_PLACED" && event.fields?.wardType === "CONTROL_WARD") || questCompletion;
+    if (!supporting && !primary) return;
+    const kind = questCompletion || questUpdate ? "support-quest" : "ward";
+    const key = `${kind}:${event.actorParticipantId}:${event.timestampMs}:${event.frameAtMs}`,
+      group = candidates.get(key) ?? { supporting: [], primary: [] };
+    group[supporting ? "supporting" : "primary"].push(index);
     candidates.set(key, group);
   });
   const paired = new Map<number, DisplayEvent>(),
     supporting = new Set<number>();
-  for (const { removals, placements } of candidates.values()) {
-    if (removals.length !== 1 || placements.length !== 1) continue;
-    const a = removals[0],
-      b = placements[0];
+  for (const { supporting: updates, primary } of candidates.values()) {
+    if (updates.length !== 1 || primary.length !== 1) continue;
+    const a = updates[0],
+      b = primary[0];
     if (
       Math.abs(a - b) !== 1 ||
       Math.abs(events[a].frameEventIndex! - events[b].frameEventIndex!) !== 1

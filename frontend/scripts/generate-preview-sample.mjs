@@ -33,7 +33,8 @@ const roster = match.participants.map((player) => ({
   participantTotals: Object.fromEntries(["totalDamageDealt", "totalDamageDealtToChampions", "totalHeal", "totalHealsOnTeammates", "totalDamageShieldedOnTeammates"].map(key => [key, player[key] ?? null])),
 }));
 const eventFields = ["type", "timestamp", "participantId", "killerId", "victimId", "killerTeamId",
-  "assistingParticipantIds", "position", "itemId", "monsterType", "monsterSubType"];
+  "assistingParticipantIds", "position", "itemId", "monsterType", "monsterSubType",
+  "teamId", "buildingType", "towerType", "laneType"];
 const sample = {
   source: "backend/src/main/resources/demo/{match,timeline}.json — demo-match-v1; regenerate with node frontend/scripts/generate-preview-sample.mjs",
   summary: { queueId: match.queueId, mapId: match.mapId, gameMode: match.gameMode,
@@ -60,11 +61,14 @@ const sample = {
     const target = event.victimId ?? null;
     const assists = event.assistingParticipantIds ?? [];
     const label = { ITEM_PURCHASED: `Purchased item ${event.itemId}`, CHAMPION_KILL: "Champion kill",
-      ELITE_MONSTER_KILL: "Dragon secured" }[event.type];
+      ELITE_MONSTER_KILL: { DRAGON: "Dragon secured", BARON_NASHOR: "Baron secured",
+        RIFTHERALD: "Rift Herald secured" }[event.monsterType] ?? "Epic monster secured",
+      BUILDING_KILL: "Structure destroyed" }[event.type];
     if (!label) throw new Error(`Unsupported synthetic event: ${event.type}`);
     const actorTeamId = roster.find(player => player.participantId === actor)?.teamId ?? null;
     return { timestampMs: event.timestamp, label, type: event.type,
-      presentation: { actorTeam: { teamId: actorTeamId, basis: actorTeamId === null ? "missing" : "known" }, objectTeam: { teamId: null, basis: "missing" } },
+      presentation: { actorTeam: { teamId: actorTeamId, basis: actorTeamId === null ? "missing" : "known" },
+        objectTeam: { teamId: null, basis: event.type === "BUILDING_KILL" ? "unsupported" : "missing" } },
       participantIds: [...new Set([actor, target, ...assists].filter((id) => id > 0))].sort((a, b) => a - b),
       itemId: event.itemId ?? null, actorParticipantId: actor, targetParticipantId: target,
       assisterParticipantIds: assists, assistersObserved: Array.isArray(event.assistingParticipantIds),

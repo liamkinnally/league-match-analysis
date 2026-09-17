@@ -20,7 +20,8 @@ export default async function ProfilePage({ params, searchParams }: Props) {
   if (!identity) notFound();
   const runId = typeof search.runId === "string" ? search.runId : undefined;
   return <EntryShell active="search">
-    <PlayerSearchEntry initialIdentity={identity} initialRunId={runId} />
-    <Suspense fallback={<SampleMatchPending />}><SampleMatchLink /></Suspense>
+    <PlayerSearchEntry initialIdentity={identity} initialRunId={runId}>
+      <Suspense fallback={<SampleMatchPending />}><SampleMatchLink /></Suspense>
+    </PlayerSearchEntry>
   </EntryShell>;
 }
