@@ -3,6 +3,7 @@ import { expect, it, vi } from "vitest";
 import Home from "../app/page";
 import SearchPage from "../app/search/page";
 import { SampleMatchLink } from "./sample-match-link";
+import { cloneElement } from "react";
 
 vi.mock("server-only", () => ({}));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
@@ -21,7 +22,8 @@ it("makes the sample reachable from entry pages while preventing live search and
   expect(screen.queryByRole("button", { name: "Find matches" })).not.toBeInTheDocument();
   view.unmount();
   const search = await SearchPage({ searchParams: Promise.resolve({ runId: "00000000-0000-0000-0000-000000000001" }) });
-  render(<>{search.props.children[1]}{await SampleMatchLink()}</>);
+  render(cloneElement(search.props.children, { children: await SampleMatchLink() }));
+  expect(screen.getByText(/Live player search is unavailable in this sample preview/)).toBeVisible();
   expect(screen.getByRole("link", { name: "Explore sample match" })).toHaveAttribute("href", "/matches/NA1_7000000001/development?focus=6&compare=1");
   expect(fetcher).not.toHaveBeenCalled();
 });

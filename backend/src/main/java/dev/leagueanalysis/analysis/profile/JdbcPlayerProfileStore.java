@@ -175,22 +175,22 @@ public class JdbcPlayerProfileStore implements RankSnapshotStore {
         if(!isAllowed(subject.puuid()))throw new IllegalStateException("PROFILE_UNAVAILABLE");
         var pages=jdbc.query("""
             select id,status,page_end_time,(select count(*)::integer from league_analysis.ingestion_item item where item.ingestion_run_id=ingestion_run.id) from league_analysis.ingestion_run
-            where (resolved_puuid=? or id=(select recent_run_id from league_analysis.player_profile_current where puuid=? and platform=?)) and public_request and lookup_kind='HISTORY' and queue_id=420 and page_start=0
+            where platform_route=? and (resolved_puuid=? or id=(select recent_run_id from league_analysis.player_profile_current where puuid=? and platform=?)) and public_request and lookup_kind='HISTORY' and queue_id=420 and page_start=0
             order by started_at desc,id desc limit 1
-            """,(rs,n)->new RecentPage(rs.getObject(1,UUID.class),rs.getString(2),rs.getObject(3,Long.class),rs.getObject(4,Integer.class)),subject.puuid(),subject.puuid(),subject.platform());
+            """,(rs,n)->new RecentPage(rs.getObject(1,UUID.class),rs.getString(2),rs.getObject(3,Long.class),rs.getObject(4,Integer.class)),subject.platform(),subject.puuid(),subject.puuid(),subject.platform());
         var page=pages.isEmpty()?null:pages.getFirst();
         Long fallbackEnd=jdbc.queryForObject("select page_end_time from league_analysis.ingestion_run where id=?",Long.class,run);
         var snapshot=page!=null&&page.end()!=null?Instant.ofEpochSecond(page.end()):fallbackEnd==null?now:Instant.ofEpochSecond(fallbackEnd);
-        var lastRefresh=jdbc.queryForObject("select max(started_at) from league_analysis.ingestion_run where resolved_puuid=? and public_request and lookup_kind='HISTORY' and page_start=0 and status in ('RUNNING','COMPLETE')",OffsetDateTime.class,subject.puuid());
+        var lastRefresh=jdbc.queryForObject("select max(started_at) from league_analysis.ingestion_run where resolved_puuid=? and platform_route=? and public_request and lookup_kind='HISTORY' and page_start=0 and status in ('RUNNING','COMPLETE')",OffsetDateTime.class,subject.puuid(),subject.platform());
         var retry=lastRefresh==null?null:lastRefresh.toInstant().plusSeconds(900);
         var recentRequest=jdbc.query("select recent_requested_at from league_analysis.player_profile_current where puuid=? and platform=?",(rs,n)->Optional.ofNullable(instant(rs,1)),subject.puuid(),subject.platform()).stream().findFirst().orElse(Optional.empty()).orElse(null);
         if(recentRequest!=null&&(retry==null||recentRequest.plusSeconds(900).isAfter(retry)))retry=recentRequest.plusSeconds(900);
         if(retry!=null&&!retry.isAfter(now))retry=null;
         var rows=jdbc.query("""
             select p.win,m.game_creation_ms from league_analysis.riot_participant p join league_analysis.riot_match m on m.match_id=p.match_id
-            where p.puuid=? and m.game_creation_ms<=? and m.queue_id=420 and m.map_id=11 and not league_analysis.privacy_blocked('match',m.match_id)
+            where p.puuid=? and split_part(m.match_id,'_',1)=? and m.game_creation_ms<=? and m.queue_id=420 and m.map_id=11 and not league_analysis.privacy_blocked('match',m.match_id)
             order by m.game_creation_ms desc,m.match_id desc limit 20
-            """,(rs,n)->new RecentGame(rs.getObject(1,Boolean.class),rs.getLong(2)),subject.puuid(),snapshot.toEpochMilli());
+            """,(rs,n)->new RecentGame(rs.getObject(1,Boolean.class),rs.getLong(2)),subject.puuid(),subject.platform(),snapshot.toEpochMilli());
         int wins=(int)rows.stream().filter(r->Boolean.TRUE.equals(r.win())).count();int losses=(int)rows.stream().filter(r->Boolean.FALSE.equals(r.win())).count();
         boolean loading=page!=null&&"RUNNING".equals(page.status());
         int checked=page==null||page.count()==null?rows.size():page.count();

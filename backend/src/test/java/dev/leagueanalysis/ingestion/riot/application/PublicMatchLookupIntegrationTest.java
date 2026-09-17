@@ -59,6 +59,117 @@ class PublicMatchLookupIntegrationTest {
         return profiles;
     }
 
+    PublicMatchLookup emptyProfile(String name, String tag, String platform, String puuid) {
+        var command = new RiotIngestionCommand(name, tag, 20, 0, 0, clock.instant().getEpochSecond(), null, platform);
+        var id = store.startPublicRun(command, clock.instant());
+        var body = json.createObjectNode().put("gameName", name).put("tagLine", tag).put("puuid", puuid);
+        var bytes = body.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        String digest;
+        try { digest = HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(bytes)); }
+        catch (Exception unavailable) { throw new IllegalStateException(unavailable); }
+        var doc = new dev.leagueanalysis.ingestion.riot.domain.ProviderDocument(
+                dev.leagueanalysis.ingestion.riot.domain.SourceKind.ACCOUNT, name+"#"+tag, clock.instant(), 200,
+                dev.leagueanalysis.ingestion.riot.domain.RiotPlatform.parse(platform).regionalRoute(), platform, null,
+                digest, bytes.length, body, json.createObjectNode(), "fixture-v1", 1);
+        var capture = store.saveCapture(id, doc);
+        store.recordResolvedAccount(id, new dev.leagueanalysis.ingestion.riot.domain.RiotAccount(puuid,name,tag), capture);
+        store.recordVerifiedRequestedIdentity(id, command);
+        store.finishRun(id, IngestionRunStatus.COMPLETE, null, null, clock.instant());
+        return store.readPublicRun(id).orElseThrow();
+    }
+
+    @Test void cachedZeroMatchProfilesAndRefreshAdmissionStaySeparateAcrossPlatforms() {
+        var na = emptyProfile("SharedName", "tag", "NA1", "regional-na");
+        var euw = emptyProfile("SharedName", "tag", "EUW1", "regional-euw");
+        var eune = emptyProfile("SharedName", "tag", "EUN1", "regional-eune");
+        var kr = emptyProfile("SharedName", "tag", "KR", "regional-kr");
+        for (var page : List.of(na, euw, eune, kr)) {
+            assertThat(page.status()).isEqualTo("EMPTY");
+            assertThat(service.submit("sharedname", "TAG", 0, page.platform(), "peer").lookup().runId()).isEqualTo(page.runId());
+            assertThat(store.readPageCommand(page.runId()).orElseThrow().platform()).isEqualTo(page.platform());
+            assertThat(profileStore.subject(page.runId()).orElseThrow().platform()).isEqualTo(page.platform());
+            assertThatThrownBy(() -> service.refresh(page.runId(), "peer")).isInstanceOf(PublicLookupException.class);
+        }
+        store.recordRetryNotBefore(euw.runId(), clock.instant().plusSeconds(120));
+        assertThat(store.latestCooldown("EUW1")).contains(clock.instant().plusSeconds(120));
+        assertThat(store.latestCooldown("EUN1")).contains(clock.instant().plusSeconds(120));
+        assertThat(store.latestCooldown("NA1")).isEmpty();
+        assertThat(store.latestCooldown("KR")).isEmpty();
+        assertThat(gateway.calls).isEmpty();
+    }
+
+    @Test void autocompleteIsBoundedLiteralPrivateAndPlatformScopedIncludingEmptyAccounts() {
+        for (int i=0; i<7; i++) emptyProfile("Alpha"+i, "tag", "NA1", "suggest-na-"+i);
+        emptyProfile("AlphaEU", "tag", "EUW1", "suggest-euw");
+        emptyProfile("Alpha_Exact", "tag", "NA1", "suggest-literal");
+        emptyProfile("선수이름", "KR1", "KR", "suggest-kr");
+        var hidden = emptyProfile("AlphaHidden", "tag", "NA1", "suggest-hidden");
+        jdbc.update("update league_analysis.ingestion_run set status='RUNNING' where id=?",hidden.runId());
+        jdbc.update("insert into league_analysis.player_profile_current(puuid,platform,profile_icon_id,summoner_level) values ('suggest-na-0','NA1',29,180)");
+        assertThat(store.suggestions("NA1","a")).hasSize(5).extracting(s -> s.platform()).containsOnly("NA1");
+        var exact = store.suggestions("NA1","ALPHA0#ta");
+        assertThat(exact).hasSize(1);
+        assertThat(exact.getFirst().profileIconId()).isEqualTo(29);
+        assertThat(exact.getFirst().summonerLevel()).isEqualTo(180);
+        assertThat(store.suggestions("EUW1","Alpha")).extracting(s -> s.gameName()).containsExactly("AlphaEU");
+        assertThat(store.suggestions("NA1","Alpha_")).extracting(s -> s.gameName()).containsExactly("Alpha_Exact");
+        assertThat(store.suggestions("NA1","%" )).isEmpty();
+        assertThat(store.suggestions("KR","선수")).extracting(s -> s.gameName()).containsExactly("선수이름");
+        assertThat(store.suggestions("NA1","AlphaHidden")).isEmpty();
+        jdbc.update("insert into league_analysis.privacy_exclusion(kind,subject_hash) values ('puuid',?)",dev.leagueanalysis.privacy.PrivacyHash.of("suggest-na-0"));
+        try { assertThat(store.suggestions("NA1","Alpha0")).isEmpty(); }
+        finally { jdbc.update("delete from league_analysis.privacy_exclusion where subject_hash=?",dev.leagueanalysis.privacy.PrivacyHash.of("suggest-na-0")); }
+        assertThat(gateway.calls).isEmpty();
+    }
+
+    @Test void autocompleteKeepsVerifiedLookupNameAfterHistoricalParticipantNamesAreImported() {
+        var result=run("CurrentAlias");
+        String historicalName=jdbc.queryForObject("select game_name from league_analysis.riot_identity where puuid=?",String.class,PublicLookupGatewayFixture.PUUID);
+        assertThat(historicalName).isNotEqualTo("CurrentAlias");
+        assertThat(store.suggestions("NA1","CurrentAlias")).extracting(s->s.gameName()).containsExactly("CurrentAlias");
+        assertThat(store.suggestions("NA1",historicalName)).extracting(s->s.gameName()).doesNotContain(historicalName);
+        String participantName=jdbc.queryForObject("select game_name from league_analysis.riot_identity where puuid='lookup-invented-participant-1'",String.class);
+        assertThat(store.suggestions("NA1",participantName)).extracting(s->s.gameName()).contains(participantName);
+        assertThat(result.status()).isEqualTo("COMPLETE");
+    }
+
+    @Test void autocompleteUsesNewestCanonicalAccountNameInsteadOfOldNamesOrRequestSpelling() {
+        var original=emptyProfile("BeforeRename","tag","NA1","renamed-suggestion");
+        clock.now=clock.now.plusSeconds(1);
+        var renamed=emptyProfile("AfterRename","newtag","NA1","renamed-suggestion");
+        jdbc.update("update league_analysis.ingestion_run set requested_game_name='REQUESTSPELLING',requested_tag_line='NEWTAG' where id=?",renamed.runId());
+        assertThat(store.suggestions("NA1","AfterRename#new")).extracting(s->s.gameName()+"#"+s.tagLine()).containsExactly("AfterRename#newtag");
+        assertThat(store.suggestions("NA1","BeforeRename")).isEmpty();
+        assertThat(store.suggestions("NA1","REQUESTSPELLING")).isEmpty();
+        assertThat(store.readPublicRun(original.runId())).isPresent();
+    }
+
+    @Test void regionalHistoryOlderPagesAndTimelineKeepTheirPlatform() {
+        gateway.totalMatches=21;
+        for(String platform:List.of("EUW1","EUN1","KR")) {
+            var first=service.submit("Regional"+platform,"tag",0,platform,"peer"+platform);
+            drain();
+            var page=service.get(first.lookup().runId());
+            assertThat(page.status()).isEqualTo("COMPLETE");
+            assertThat(page.matches()).hasSize(20).allSatisfy(match->assertThat(match.matchId()).startsWith(platform+"_"));
+            var older=service.older(page.runId(),"peer"+platform); drain();
+            assertThat(service.get(older.lookup().runId()).matches()).hasSize(1);
+            assertThat(service.get(older.lookup().runId()).platform()).isEqualTo(platform);
+            String match=page.matches().getFirst().matchId();
+            service.requestTimeline(match,"peer"+platform); drain();
+            assertThat(service.timeline(match).status()).isEqualTo("AVAILABLE");
+        }
+    }
+
+    @Test void pendingSameRiotIdInDifferentPlatformsNeverSharesTheRun() {
+        var na = service.submit("Pending", "tag", 0, "NA1", "peer");
+        var euw = service.submit("Pending", "tag", 0, "EUW1", "peer");
+        assertThat(euw.lookup().runId()).isNotEqualTo(na.lookup().runId());
+        assertThat(euw.lookup().platform()).isEqualTo("EUW1");
+        assertThat(service.submit("Pending", "tag", 0, "EUW1", "peer").lookup().runId()).isEqualTo(euw.lookup().runId());
+        work.clear();
+    }
+
     @Test void firstLookupFetchesProfileAndRankWhileRecentHistoryIsStillLoading() {
         gateway.totalMatches = 20;
         var summoner = mock(SummonerProfileClient.class);
@@ -67,7 +178,8 @@ class PublicMatchLookupIntegrationTest {
         when(ranks.peek(anyString(), anyString(), anyString())).thenReturn(new CurrentRankProvider.State(null, null, false, false, null, null));
         var profiles = attachProfiles(summoner, ranks);
         var id = service.submit("CurrentAlias", "NA1", 440, "peer").lookup().runId();
-        work.remove().run(); // Account verified; list/details are still queued.
+        work.remove().run(); // Account resolution.
+        work.remove().run(); // Platform verified; list/details are still queued.
         assertThat(profiles.load(id, null).summoner().refreshing()).isTrue();
         assertThat(profiles.load(id, null).soloRank().refreshing()).isTrue();
         verifyNoInteractions(summoner);
@@ -109,6 +221,7 @@ class PublicMatchLookupIntegrationTest {
         var id = service.submit("CurrentAlias", "NA1", 440, "peer").lookup().runId();
         work.remove().run();
         work.remove().run();
+        work.remove().run();
         assertThat(delayed).hasSize(1);
         assertThat(work).isEmpty();
         assertThat(service.get(id).status()).isEqualTo("RUNNING");
@@ -131,6 +244,7 @@ class PublicMatchLookupIntegrationTest {
         var id = service.submit("CurrentAlias", "NA1", 440, "peer").lookup().runId();
         work.remove().run();
         work.remove().run();
+        work.remove().run();
         assertThat(service.get(id).status()).isEqualTo("RUNNING");
         assertThat(delayed).hasSize(1);
         clock.now = clock.now.plusSeconds(901);
@@ -148,7 +262,7 @@ class PublicMatchLookupIntegrationTest {
                 RiotFailureCode.UPSTREAM_UNAVAILABLE, "sanitized"));
         var profiles = attachProfiles(summoner);
         var id = service.submit("CurrentAlias", "NA1", "peer").lookup().runId();
-        for (int i = 0; i < 4; i++) work.remove().run(); // Account, failed Summoner, list, rank.
+        for (int i = 0; i < 5; i++) work.remove().run(); // Account, platform verification, failed Summoner, list, rank.
         assertThat(service.get(id).status()).isEqualTo("RUNNING");
         var resolvedProfile = profiles.load(id, null);
         assertThat(resolvedProfile.summoner().status()).isEqualTo("unavailable");
@@ -192,7 +306,7 @@ class PublicMatchLookupIntegrationTest {
         var a=service.recentRecord(first.lookup().runId(),"first-peer");
         var b=service.recentRecord(second.lookup().runId(),"second-peer");
         assertThat(service.recentRecord(first.lookup().runId(),"first-peer").lookup().runId()).isEqualTo(a.lookup().runId());
-        for(int i=0;i<4;i++)work.remove().run();
+        for(int i=0;i<6;i++)work.remove().run();
         assertThat(gateway.calls).containsExactly("account","account","list","list");
         work.remove().run();work.remove().run();
         assertThat(service.get(a.lookup().runId()).matches()).hasSize(1);
@@ -347,8 +461,8 @@ class PublicMatchLookupIntegrationTest {
         gateway.detailFailure = RiotFailureCode.RATE_LIMITED;
         gateway.totalMatches = 20;
         var limited = service.submit("Limited", "NA1", "peer").lookup().runId();
-        // Account, list, first detail. Retry is scheduled, not executed synchronously.
-        work.remove().run(); work.remove().run(); work.remove().run();
+        // Account, platform verification, list, first detail. Retry is scheduled, not executed synchronously.
+        work.remove().run(); work.remove().run(); work.remove().run(); work.remove().run();
         assertThat(service.get(limited).retryNotBefore()).isEqualTo(clock.now.plusSeconds(120));
         assertThat(service.get(limited).status()).isEqualTo("RUNNING");
         service.close();

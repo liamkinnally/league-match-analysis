@@ -52,6 +52,32 @@ class RemovalPlannerIntegrationTest {
         });
     }
 
+    @Test void removesSupportedRegionalRawEvidenceAndStillRejectsUnknownPlatforms() throws Exception {
+        UUID run = accountRun("RegionalPlayer", TARGET);
+        for (String match : List.of("EUW1_777", "EUN1_778", "KR_779")) {
+            var body = JSON.valueToTree(Map.of("metadata", Map.of("matchId", match, "participants", List.of(TARGET))));
+            store.saveCapture(run, document(SourceKind.MATCH_DETAIL, match, body, 1));
+        }
+        var plan = planner.plan(TARGET);
+        assertThat(plan.matchIds()).containsExactlyInAnyOrder("EUW1_777", "EUN1_778", "KR_779");
+        execute(plan);
+        assertThat(jdbc.queryForObject("select count(*) from league_analysis.source_capture", Long.class)).isZero();
+        UUID invalid = accountRun("RegionalPlayer", TARGET);
+        var invalidBody = JSON.valueToTree(Map.of("metadata", Map.of("matchId", "ZZ1_123", "participants", List.of(TARGET))));
+        store.saveCapture(invalid, document(SourceKind.MATCH_DETAIL, "ZZ1_123", invalidBody, 1));
+        assertThatThrownBy(() -> planner.plan(TARGET)).hasMessageContaining("UNSUPPORTED_CAPTURE_MATCH_IDENTIFIER");
+    }
+
+    @Test void reanchoringIdentityRestoresTheRetainedEvidencePlatform() throws Exception {
+        UUID retained=match(UNRELATED,"other-puuid","invented-puuid-2",0);
+        jdbc.update("update league_analysis.source_capture set platform_route='KR',regional_route='ASIA' where ingestion_run_id=?",retained);
+        match(SHARED,TARGET,"invented-puuid-2",1);
+        assertThat(jdbc.queryForObject("select platform_route from league_analysis.riot_identity where puuid='invented-puuid-2'",String.class)).isEqualTo("NA1");
+        execute(planner.plan(TARGET));
+        assertThat(jdbc.queryForObject("select platform_route from league_analysis.riot_identity where puuid='invented-puuid-2'",String.class)).isEqualTo("KR");
+        assertThat(jdbc.queryForObject("select count(*) from league_analysis.riot_match where match_id=?",Integer.class,UNRELATED)).isEqualTo(1);
+    }
+
     @Test void dryRunReportsSharedMatchesWithoutChangingAnyRows() throws Exception {
         match(UNRELATED, "other-puuid", "invented-puuid-2", 0);
         match(SHARED, TARGET, "invented-puuid-2", 1);

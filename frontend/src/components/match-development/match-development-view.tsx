@@ -1,10 +1,9 @@
 "use client";
 
-import { PRODUCT_NAME } from "../../lib/product";
-
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { DevelopmentFooter } from "../development-footer";
+import { SiteBrand } from "../site-brand";
 import { DeferredTimeline } from "./deferred-timeline";
 import { AreaTimeline } from "./area-timeline";
 import { TeamResults } from "./team-results";
@@ -122,9 +121,7 @@ export function MatchDevelopmentView({
         Skip to match
       </a>
       <header className="development-nav">
-        <Link className="development-brand" href="/">
-          {PRODUCT_NAME}
-        </Link>
+        <SiteBrand />
         <nav aria-label="Product navigation">
           <Link href="/">Home</Link>
           <Link href={runeState.historyRunId ? `/search?runId=${runeState.historyRunId}` : "/search"}>Match history</Link>

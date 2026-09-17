@@ -105,3 +105,36 @@
 
 .player-history__filter { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
 .entry-app .player-history__filter select { inline-size: auto; max-inline-size: 100%; min-block-size: 2.5rem; background: var(--development-surface); }
+
+.entry-app .player-search--combined { grid-template-columns: minmax(0, 1fr) 9.4rem; align-items: end; gap: 0.6rem; }
+.entry-app .player-search__field { position: relative; min-inline-size: 0; }
+.entry-app .player-search__riot-label { display: block; margin-block-end: 0.4rem; }
+.entry-app .player-search__input-group { display: flex; border: 1px solid var(--development-line); border-radius: 0.2rem; background: var(--development-surface); }
+.entry-app .player-search__input-group:focus-within { border-color: var(--development-accent); }
+.entry-app .player-search__identity-input { position: relative; flex: 1; min-inline-size: 0; display: flex; }
+.entry-app .player-search__input-group input { inline-size: 100%; min-inline-size: 0; border: 0; border-radius: 0; background: transparent; }
+.entry-app .player-search__identity-input input::placeholder { color: transparent; }
+.entry-app .player-search__placeholder { position: absolute; inset-inline: 0.7rem; inset-block: 0; display: flex; align-items: center; gap: 0.35rem; color: var(--development-muted); font-size: 0.86rem; white-space: nowrap; pointer-events: none; }
+.entry-app .player-search__placeholder > span { padding: 0.1rem 0.25rem; border-radius: 0.15rem; background: var(--development-raised); font-size: 0.8rem; }
+.entry-app .player-search__region { display: flex; flex: 0 0 5.4rem; align-items: stretch; margin: 0; border-inline-end: 1px solid var(--development-line); }
+.entry-app .player-search__region select { inline-size: calc(100% - 4px); margin-inline-end: 4px; min-block-size: 2.75rem; border: 0; padding-inline: 0.7rem 0.2rem; border-radius: 0.2rem 0 0 0.2rem; background: transparent; color: var(--development-text); font: inherit; font-size: 0.8rem; cursor: pointer; }
+.entry-app .player-search__region select option { background: var(--development-surface); }
+.entry-app .player-search__suggestions { position: absolute; z-index: 20; inset-inline: 0; inset-block-start: calc(100% + 0.3rem); border: 1px solid #454545; border-radius: 0.2rem; background: var(--development-panel); box-shadow: 0 8px 20px #0006; }
+.entry-app .player-search__suggestions-label { margin: 0; padding: 0.65rem 0.8rem; color: var(--development-muted); font-size: 0.72rem; }
+.entry-app .player-search__suggestions ul { margin: 0; padding: 0; list-style: none; }
+.entry-app .player-search__suggestions [role="option"] { display: flex; align-items: center; gap: 0.7rem; min-block-size: 3.6rem; padding: 0.45rem 0.8rem; border-block-start: 1px solid var(--development-line); cursor: pointer; }
+.entry-app .player-search__suggestions [aria-selected="true"] { background: var(--development-raised); box-shadow: inset 2px 0 var(--development-accent); }
+.entry-app .player-search__suggestion-icon { flex: 0 0 2.25rem; inline-size: 2.25rem; block-size: 2.25rem; overflow: hidden; border-radius: 0.2rem; background: var(--development-surface); font-size: 0.75rem; }
+.entry-app .player-search__suggestion-icon img { inline-size: 100%; block-size: 100%; object-fit: cover; }
+.entry-app .player-search__suggestion-identity { display: grid; gap: 0.15rem; min-inline-size: 0; }
+.entry-app .player-search__suggestion-identity strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.86rem; font-weight: 600; line-height: 1.3; }
+.entry-app .player-search__suggestion-identity strong span { margin-inline-start: 0.25rem; color: var(--development-muted); font-weight: 400; }
+.entry-app .player-search__suggestion-identity small { color: var(--development-muted); font-size: 0.71rem; }
+.entry-app .player-search__suggestions-empty { margin: 0; padding: 0.2rem 0.8rem 0.8rem; color: var(--development-muted); font-size: 0.76rem; line-height: 1.5; }
+.entry-app .player-search__error { grid-column: 1 / -1; margin: 0; color: var(--development-text); font-size: 0.78rem; line-height: 1.5; }
+@media (max-width: 35rem) {
+  .entry-app .player-search--combined { grid-template-columns: minmax(0, 1fr); }
+  .entry-app .player-search--combined > button { grid-column: 1; justify-content: center; }
+  .entry-app .player-search__input-group input { font-size: 1rem; }
+  .entry-app .player-search__suggestion-identity strong { font-size: 0.82rem; }
+}

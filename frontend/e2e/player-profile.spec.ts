@@ -35,7 +35,7 @@ test("cached player profile summarizes counted games and keeps all history rows 
 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Invented Player#DEMO");
   await expect(page.getByRole("heading", { name: "Player search", exact: true })).toHaveCount(0);
-  await expect(page.getByLabel("Game name")).toBeVisible();
+  await expect(page.getByLabel("Riot ID")).toBeVisible();
   await expect(page.getByLabel("Level 123")).toBeVisible();
   await expect(page.getByRole("button", { name: "Update", exact: true })).toBeDisabled();
   const solo = page.getByRole("region", { name: "Ranked Solo/Duo", exact: true });

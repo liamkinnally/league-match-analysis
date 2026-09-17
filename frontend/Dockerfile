@@ -21,6 +21,7 @@ RUN groupadd --system --gid 1001 nodejs \
 WORKDIR /app
 COPY --from=build --chown=nextjs:nodejs /workspace/frontend/.next/standalone ./
 COPY --from=build --chown=nextjs:nodejs /workspace/frontend/.next/static ./.next/static
+COPY --from=build --chown=nextjs:nodejs /workspace/frontend/public ./public
 
 ENV NODE_ENV=production \
     HOSTNAME=0.0.0.0 \

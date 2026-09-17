@@ -1,10 +1,11 @@
+import { isPlatform, matchIdPattern, type Platform } from "./regions";
 export type MatchSummary = {
   matchId: string; queueId: number; participantId: number; championName: string; championId: number;
   gameVersion: string; endItemIds: number[]; position: string; win: boolean; remake: boolean | null; startedAtMs: number; durationSeconds: number;
   kills: number; deaths: number; assists: number; cs: number; gold: number; timelineAvailable: boolean;
 };
 export type PlayerLookup = {
-  runId: string; gameName: string; tagLine: string; queueId: number;
+  runId: string; gameName: string; tagLine: string; platform: Platform; queueId: number;
   lastUpdated: string | null; nextRefreshAt: string | null; previousRunId: string | null; hasMore: boolean;
   status: "RUNNING" | "COMPLETE" | "EMPTY" | "PARTIAL" | "FAILED";
   message: string | null; retryNotBefore: string | null; matches: MatchSummary[];
@@ -50,13 +51,15 @@ function nullableDate(value: unknown): string | null {
 export function parseLookup(value: unknown): PlayerLookup {
   const r = record(value);
   const runId = text(r.runId);
+  const platform = r.platform ?? "NA1";
+  if (!isPlatform(platform)) throw new Error("INVALID_LOOKUP");
   if (!runIdPattern.test(runId) || !["RUNNING", "COMPLETE", "EMPTY", "PARTIAL", "FAILED"].includes(String(r.status))
       || !Array.isArray(r.matches) || r.matches.length > 20 || !isHistoryFilter(r.queueId)
       || (r.previousRunId !== null && (typeof r.previousRunId !== "string" || !runIdPattern.test(r.previousRunId)))) throw new Error("INVALID_LOOKUP");
   const unresolved = (r.status === "RUNNING" || r.status === "FAILED")
     && r.gameName === "" && r.tagLine === "";
   return {
-    runId, gameName: unresolved ? "" : text(r.gameName), tagLine: unresolved ? "" : text(r.tagLine, 16), status: r.status as PlayerLookup["status"],
+    runId, platform, gameName: unresolved ? "" : text(r.gameName), tagLine: unresolved ? "" : text(r.tagLine, 16), status: r.status as PlayerLookup["status"],
     message: typeof r.message === "string" && messages.has(r.message) ? r.message : null,
     retryNotBefore: retryDate(r.retryNotBefore), queueId: r.queueId,
     lastUpdated: nullableDate(r.lastUpdated), nextRefreshAt: nullableDate(r.nextRefreshAt),
@@ -66,7 +69,7 @@ export function parseLookup(value: unknown): PlayerLookup {
       const matchId = text(m.matchId);
       const participantId = number(m.participantId, 10);
       if (!isHistoryQueue(m.queueId) || (r.queueId !== 0 && m.queueId !== r.queueId)) throw new Error("INVALID_LOOKUP");
-      if (!/^NA1_\d+$/.test(matchId) || participantId < 1) throw new Error("INVALID_LOOKUP");
+      if ((!matchIdPattern.test(matchId) || !matchId.startsWith(`${platform}_`)) || participantId < 1) throw new Error("INVALID_LOOKUP");
       if (!Array.isArray(m.endItemIds) || m.endItemIds.length > 7) throw new Error("INVALID_LOOKUP");
       return { matchId, queueId: m.queueId, participantId, championName: text(m.championName), championId: number(m.championId),
         gameVersion: text(m.gameVersion), endItemIds: m.endItemIds.map((id) => number(id)),

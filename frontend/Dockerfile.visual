@@ -13,5 +13,6 @@ ENV LEAGUE_ANALYSIS_RUNTIME=verification
 
 RUN npm run build
 RUN cp -R .next/static .next/standalone/.next/static
+RUN cp -R public .next/standalone/public
 
 CMD ["npm", "run", "test:visual:raw"]

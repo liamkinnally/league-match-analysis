@@ -17,13 +17,12 @@ test("player lookup", async ({ page, request }) => {
   await expect(page.getByRole("complementary", { name: "About this site" })).toContainText("LoL Match Analysis");
   await expect(page.getByText("Prototype", { exact: true })).toHaveCount(0);
   await expect(page.getByText(/All supported queues/)).toHaveCount(0);
-  await page.getByLabel("Game name").fill(`Lookup${id}`);
-  await page.getByLabel("Tag line").fill("NA1");
+  await page.getByLabel("Riot ID").fill(`Lookup${id}#NA1`);
   await page.getByRole("button", { name: "Find matches" }).click();
-  await expect(page).toHaveURL(/search\?runId=/);
-  const runId = new URL(page.url()).searchParams.get("runId");
+  await expect(page).toHaveURL(new RegExp(`/summoners/na/Lookup${id}-NA1$`));
   const row = page.getByRole("link", { name: "Garen victory match development" });
   await expect(row).toBeVisible({ timeout: 20000 });
+  const runId = new URL((await row.getAttribute("href"))!, page.url()).searchParams.get("historyRunId");
   const populatedSearch = await search.boundingBox();
   const profile = await page.locator(".profile-header").boundingBox();
   expect(populatedSearch).not.toBeNull();
@@ -39,6 +38,14 @@ test("player lookup", async ({ page, request }) => {
   await page.screenshot({ path: "test-results/player-history-wide.png", fullPage: true });
   const response = await request.get(`/api/player-matches/${runId}`);
   expect(await response.text()).not.toMatch(/puuid|lookup-invented-participant|sourceCapture|payload_json/);
+  const suggestionQuery = new URLSearchParams({ platform: "NA1", q: `Lookup${id}` });
+  const suggestions = await request.get(`/api/player-suggestions?${suggestionQuery}`);
+  expect(suggestions.ok()).toBe(true);
+  expect(await suggestions.json()).toMatchObject({ suggestions: [{ gameName: `Lookup${id}`, tagLine: "NA1", platform: "NA1" }] });
+  expect(await suggestions.text()).not.toMatch(/puuid|sourceCapture|payload_json/);
+  suggestionQuery.set("platform", "EUW1");
+  const otherRegion = await request.get(`/api/player-suggestions?${suggestionQuery}`);
+  expect(await otherRegion.json()).toEqual({ suggestions: [] });
   await page.reload();
   await expect(row).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
@@ -59,8 +66,7 @@ test("player lookup", async ({ page, request }) => {
 test("failed live lookup keeps the independent sample working", async ({ page }) => {
   await installDeterministicGameAssets(page);
   await page.goto("/search");
-  await page.getByLabel("Game name").fill("Unavailable");
-  await page.getByLabel("Tag line").fill("NA1");
+  await page.getByLabel("Riot ID").fill("Unavailable#NA1");
   await page.getByRole("button", { name: "Find matches" }).click();
   await expect(page.getByText("Live lookup is unavailable. Explore the sample match.")).toBeVisible();
   await page.getByRole("link", { name: "Explore sample match" }).click();
@@ -91,14 +97,14 @@ test("slow history keeps navigation and completed matches usable, then recovers 
   await expect(row).toBeVisible();
   await expect(row.getByText("SUPPORT", { exact: true })).toBeVisible();
   await expect(page.locator(".player-lookup__status").getByRole("status")).toContainText("1 match is ready to open");
-  await page.getByLabel("Game name").fill("Another player");
+  await page.getByLabel("Riot ID").fill("Another player");
   stage = "failed";
   await expect(page.getByRole("region", { name: "Player lookup" }).getByRole("alert")).toBeVisible();
   await expect(row).toBeVisible();
   stage = "complete";
   await page.getByRole("button", { name: "Retry loading" }).click();
   await expect(page.locator(".player-lookup__status").getByRole("status")).toHaveText("1 match");
-  await expect(page.getByLabel("Game name")).toHaveValue("Another player");
+  await expect(page.getByLabel("Riot ID")).toHaveValue("Another player");
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);
 });
@@ -111,8 +117,7 @@ test("ARAM history filters, paginates, restores loaded pages, and upgrades a def
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
   await page.goto("/search");
-  await page.getByLabel("Game name").fill(`History${seed}`);
-  await page.getByLabel("Tag line").fill("NA1");
+  await page.getByLabel("Riot ID").fill(`History${seed}#NA1`);
   await page.getByRole("button", { name: "Find matches" }).click();
   const rows = page.getByRole("list", { name: "Recent match history" }).getByRole("listitem");
   await expect(page.getByLabel("Queue Type")).toHaveValue("0");
@@ -139,7 +144,7 @@ test("ARAM history filters, paginates, restores loaded pages, and upgrades a def
     expect([200, 202]).toContain(response.status());
     const { runId } = await response.json();
     // Rows render before the asynchronous router navigation commits the restorable page URL.
-    await expect(page).toHaveURL(new RegExp(`/search\\?runId=${runId}$`), { timeout: 40000 });
+    await expect(page).toHaveURL(new RegExp(`/summoners/na/History${seed}-NA1\\?runId=${runId}$`), { timeout: 40000 });
   };
   await historyAction(() => page.getByLabel("Queue Type").selectOption("450"));
   await expect(rows).toHaveCount(20, { timeout: 40000 });

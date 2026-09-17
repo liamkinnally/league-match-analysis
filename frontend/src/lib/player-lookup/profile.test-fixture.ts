@@ -1,5 +1,5 @@
 export const profileFixture = {
-  identity: { gameName: "Invented Player", tagLine: "DEMO" },
+  identity: { platform: "NA1" as const, gameName: "Invented Player", tagLine: "DEMO" },
   summoner: { status: "available", profileIconId: 29, summonerLevel: 123, revisionAt: "2026-09-14T10:00:00Z", fetchedAt: "2026-09-14T10:00:00Z", refreshing: false, stale: false, retryNotBefore: null, error: null },
   soloRank: { status: "ranked", tier: "EMERALD", division: "II", leaguePoints: 42, wins: 80, losses: 60, winRate: 57.1, period: "unknown", fetchedAt: "2026-09-14T10:01:00Z", refreshing: false, stale: false, retryNotBefore: null, error: null },
   flexRank: { status: "unranked", tier: null, division: null, leaguePoints: null, wins: null, losses: null, winRate: null, period: "unknown", fetchedAt: "2026-09-14T10:01:00Z", refreshing: false, stale: false, retryNotBefore: null, error: null },

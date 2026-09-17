@@ -806,8 +806,48 @@ button {
 }
 
 .development-brand {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 0.4rem;
+  min-block-size: 2.5rem;
   font-weight: 700;
   text-decoration: none;
+}
+
+.development-brand__mark {
+  flex: 0 0 1.75rem;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+}
+
+.development-brand__name {
+  color: var(--development-text);
+  white-space: nowrap;
+}
+
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+  .development-brand__name {
+    background: linear-gradient(110deg, var(--development-text) 12%, #d4def2 54%, var(--brand-accent) 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+}
+
+.development-brand:hover .development-brand__name {
+  color: var(--brand-accent-hover);
+  -webkit-text-fill-color: currentColor;
+}
+
+@media (forced-colors: active) {
+  .development-brand__name,
+  .development-brand:hover .development-brand__name {
+    background: none;
+    color: LinkText;
+    -webkit-text-fill-color: currentColor;
+  }
 }
 
 .development-nav nav {

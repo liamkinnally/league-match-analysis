@@ -135,3 +135,38 @@ it("keeps an unranked Flex result as a plain row even when the cached result is 
   expect(flex.querySelector("summary")).toBeNull();
   expect(within(flex).queryByText(/out of date/)).not.toBeInTheDocument();
 });
+
+it("opens ranked Flex details by default without repeating LP in its collapsible header", () => {
+  const input = props();
+  input.profile.flexRank = { ...input.profile.soloRank, tier: "DIAMOND", division: "IV", leaguePoints: 79 };
+  const view = render(<PlayerProfilePanel {...input} />);
+  const summary = screen.getByText("Ranked Flex", { selector: "summary span" }).closest("summary")!;
+  const flex = summary.closest("details")!;
+  expect.soft(summary).not.toHaveTextContent(/LP/);
+  expect.soft(flex).toHaveAttribute("open");
+  expect(within(flex).getByText("Diamond IV", { exact: true })).toBeVisible();
+  const points = within(flex).getByText("79", { exact: false, selector: ".profile-rank__lp" });
+  expect(points).toHaveTextContent("79 LP");
+  expect(points).toBeVisible();
+
+  fireEvent.click(summary);
+  expect(flex).not.toHaveAttribute("open");
+  expect(points).not.toBeVisible();
+  view.rerender(<PlayerProfilePanel {...input} now={1000} />);
+  expect(flex).not.toHaveAttribute("open");
+  fireEvent.click(summary);
+  expect(points).toBeVisible();
+});
+
+it.each([
+  ["unavailable", "Unavailable"],
+  ["loading", "Loading…"],
+] as const)("keeps %s Flex details collapsed with their status in the header", (status, label) => {
+  const input = props();
+  input.profile.flexRank.status = status;
+  render(<PlayerProfilePanel {...input} />);
+  const summary = screen.getByText("Ranked Flex", { selector: "summary span" }).closest("summary")!;
+  expect(summary.closest("details")).not.toHaveAttribute("open");
+  expect(summary).toHaveTextContent(label);
+  expect(summary).not.toHaveTextContent(/LP/);
+});

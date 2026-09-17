@@ -102,3 +102,14 @@ it("honors a server cooldown even when an earlier profile allowed recent collect
   await act(async () => hook.result.current.loadRecent());
   expect(fetcher.mock.calls.filter(([, options]) => options.method === "POST")).toHaveLength(1);
 });
+
+it("keeps identical Riot IDs isolated when the selected platform changes", async () => {
+  const fetcher = vi.fn().mockImplementation(async () => Response.json(profileFixture));
+  vi.stubGlobal("fetch", fetcher);
+  const hook = renderHook(({ platform }: { platform: "NA1" | "KR" }) => usePlayerProfile({ ...subject, platform }), { initialProps: { platform: "NA1" } });
+  await act(async () => {});
+  expect(hook.result.current.profile?.summoner.summonerLevel).toBe(123);
+  await act(async () => hook.rerender({ platform: "KR" }));
+  expect(hook.result.current.profile).toBeNull();
+  expect(hook.result.current.issue).not.toBeNull();
+});

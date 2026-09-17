@@ -23,12 +23,13 @@ public final class SummonerProfileClient {
     public record Profile(int iconId,Long level,Instant revisionAt) {}
     public Profile fetch(String platform,String puuid) {
         if(properties.apiKey().isBlank())throw new RiotGatewayException(RiotFailureCode.CONFIGURATION_MISSING,"Profile credentials unavailable");
-        if(!platform.equals(properties.platformRoute()))throw new IllegalArgumentException("UNSUPPORTED_PLATFORM");
+        if(!dev.leagueanalysis.ingestion.riot.domain.RiotPlatform.supported(platform))throw new IllegalArgumentException("UNSUPPORTED_PLATFORM");
         try {
             var request=HttpRequest.newBuilder(URI.create("https://"+platform.toLowerCase(Locale.ROOT)+".api.riotgames.com/lol/summoner/v4/summoners/by-puuid/"+URLEncoder.encode(puuid,StandardCharsets.UTF_8)))
                 .header("X-Riot-Token",properties.apiKey()).timeout(properties.requestTimeout()).GET().build();
             var response=transport.send(request,properties.requestTimeout(),Math.min(properties.maxResponseBytes(),65536));
             if(response.statusCode()==429)throw new RiotGatewayException(RiotFailureCode.RATE_LIMITED,"Profile cooling down",retry(response));
+            if(response.statusCode()==404)throw new RiotGatewayException(RiotFailureCode.NOT_FOUND,"Account not found on selected platform");
             if(response.statusCode()!=200)throw new RiotGatewayException(RiotFailureCode.UPSTREAM_UNAVAILABLE,"Profile unavailable");
             var body=json.readTree(response.body());var icon=body.path("profileIconId");
             if(!body.isObject()||!icon.isIntegralNumber()||!icon.canConvertToInt()||icon.intValue()<0)throw new IllegalArgumentException();

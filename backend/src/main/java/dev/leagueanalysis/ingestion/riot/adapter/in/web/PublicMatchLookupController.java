@@ -29,7 +29,8 @@ public class PublicMatchLookupController {
 
     @PostMapping
     public ResponseEntity<PublicMatchLookup> submit(@RequestBody Request request, HttpServletRequest servlet) {
-        var result = service.submit(request.gameName(), request.tagLine(), request.queueId() == null ? 0 : request.queueId(), servlet.getRemoteAddr());
+        var platform = dev.leagueanalysis.ingestion.riot.domain.RiotPlatform.parse(request.platform()).name();
+        var result = service.submit(request.gameName(), request.tagLine(), request.queueId() == null ? 0 : request.queueId(), platform, servlet.getRemoteAddr());
         return ResponseEntity.status(result.httpStatus()).header("Cache-Control", "no-store").body(result.lookup());
     }
 
@@ -63,8 +64,9 @@ public class PublicMatchLookupController {
         return ResponseEntity.badRequest().body(new Error("Enter a Riot game name and tag line.", null));
     }
 
-    public record Request(String gameName, String tagLine, Integer queueId) {
-        public Request(String gameName, String tagLine) { this(gameName, tagLine, null); }
+    public record Request(String gameName, String tagLine, Integer queueId, String platform) {
+        public Request(String gameName, String tagLine, Integer queueId) { this(gameName, tagLine, queueId, null); }
+        public Request(String gameName, String tagLine) { this(gameName, tagLine, null, null); }
     }
     public record Error(String message, Instant retryNotBefore) {}
 }

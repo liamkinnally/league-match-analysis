@@ -7,7 +7,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   const params = await searchParams;
   const runId = typeof params.runId === "string" ? params.runId : undefined;
   return <EntryShell active="search">
-    <PlayerSearchEntry initialRunId={runId} />
-    <Suspense fallback={<SampleMatchPending />}><SampleMatchLink /></Suspense>
+    <PlayerSearchEntry initialRunId={runId}>
+      <Suspense fallback={<SampleMatchPending />}><SampleMatchLink /></Suspense>
+    </PlayerSearchEntry>
   </EntryShell>;
 }

@@ -7,7 +7,9 @@ import java.util.UUID;
 /** Minimized public projection. Observation values deliberately carry no inferred LP deltas. */
 public record PlayerProfile(Identity identity, Summoner summoner, Rank soloRank, Rank flexRank,
         RecentRecord recentSolo, RankHistory rankHistory) {
-    public record Identity(String gameName, String tagLine) {}
+    public record Identity(String gameName, String tagLine, String platform) {
+        public Identity(String gameName, String tagLine) { this(gameName, tagLine, "NA1"); }
+    }
     public record Summoner(String status, Integer profileIconId, Long summonerLevel, Instant revisionAt,
             Instant fetchedAt, boolean refreshing, boolean stale, Instant retryNotBefore, String error) {}
     public record Rank(String status, String tier, String division, Integer leaguePoints, Integer wins,

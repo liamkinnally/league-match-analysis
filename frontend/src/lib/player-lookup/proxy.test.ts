@@ -6,7 +6,7 @@ import { GET } from "../../app/api/player-matches/[runId]/route";
 vi.mock("server-only", () => ({}));
 
 const runId = "00000000-0000-0000-0000-000000000001";
-const lookup = { runId, gameName: "Invented", tagLine: "NA1", status: "RUNNING", message: null, retryNotBefore: null, queueId: 420, lastUpdated: null, nextRefreshAt: null, previousRunId: null, hasMore: true, matches: [] };
+const lookup = { platform: "NA1", runId, gameName: "Invented", tagLine: "NA1", status: "RUNNING", message: null, retryNotBefore: null, queueId: 420, lastUpdated: null, nextRefreshAt: null, previousRunId: null, hasMore: true, matches: [] };
 beforeEach(() => vi.stubEnv("BACKEND_URL", "http://127.0.0.1:8080"));
 
 it("forwards only validated Riot ID fields and strips private upstream data", async () => {
@@ -18,7 +18,7 @@ it("forwards only validated Riot ID fields and strips private upstream data", as
   const request = fetcher.mock.calls[0][0] as Request;
   expect(request.headers.get("content-type")).toBe("application/json");
   expect(request.headers.has("authorization")).toBe(false);
-  expect(await request.text()).toBe('{"gameName":"Invented","tagLine":"NA1","queueId":0}');
+  expect(await request.text()).toBe('{"gameName":"Invented","tagLine":"NA1","queueId":0,"platform":"NA1"}');
 });
 it("validates before contacting backend and never proxies arbitrary paths", async () => {
   const fetcher = vi.fn(); vi.stubGlobal("fetch", fetcher);
@@ -120,7 +120,7 @@ it("forwards a supported queue and rejects provider pagination controls", async 
   vi.stubGlobal("fetch", fetcher);
   const post = (body: unknown) => POST(new Request("http://localhost", { method: "POST", body: JSON.stringify(body) }));
   expect((await post({ gameName: "Invented", tagLine: "NA1", queueId: 480 })).status).toBe(200);
-  expect(await (fetcher.mock.calls[0][0] as Request).json()).toEqual({ gameName: "Invented", tagLine: "NA1", queueId: 480 });
+  expect(await (fetcher.mock.calls[0][0] as Request).json()).toEqual({ gameName: "Invented", tagLine: "NA1", queueId: 480, platform: "NA1" });
   expect((await post({ gameName: "Invented", tagLine: "NA1", queueId: "480" })).status).toBe(400);
   expect((await post({ gameName: "Invented", tagLine: "NA1", count: 100 })).status).toBe(400);
 });
@@ -161,4 +161,22 @@ it("preserves nullable remake evidence without interpreting absence as a counted
   }
   expect(parseLookup({ ...lookup, matches: [match] }).matches[0].remake).toBeNull();
   expect(() => parseLookup({ ...lookup, matches: [{ ...match, remake: "false" }] })).toThrow();
+});
+
+it("passes the selected region and rejects unsupported regions before contacting the backend", async () => {
+  const fetcher = vi.fn().mockResolvedValue(Response.json({ ...lookup, platform: "KR" }));
+  vi.stubGlobal("fetch", fetcher);
+  const post = (platform: string) => POST(new Request("http://localhost/api/player-matches", { method: "POST", body: JSON.stringify({ gameName: "다른 이름", tagLine: "KR1", platform }) }));
+  expect((await post("KR")).status).toBe(200);
+  expect(await (fetcher.mock.calls[0][0] as Request).json()).toEqual({ gameName: "다른 이름", tagLine: "KR1", platform: "KR", queueId: 0 });
+  expect((await post("OTHER")).status).toBe(400);
+  expect(fetcher).toHaveBeenCalledTimes(1);
+});
+
+it("accepts regional match IDs and rejects a different platform inside a profile history", () => {
+  const match = { matchId: "KR_21", queueId: 420, participantId: 6, championName: "Garen", championId: 86,
+    gameVersion: "16.17.1", endItemIds: [], position: "TOP", win: true, startedAtMs: 1,
+    durationSeconds: 1800, kills: 8, deaths: 3, assists: 7, cs: 214, gold: 13800, timelineAvailable: false };
+  expect(parseLookup({ ...lookup, platform: "KR", matches: [match] }).matches[0].matchId).toBe("KR_21");
+  expect(() => parseLookup({ ...lookup, platform: "EUW1", matches: [match] })).toThrow();
 });

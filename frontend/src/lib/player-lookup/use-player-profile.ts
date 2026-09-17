@@ -27,7 +27,7 @@ function pause(signal: AbortSignal): Promise<void> {
   });
 }
 export function usePlayerProfile(subject: Subject | null) {
-  const identityKey = subject ? JSON.stringify([subject.gameName.toLowerCase(), subject.tagLine.toLowerCase()]) : "";
+  const identityKey = subject ? JSON.stringify([subject.gameName.toLowerCase(), subject.tagLine.toLowerCase(), subject.platform ?? "NA1"]) : "";
   const runId = subject?.runId, updatedAt = subject?.updatedAt, historyStatus = subject?.historyStatus;
   const [state, setState] = useState<{ key: string; profile: PlayerProfile | null; issue: Issue | null }>({ key: "", profile: null, issue: null });
   const [pending, setPending] = useState<"load" | "recent" | "older" | null>(null);
@@ -41,8 +41,8 @@ export function usePlayerProfile(subject: Subject | null) {
     const controller = new AbortController(); controllerRef.current = controller;
     const { signal } = controller;
     setPending(kind);
-    const [gameName, tagLine] = JSON.parse(identityKey) as [string, string];
-    const expected = { gameName, tagLine };
+    const [gameName, tagLine, platform] = JSON.parse(identityKey) as [string, string, import("./regions").Platform];
+    const expected = { gameName, tagLine, platform };
     const accept = (next: PlayerProfile, append = false) => {
       if (!sameProfileIdentity(next.identity, expected)) throw new Error("PROFILE_IDENTITY_MISMATCH");
       if (signal.aborted) return;

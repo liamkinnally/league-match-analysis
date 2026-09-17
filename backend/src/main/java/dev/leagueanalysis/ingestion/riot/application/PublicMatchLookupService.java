@@ -60,8 +60,11 @@ public class PublicMatchLookupService {
 
     public Submission submit(String gameName, String tagLine, String peer) { return submit(gameName, tagLine, 0, peer); }
 
-    public synchronized Submission submit(String gameName, String tagLine, int queueId, String peer) {
-        var command = firstPage(gameName, tagLine, queueId);
+    public Submission submit(String gameName, String tagLine, int queueId, String peer) {
+        return submit(gameName, tagLine, queueId, "NA1", peer);
+    }
+    public synchronized Submission submit(String gameName, String tagLine, int queueId, String platform, String peer) {
+        var command = firstPage(gameName, tagLine, queueId, platform);
         var running = active.get(key(command));
         if (running != null) return new Submission(202, get(running));
         var cached = store.findFresh(command, Instant.EPOCH);
@@ -71,7 +74,7 @@ public class PublicMatchLookupService {
 
     public synchronized Submission refresh(UUID runId, String peer) {
         var previous = pageCommand(runId);
-        var command = firstPage(previous.gameName(), previous.tagLine(), previous.queueId());
+        var command = firstPage(previous.gameName(), previous.tagLine(), previous.queueId(), previous.platform());
         var running = active.get(key(command));
         if (running != null) return new Submission(202, get(running));
         var next = store.latestRefresh(command).map(time -> time.plusSeconds(900)).filter(time -> time.isAfter(clock.instant()));
@@ -87,7 +90,7 @@ public class PublicMatchLookupService {
         if (page.status().equals("RUNNING")) return new Submission(202, page);
         if (!page.hasMore()) return new Submission(200, page);
         var command = new RiotIngestionCommand(previous.gameName(), previous.tagLine(), 20, previous.queueId(),
-                Math.addExact(previous.start(), previous.matchLimit()), previous.endTime(), runId);
+                Math.addExact(previous.start(), previous.matchLimit()), previous.endTime(), runId, previous.platform());
         var running = active.get(key(command));
         return running == null ? start(command, peer) : new Submission(202, get(running));
     }
@@ -95,13 +98,13 @@ public class PublicMatchLookupService {
     /** Bounded recent work shares history admission, identity verification, cooldown and round-robin turns. */
     public synchronized Submission recentRecord(UUID runId,String peer) {
         var previous=pageCommand(runId);
-        var command=new RiotIngestionCommand(previous.gameName(),previous.tagLine(),20,420,0,clock.instant().getEpochSecond(),runId);
-        var requestKey=new RequestKey("RECENT",profiles==null?previous.gameName().toLowerCase(Locale.ROOT):profiles.identityKey(runId),"",420,null);
+        var command=new RiotIngestionCommand(previous.gameName(),previous.tagLine(),20,420,0,clock.instant().getEpochSecond(),runId,previous.platform());
+        var requestKey=new RequestKey(previous.platform(),"RECENT",profiles==null?previous.gameName().toLowerCase(Locale.ROOT):profiles.identityKey(runId),"",420,null);
         var running=active.get(requestKey);
         if(running!=null)return new Submission(202,get(running));
         var next=store.latestRefresh(command).map(time->time.plusSeconds(900)).filter(time->time.isAfter(clock.instant()));
         if(next.isPresent())throw new PublicLookupException(429,"This account was updated recently. Try again after the indicated time.",next.get());
-        checkAdmission(peer);
+        checkAdmission(peer, previous.platform());
         if(profiles!=null)profiles.claimRecent(runId);
         var result=start(command,peer,requestKey);
         if(profiles!=null)profiles.bindRecent(runId,result.lookup().runId());
@@ -112,8 +115,8 @@ public class PublicMatchLookupService {
         return store.readPageCommand(runId).orElseThrow(() -> new PublicLookupException(404, "History page not found. Search again.", null));
     }
 
-    private RiotIngestionCommand firstPage(String name, String tag, int queue) {
-        var command = new RiotIngestionCommand(name, tag, 20, queue, 0, clock.instant().getEpochSecond(), null);
+    private RiotIngestionCommand firstPage(String name, String tag, int queue, String platform) {
+        var command = new RiotIngestionCommand(name, tag, 20, queue, 0, clock.instant().getEpochSecond(), null, platform);
         if (command.gameName().codePoints().anyMatch(Character::isISOControl)
                 || command.tagLine().codePoints().anyMatch(Character::isISOControl))
             throw new IllegalArgumentException("INVALID_RIOT_ID");
@@ -122,7 +125,7 @@ public class PublicMatchLookupService {
 
     private Submission start(RiotIngestionCommand command, String peer) {return start(command,peer,key(command));}
     private Submission start(RiotIngestionCommand command,String peer,RequestKey key) {
-        checkAdmission(peer);
+        checkAdmission(peer, command.platform());
         var now = clock.instant();
         var id = store.startPublicRun(command, now);
         active.put(key, id);
@@ -176,20 +179,20 @@ public class PublicMatchLookupService {
         var current = timeline(matchId);
         if (current.status().equals("AVAILABLE") || current.status().equals("RUNNING") || current.status().equals("UNAVAILABLE")) return current;
         if (current.retryNotBefore() != null && current.retryNotBefore().isAfter(clock.instant())) return current;
-        checkAdmission(peer);
+        checkAdmission(peer, dev.leagueanalysis.ingestion.riot.domain.RiotPlatform.fromMatchId(matchId).name());
         var now = clock.instant();
         var id = store.startTimelineRun(matchId, now);
-        var key = new RequestKey("TIMELINE", matchId, "", 0, null);
+        var key = new RequestKey(dev.leagueanalysis.ingestion.riot.domain.RiotPlatform.fromMatchId(matchId).name(), "TIMELINE", matchId, "", 0, null);
         active.put(key, id);
         enqueue(key, id, ingestion.timelineWork(id, matchId, store), now.plusSeconds(900));
         recordAdmission(peer, now);
         return timeline(matchId);
     }
 
-    private void checkAdmission(String peer) {
+    private void checkAdmission(String peer, String platform) {
         if (!enabled) throw new PublicLookupException(503, "Live lookup is unavailable. Explore the sample match.", null);
         var now = clock.instant();
-        store.latestCooldown().filter(time -> time.isAfter(now)).ifPresent(time -> {
+        store.latestCooldown(platform).filter(time -> time.isAfter(now)).ifPresent(time -> {
             throw new PublicLookupException(429, "Riot is cooling down. Try again after the indicated time.", time);
         });
         if (active.size() >= 5) throw busy(now.plusSeconds(2));
@@ -212,7 +215,7 @@ public class PublicMatchLookupService {
         synchronized (this) { if (!id.equals(active.get(key))) return; }
         try {
             if (!clock.instant().isBefore(deadline)) { fail(key, id, work); return; }
-            var cooldown = store.latestCooldown().filter(time -> time.isAfter(clock.instant()));
+            var cooldown = store.latestCooldown(key.platform()).filter(time -> time.isAfter(clock.instant()));
             if (cooldown.isPresent()) { defer(key, id, work, deadline, cooldown.get()); return; }
             if (work.step()) release(key, id);
             else enqueue(key, id, work, deadline);
@@ -250,12 +253,12 @@ public class PublicMatchLookupService {
                 ? lookup.withIdentity(pending.gameName(), pending.tagLine()) : lookup;
     }
     private static void validateMatchId(String id) {
-        if (id == null || !id.matches("NA1_[0-9]{1,20}")) throw new IllegalArgumentException("INVALID_MATCH_ID");
+        dev.leagueanalysis.ingestion.riot.domain.RiotPlatform.fromMatchId(id);
     }
     private PublicLookupException busy(Instant retry) { return new PublicLookupException(429, "Lookup is busy. Try again shortly.", retry); }
     private RequestKey key(RiotIngestionCommand c) {
-        return new RequestKey("HISTORY", c.gameName().toLowerCase(Locale.ROOT), c.tagLine().toLowerCase(Locale.ROOT), c.queueId(), c.previousRunId());
+        return new RequestKey(c.platform(), "HISTORY", c.gameName().toLowerCase(Locale.ROOT), c.tagLine().toLowerCase(Locale.ROOT), c.queueId(), c.previousRunId());
     }
-    private record RequestKey(String kind, String name, String tag, int queue, UUID previous) {}
+    private record RequestKey(String platform, String kind, String name, String tag, int queue, UUID previous) {}
     public record Submission(int httpStatus, PublicMatchLookup lookup) {}
 }

@@ -9,6 +9,7 @@ public interface PublicMatchLookupStore {
     Optional<PublicMatchLookup> readPublicRun(UUID runId);
     Optional<PublicMatchLookup> findFresh(RiotIngestionCommand command, Instant since);
     Optional<Instant> latestCooldown();
+    default Optional<Instant> latestCooldown(String platform) { return latestCooldown(); }
     default boolean matchesPageIdentity(UUID previousRunId, String puuid) { return false; }
     default Optional<RiotIngestionCommand> readPageCommand(UUID runId) { return Optional.empty(); }
     default Optional<PublicMatchLookup> findOlder(UUID previousRunId) { return Optional.empty(); }

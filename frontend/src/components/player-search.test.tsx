@@ -3,6 +3,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import PlayerSearch from "./player-search";
 vi.mock("../lib/player-lookup/use-player-profile", () => ({ usePlayerProfile: () => ({ profile: null, issue: null, loading: false, loadingRecent: false, loadingOlder: false, busy: false, reload: vi.fn(), loadRecent: vi.fn(), loadOlder: vi.fn() }) }));
 vi.mock("./player-profile", () => ({ PlayerProfileHeader: ({ identity, children }: { identity: { gameName: string; tagLine: string }; children?: import("react").ReactNode }) => <><h2>{identity.gameName}<span>#{identity.tagLine}</span></h2>{children}</>, PlayerProfilePanel: () => null }));
+vi.mock("../lib/game-assets/use-game-assets", async importOriginal => ({ ...await importOriginal<typeof import("../lib/game-assets/use-game-assets")>(), useCurrentProfileAssets: () => null }));
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 const runId = "00000000-0000-0000-0000-000000000001";
@@ -51,17 +52,16 @@ it("shows the retrieved Riot ID in the form without overwriting edits during pol
   vi.useFakeTimers();
   vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => Response.json(running)));
   await act(async () => render(<PlayerSearch initialRunId={runId} />));
-  expect(screen.getByLabelText("Game name")).toHaveValue("Invented");
-  fireEvent.change(screen.getByLabelText("Game name"), { target: { value: "다른 이름" } });
+  expect(screen.getByLabelText("Riot ID")).toHaveValue("Invented#NA1");
+  fireEvent.change(screen.getByLabelText("Riot ID"), { target: { value: "다른 이름" } });
   await act(async () => vi.advanceTimersByTime(2000));
-  expect(screen.getByLabelText("Game name")).toHaveValue("다른 이름");
+  expect(screen.getByLabelText("Riot ID")).toHaveValue("다른 이름");
 });
 
 it("keeps a submitted form busy until its response and shows progress outside the button", async () => {
   vi.stubGlobal("fetch", vi.fn(() => new Promise(() => {})));
   render(<PlayerSearch />);
-  fireEvent.change(screen.getByLabelText("Game name"), { target: { value: "Invented" } });
-  fireEvent.change(screen.getByLabelText("Tag line"), { target: { value: "NA1" } });
+  fireEvent.change(screen.getByLabelText("Riot ID"), { target: { value: "Invented#NA1" } });
   fireEvent.click(screen.getByRole("button", { name: "Find matches" }));
   expect(screen.getByRole("status")).toHaveTextContent("Starting player lookup");
   expect(screen.getByRole("button", { name: /Finding matches/ })).toBeDisabled();
@@ -71,8 +71,7 @@ it("shows new submission progress after a history loading failure", async () => 
   vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(Response.json({}, { status: 503 })).mockImplementation(() => new Promise(() => {})));
   await act(async () => render(<PlayerSearch initialRunId={runId} />));
   expect(screen.getByRole("alert")).toBeVisible();
-  fireEvent.change(screen.getByLabelText("Game name"), { target: { value: "Another player" } });
-  fireEvent.change(screen.getByLabelText("Tag line"), { target: { value: "NA1" } });
+  fireEvent.change(screen.getByLabelText("Riot ID"), { target: { value: "Another player#NA1" } });
   fireEvent.click(screen.getByRole("button", { name: "Find matches" }));
   expect(screen.getByRole("status")).toHaveTextContent("Starting player lookup");
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
@@ -91,10 +90,9 @@ it("polls at two-second intervals and exposes completed rows while lookup contin
 it("submits a Riot ID and stores the run in navigation history", async () => {
   vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => Response.json({ ...running, queueId: 0 }, { status: 202 })));
   render(<PlayerSearch />);
-  fireEvent.change(screen.getByLabelText("Game name"), { target: { value: "Invented" } });
-  fireEvent.change(screen.getByLabelText("Tag line"), { target: { value: "NA1" } });
+  fireEvent.change(screen.getByLabelText("Riot ID"), { target: { value: "Invented#NA1" } });
   await act(async () => fireEvent.click(screen.getByRole("button", { name: "Find matches" })));
-  expect(push).toHaveBeenCalledWith(`/search?runId=${runId}`);
+  expect(push).toHaveBeenCalledWith("/summoners/na/Invented-NA1");
 });
 it("shows the empty-result message", async () => {
   vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => Response.json({ ...running, status: "EMPTY", hasMore: false })));
@@ -128,7 +126,7 @@ it.each(["RUNNING", "FAILED"])("labels an unresolved %s lookup without rendering
   expect(screen.getByRole("heading", { name: "Find a player’s match history" })).toBeVisible();
   expect(screen.queryByRole("heading", { name: "#" })).not.toBeInTheDocument();
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-  expect(screen.getByLabelText("Game name")).toHaveValue("");
+  expect(screen.getByLabelText("Riot ID")).toHaveValue("");
   expect(screen.getByRole("button", { name: "Find matches" })).toBeEnabled();
 });
 
@@ -169,22 +167,21 @@ it("searches all queues before exposing a result filter and labels each match by
   });
   vi.stubGlobal("fetch", fetcher);
   render(<PlayerSearch />);
-  expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+  expect(screen.queryByRole("combobox", { name: "Queue Type" })).not.toBeInTheDocument();
   expect(screen.queryByText(/All supported queues/)).not.toBeInTheDocument();
-  fireEvent.change(screen.getByLabelText("Game name"), { target: { value: "Invented" } });
-  fireEvent.change(screen.getByLabelText("Tag line"), { target: { value: "NA1" } });
+  fireEvent.change(screen.getByLabelText("Riot ID"), { target: { value: "Invented#NA1" } });
   await act(async () => fireEvent.click(screen.getByRole("button", { name: "Find matches" })));
-  expect(JSON.parse(fetcher.mock.calls[0][1].body)).toEqual({ gameName: "Invented", tagLine: "NA1", queueId: 0 });
+  expect(JSON.parse(fetcher.mock.calls[0][1].body)).toEqual({ gameName: "Invented", tagLine: "NA1", platform: "NA1", queueId: 0 });
   expect(screen.getByLabelText("Queue Type")).toHaveValue("0");
   expect(within(screen.getByLabelText("Queue Type")).getAllByRole("option").map(option => option.textContent)).toEqual(["All queues", "Ranked Solo/Duo", "Ranked Flex", "Draft Pick", "Swiftplay", "ARAM"]);
   const rows = within(screen.getByRole("list", { name: "Recent match history" }));
   expect(rows.getByText("Ranked Solo/Duo")).toBeVisible();
   expect(rows.getByText("Swiftplay")).toBeVisible();
   // Editing a new search must not change whose history the result filter queries.
-  fireEvent.change(screen.getByLabelText("Game name"), { target: { value: "Another" } });
+  fireEvent.change(screen.getByLabelText("Riot ID"), { target: { value: "Another#NA1" } });
   await act(async () => fireEvent.change(screen.getByLabelText("Queue Type"), { target: { value: "480" } }));
   const posts = fetcher.mock.calls.filter(([url]) => url === "/api/player-matches");
-  expect(JSON.parse(posts[1][1].body)).toEqual({ gameName: "Invented", tagLine: "NA1", queueId: 480 });
+  expect(JSON.parse(posts[1][1].body)).toEqual({ gameName: "Invented", tagLine: "NA1", platform: "NA1", queueId: 480 });
   expect(screen.getByLabelText("Queue Type")).toHaveValue("480");
   expect(within(screen.getByRole("list", { name: "Recent match history" })).queryByText("Ranked Solo/Duo")).not.toBeInTheDocument();
   await act(async () => fireEvent.click(screen.getByRole("button", { name: "Find matches" })));
@@ -200,16 +197,16 @@ it("keeps an empty raw page scoped to that page when older supported matches may
   expect(screen.queryByText("No supported matches found on NA1.")).not.toBeInTheDocument();
 });
 
-it("uses empty Doublelift/NA01 examples and never relabels loaded identity from edited inputs", async () => {
+it("uses a full Riot ID example and never relabels loaded identity from edited inputs", async () => {
   vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => Response.json({ ...running, status: "EMPTY", hasMore: false })));
   const empty = render(<PlayerSearch />);
-  expect(screen.getByLabelText("Game name")).toHaveAttribute("placeholder", "ex. Doublelift");
-  expect(screen.getByLabelText("Tag line")).toHaveAttribute("placeholder", "NA01");
-  expect(screen.getByLabelText("Game name")).toHaveValue("");
-  expect(screen.getByLabelText("Tag line")).toHaveValue("");
+  expect(screen.getByLabelText("Riot ID")).toHaveAttribute("placeholder", "Game name + #NA1");
+  fireEvent.change(screen.getByRole("combobox", { name: "Region" }), { target: { value: "KR" } });
+  expect(screen.getByLabelText("Riot ID")).toHaveAttribute("placeholder", "Game name + #KR1");
+  expect(screen.getByLabelText("Riot ID")).toHaveValue("");
   empty.unmount();
   await act(async () => render(<PlayerSearch initialRunId={runId} />));
-  fireEvent.change(screen.getByLabelText("Game name"), { target: { value: "Edited search" } });
+  fireEvent.change(screen.getByLabelText("Riot ID"), { target: { value: "Edited search#NA1" } });
   expect(screen.getByRole("heading", { name: "Invented#NA1" })).toBeVisible();
   expect(screen.queryByRole("heading", { name: /Edited search/ })).not.toBeInTheDocument();
 });

@@ -32,22 +32,35 @@ class CurrentRankServiceTest {
                 new ObjectMapper(),now::get,pending::add);
     }
     void drain() { while (!pending.isEmpty()) pending.remove().run(); }
+    @Test void rateLimitedKoreaCannotBlockOtherPlatformsRankLookups() {
+        status=429; headers=Map.of("Retry-After",List.of("120"));
+        var service=service(); service.load("KR_1"); drain();
+        status=200; body="[]";
+        for(String platform:List.of("NA1","EUW1","EUN1")) {
+            service.load(platform+"_1"); drain();
+            assertThat(service.load(platform+"_1").orElseThrow().players().getFirst().status()).isEqualTo("unranked");
+        }
+        assertThat(service.load("KR_1").orElseThrow().players().getFirst().error()).isEqualTo("RATE_LIMITED");
+        assertThat(requests).extracting(request -> request.uri().getHost())
+                .containsExactly("kr.api.riotgames.com","na1.api.riotgames.com","euw1.api.riotgames.com","eun1.api.riotgames.com");
+    }
+
     @Test void soloAndFlexShareOneProviderResponseAndRefresh() {
-        query=id -> Optional.of(new RankRosterQuery.Roster(id,id.equals("NA1_flex") ? 440 : 420,
+        query=id -> Optional.of(new RankRosterQuery.Roster(id,id.equals("NA1_2") ? 440 : 420,
                 List.of(new RankRosterQuery.Player(1,"private-test-puuid"))));
         body="[{\"queueType\":\"RANKED_SOLO_5x5\",\"tier\":\"GOLD\",\"rank\":\"II\",\"leaguePoints\":42,\"wins\":12,\"losses\":8},{\"queueType\":\"RANKED_FLEX_SR\",\"tier\":\"SILVER\",\"rank\":\"I\",\"leaguePoints\":19,\"wins\":3,\"losses\":2}]";
         var service=service();
-        service.load("NA1_solo"); service.load("NA1_flex");
+        service.load("NA1_1"); service.load("NA1_2");
         assertThat(pending).hasSize(1); drain();
         assertThat(requests).hasSize(1);
-        assertThat(service.load("NA1_solo").orElseThrow().players().getFirst().tier()).isEqualTo("GOLD");
-        assertThat(service.load("NA1_flex").orElseThrow().players().getFirst().tier()).isEqualTo("SILVER");
+        assertThat(service.load("NA1_1").orElseThrow().players().getFirst().tier()).isEqualTo("GOLD");
+        assertThat(service.load("NA1_2").orElseThrow().players().getFirst().tier()).isEqualTo("SILVER");
     }
     @Test void queuedPlayersShareAuthenticationFailureAndItsExactBackoff() {
         var roster = java.util.stream.IntStream.rangeClosed(1, 10)
                 .mapToObj(id -> new RankRosterQuery.Player(id, "private-test-" + id)).toList();
         query = id -> Optional.of(new RankRosterQuery.Roster(id, 420,
-                id.equals("NA1_other") ? List.of(new RankRosterQuery.Player(1, "private-new-player")) : roster));
+                id.equals("NA1_3") ? List.of(new RankRosterQuery.Player(1, "private-new-player")) : roster));
         status = 403;
         var service = service();
         service.load("NA1_1");
@@ -58,7 +71,7 @@ class CurrentRankServiceTest {
             assertThat(player.status()).isEqualTo("unavailable");
             assertThat(player.error()).isEqualTo("AUTH_UNAVAILABLE");
         });
-        assertThat(service.load("NA1_other").orElseThrow().players().getFirst().error())
+        assertThat(service.load("NA1_3").orElseThrow().players().getFirst().error())
                 .isEqualTo("AUTH_UNAVAILABLE");
         now.addAndGet(59_999);
         service.load("NA1_1");
@@ -152,6 +165,6 @@ class CurrentRankServiceTest {
         now.addAndGet(61_000);service.load("NA1_1");drain();assertThat(requests).hasSize(2);
         assertThat(service.load("missing")).isEmpty();
         assertThat(service.load("OTHER_1").orElseThrow().queueType()).isNull();
-        assertThat(service.load("EUW1_1").orElseThrow().players().getFirst().status()).isEqualTo("unavailable");
+        assertThat(service.load("ZZ1_1").orElseThrow().players().getFirst().status()).isEqualTo("unavailable");
     }
 }

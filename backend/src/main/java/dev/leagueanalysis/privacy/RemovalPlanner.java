@@ -65,7 +65,7 @@ public final class RemovalPlanner {
 
         var matches = new HashSet<String>();
         for (var payload : data.payloads.values()) collectHashedStrings(payload.body, initialMatches, matches);
-        for (String match : matches) if (!match.matches("NA1_[0-9]+"))
+        for (String match : matches) if (!match.matches("(NA1|EUW1|EUN1|KR)_[0-9]+"))
             throw new IllegalStateException("UNSUPPORTED_CAPTURE_MATCH_IDENTIFIER");
         data.participants.stream().filter(p -> subjects.contains(p.puuid)).map(p -> p.match).forEach(matches::add);
         for (var row : data.matches) if (initialMatches.contains(PrivacyHash.of(row.match))) matches.add(row.match);
@@ -171,7 +171,7 @@ public final class RemovalPlanner {
             } else {
                 String name = null, tag = null;
                 for (var e : evidence) { if (e.person.name != null) name = e.person.name; if (e.person.tag != null) tag = e.person.tag; }
-                reanchors.add(new Reanchor(identity.puuid, evidence.getLast().capture.id, name, tag,
+                reanchors.add(new Reanchor(identity.puuid, evidence.getLast().capture.id, name, tag, evidence.getLast().capture.platform,
                         evidence.getFirst().capture.at, evidence.getLast().capture.at));
             }
         }
@@ -215,9 +215,9 @@ public final class RemovalPlanner {
         for (var item : changes.items) jdbc.update("delete from league_analysis.ingestion_item where ingestion_run_id=? and match_id=?", item.run, item.match);
         for (String puuid : changes.identities) jdbc.update("delete from league_analysis.riot_identity where puuid=?", puuid);
         for (var row : changes.reanchors) jdbc.update("""
-                update league_analysis.riot_identity set last_source_capture_id=?,game_name=?,tag_line=?,
+                update league_analysis.riot_identity set last_source_capture_id=?,game_name=?,tag_line=?,platform_route=?,
                     first_observed_at=?,last_observed_at=? where puuid=?
-                """, row.capture, row.name, row.tag, row.first, row.last, row.puuid);
+                """, row.capture, row.name, row.tag, row.platform, row.first, row.last, row.puuid);
         for (UUID id : changes.captures) jdbc.update("delete from league_analysis.source_capture where id=?", id);
         for (UUID id : changes.payloads) jdbc.update("delete from league_analysis.source_payload where id=?", id);
         for (UUID id : changes.runs) jdbc.update("delete from league_analysis.ingestion_run where id=?", id);
@@ -229,8 +229,8 @@ public final class RemovalPlanner {
             UUID id = rs.getObject(1, UUID.class); payloads.put(id, new Payload(id, rs.getString(2), json.readTree(rs.getString(3))));
         });
         var captures = new TreeMap<UUID, Capture>();
-        jdbc.query("select id,ingestion_run_id,source_payload_id,source_kind,resource_key,captured_at from league_analysis.source_capture", rs -> {
-            UUID id = rs.getObject(1, UUID.class); captures.put(id, new Capture(id, rs.getObject(2, UUID.class), rs.getObject(3, UUID.class), rs.getString(4), rs.getString(5), rs.getObject(6, OffsetDateTime.class)));
+        jdbc.query("select id,ingestion_run_id,source_payload_id,source_kind,resource_key,captured_at,platform_route from league_analysis.source_capture", rs -> {
+            UUID id = rs.getObject(1, UUID.class); captures.put(id, new Capture(id, rs.getObject(2, UUID.class), rs.getObject(3, UUID.class), rs.getString(4), rs.getString(5), rs.getObject(6, OffsetDateTime.class), rs.getString(7)));
         });
         var identities = jdbc.query("select puuid,game_name,tag_line,last_source_capture_id from league_analysis.riot_identity order by puuid",
                 (rs,n) -> new Identity(rs.getString(1),rs.getString(2),rs.getString(3),rs.getObject(4,UUID.class)));
@@ -271,7 +271,7 @@ public final class RemovalPlanner {
     }
     private static boolean isMatch(String kind) { return kind.equals("MATCH_DETAIL") || kind.equals("MATCH_TIMELINE"); }
     private static void addMatch(Set<String> matches, String match) {
-        if (match == null || !match.matches("NA1_[0-9]+")) throw new IllegalStateException("UNSUPPORTED_CAPTURE_MATCH_IDENTIFIER");
+        if (match == null || !match.matches("(NA1|EUW1|EUN1|KR)_[0-9]+")) throw new IllegalStateException("UNSUPPORTED_CAPTURE_MATCH_IDENTIFIER");
         matches.add(match);
     }
     private static void addAlias(Set<String> aliases, String name, String tag) {
@@ -315,7 +315,7 @@ public final class RemovalPlanner {
     }
     record Changes(Set<UUID> runs, Set<UUID> captures, Set<UUID> payloads, Set<String> identities, List<Item> items, List<Reanchor> reanchors) {}
     record Payload(UUID id,String kind,JsonNode body) {}
-    record Capture(UUID id,UUID run,UUID payload,String kind,String resource,OffsetDateTime at) {}
+    record Capture(UUID id,UUID run,UUID payload,String kind,String resource,OffsetDateTime at,String platform) {}
     record Identity(String puuid,String name,String tag,UUID capture) {}
     record Participant(String match,String puuid) {}
     record Run(UUID id,String name,String tag,String puuid) {}
@@ -323,7 +323,7 @@ public final class RemovalPlanner {
     record Match(String match,UUID detail,UUID timeline) {}
     record Person(String puuid,String name,String tag) {}
     record IdentityEvidence(Capture capture,Person person) {}
-    record Reanchor(String puuid,UUID capture,String name,String tag,OffsetDateTime first,OffsetDateTime last) {}
+    record Reanchor(String puuid,UUID capture,String name,String tag,String platform,OffsetDateTime first,OffsetDateTime last) {}
     record Data(Map<UUID,Payload> payloads,Map<UUID,Capture> captures,List<Identity> identities,List<Participant> participants,
                 List<Run> runs,List<Item> items,List<Match> matches,List<String> rows) {
         Set<String> verifiedPuuids() {

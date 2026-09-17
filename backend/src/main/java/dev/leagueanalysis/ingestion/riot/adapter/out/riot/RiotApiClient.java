@@ -29,8 +29,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 public final class RiotApiClient implements RiotGateway {
-    private static final String HOST = "americas.api.riotgames.com";
-    private static final Pattern MATCH_ID = Pattern.compile("NA1_[0-9]+");
+    private dev.leagueanalysis.ingestion.riot.domain.RiotPlatform platform = dev.leagueanalysis.ingestion.riot.domain.RiotPlatform.NA1;
     private static final Set<Integer> RETRYABLE_STATUS = Set.of(500, 502, 503, 504);
     private static final Set<String> RETAINED_HEADERS = Set.of(
             "content-type",
@@ -72,9 +71,18 @@ public final class RiotApiClient implements RiotGateway {
     }
 
     @Override
+    public RiotGateway forPlatform(String platform) {
+        var client = new RiotApiClient(properties, transport, json, clock, sleeper);
+        client.platform = dev.leagueanalysis.ingestion.riot.domain.RiotPlatform.parse(platform);
+        client.stopOnRateLimit = stopOnRateLimit;
+        return client;
+    }
+
+    @Override
     public RiotGateway forPublicLookup() {
         var client = new RiotApiClient(properties, transport, json, clock, sleeper);
         client.stopOnRateLimit = true;
+        client.platform = platform;
         return client;
     }
 
@@ -123,7 +131,7 @@ public final class RiotApiClient implements RiotGateway {
         }
         var ids = new ArrayList<String>();
         for (var node : payload) {
-            if (!node.isString() || !MATCH_ID.matcher(node.stringValue()).matches()) {
+            if (!node.isString() || !validHistoryId(node.stringValue())) {
                 throw failure(RiotFailureCode.INVALID_RESPONSE, "Riot response is invalid");
             }
             ids.add(node.stringValue());
@@ -151,7 +159,7 @@ public final class RiotApiClient implements RiotGateway {
         if (properties.apiKey().isBlank()) {
             throw failure(RiotFailureCode.CONFIGURATION_MISSING, "Riot API key is not configured");
         }
-        var uri = URI.create("https://" + HOST + path + (query == null ? "" : "?" + query));
+        var uri = URI.create("https://" + platform.regionalRoute().toLowerCase(Locale.ROOT) + ".api.riotgames.com" + path + (query == null ? "" : "?" + query));
         var request = HttpRequest.newBuilder(uri)
                 .timeout(properties.requestTimeout())
                 .header("Accept", "application/json")
@@ -238,8 +246,8 @@ public final class RiotApiClient implements RiotGateway {
                 resourceKey,
                 clock.instant(),
                 response.statusCode(),
-                properties.regionalRoute(),
-                properties.platformRoute(),
+                platform.regionalRoute(),
+                platform.name(),
                 providerGameVersion,
                 sha256(body),
                 body.length,
@@ -288,8 +296,30 @@ public final class RiotApiClient implements RiotGateway {
         }
     }
 
+    @Override
+    public dev.leagueanalysis.ingestion.riot.domain.PlatformAccountProfile verifyPlatformAccount(String puuid) {
+        var profile = new SummonerProfileClient(properties, transport, json, clock).fetch(platform.name(), puuid);
+        return new dev.leagueanalysis.ingestion.riot.domain.PlatformAccountProfile(profile.iconId(), profile.level(), profile.revisionAt());
+    }
+
+    private boolean validHistoryId(String id) {
+        if (id == null || !id.matches("[A-Z0-9]{2,4}_[0-9]{1,20}")) return false;
+        String prefix = id.substring(0, id.indexOf('_'));
+        return switch (platform.regionalRoute()) {
+            case "AMERICAS" -> Set.of("NA1", "BR1", "LA1", "LA2").contains(prefix);
+            case "EUROPE" -> Set.of("EUW1", "EUN1", "TR1", "RU", "ME1").contains(prefix);
+            case "ASIA" -> Set.of("KR", "JP1").contains(prefix);
+            default -> false;
+        };
+    }
+
+    private boolean validMatchId(String id) {
+        try { return dev.leagueanalysis.ingestion.riot.domain.RiotPlatform.fromMatchId(id) == platform; }
+        catch (IllegalArgumentException invalid) { return false; }
+    }
+
     private void validateMatchId(String matchId) {
-        if (matchId == null || !MATCH_ID.matcher(matchId).matches()) {
+        if (!validMatchId(matchId)) {
             throw failure(RiotFailureCode.INVALID_INPUT, "Match ID is invalid");
         }
     }

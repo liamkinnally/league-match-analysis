@@ -56,6 +56,10 @@ class PrivacyAwareIngestionIntegrationTest {
                         document(SourceKind.ACCOUNT, id.gameName() + "#" + id.tagLine(),
                                 "{\"puuid\":\"" + accountPuuid + "\"}"));
             }
+            @Override public dev.leagueanalysis.ingestion.riot.domain.PlatformAccountProfile verifyPlatformAccount(String puuid) {
+                calls.add("platform");
+                return null;
+            }
             @Override public RiotMatchList listRankedMatchIds(String puuid, int count) {
                 calls.add("list");
                 return new RiotMatchList(List.of(SHARED, UNRELATED), document(SourceKind.MATCH_LIST, puuid,
@@ -93,6 +97,21 @@ class PrivacyAwareIngestionIntegrationTest {
         assertThat(gateway.calls).containsExactly("account");
         assertThat(count("ingestion_run")).isZero();
         assertThat(count("source_capture")).isZero();
+    }
+
+    @Test void accountExcludedBetweenProviderStagesIsDiscardedBeforePlatformVerification() {
+        UUID id = service.submit("NewName", "NA1", "peer").lookup().runId();
+        work.remove().run();
+        exclude("puuid", PrivacyHash.of(PublicLookupGatewayFixture.PUUID));
+        work.remove().run();
+
+        assertThatThrownBy(() -> service.get(id)).isInstanceOfSatisfying(PublicLookupException.class,
+                exception -> assertThat(exception.status()).isEqualTo(404));
+        assertThat(gateway.calls).containsExactly("account");
+        assertThat(count("ingestion_run")).isZero();
+        assertThat(count("source_capture")).isZero();
+        assertThat(count("source_payload")).isZero();
+        assertThat(count("riot_identity")).isZero();
     }
 
     @Test void reusedAliasDoesNotExcludeDifferentVerifiedPuuidOrItsMatches() {
