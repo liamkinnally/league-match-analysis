@@ -50,7 +50,7 @@ test("packaged application serves the persisted sample through the browser", asy
   await expect(page.getByRole("heading", { name: "Gold difference over time" })).toBeVisible();
 
   await page.setViewportSize({ width: 390, height: 844 });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 
   await page.screenshot({ path: "test-results/package-smoke-narrow.png", fullPage: true });
 });
