@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: `Privacy Policy — ${PRODUCT_NAME}` };
 
 export default function PrivacyPage() {
-  return <PolicyPage title="Privacy Policy">
+  return <PolicyPage title="Privacy Policy" updated="September 22, 2026">
     <p>{PRODUCT_NAME} is a League of Legends match-analysis app. This policy describes the data it retrieves and stores.</p>
 
     <h2>Information the app uses</h2>
@@ -19,6 +19,9 @@ export default function PrivacyPage() {
     <h2>Hosting and external requests</h2>
     <p>The hosted app uses Vercel for its frontend and Railway for its backend and database. These providers process network requests and may keep operational logs, including IP addresses, request URLs and technical metadata. The app also loads League images from Riot’s Data Dragon and other game-asset CDNs; those requests disclose your IP address to the asset host.</p>
     <p>See the privacy information from <a href="https://vercel.com/legal/privacy-policy">Vercel</a>, <a href="https://railway.com/legal/privacy">Railway</a> and <a href="https://www.riotgames.com/en/privacy-notice">Riot Games</a>.</p>
+
+    <h2>Website analytics</h2>
+    <p>The production site uses Vercel Web Analytics to measure visits and page views without tracking cookies. Vercel uses technical request information to estimate daily visitors. Before sending analytics page URLs, the app removes query strings and fragments and replaces player and match identifiers with route placeholders. Local development and preview deployments do not collect these analytics.</p>
 
     <h2>Cookies, accounts and advertising</h2>
     <p>The app has no user accounts, advertising or payments, and does not intentionally set tracking cookies. This app does not sell player data. Hosting and security infrastructure may process technical information needed to deliver and protect the site.</p>

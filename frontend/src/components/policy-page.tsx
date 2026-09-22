@@ -2,11 +2,11 @@ import type { ReactNode } from "react";
 import { publicContactEmail } from "../lib/prototype-config";
 import { EntryShell } from "./entry-shell";
 
-export function PolicyPage({ title, children }: { title: string; children: ReactNode }) {
+export function PolicyPage({ title, children, updated = "September 16, 2026" }: { title: string; children: ReactNode; updated?: string }) {
   return <EntryShell>
     <article className="policy-page">
       <h1>{title}</h1>
-      <p className="policy-date">Updated September 16, 2026</p>
+      <p className="policy-date">Updated {updated}</p>
       {children}
       <h2>Contact</h2>
       <PolicyContact />

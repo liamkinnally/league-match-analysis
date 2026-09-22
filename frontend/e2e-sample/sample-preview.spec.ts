@@ -1,6 +1,25 @@
 import { expect, test } from "@playwright/test";
 import { installDeterministicGameAssets } from "../e2e/support/game-assets";
 
+test("sample preview shows the analytics notice without collecting visits", async ({ page }) => {
+  const analyticsRequests: string[] = [];
+  page.on("request", request => {
+    if (/vercel-scripts\.com|\/_vercel\/insights\//.test(request.url())) analyticsRequests.push(request.url());
+  });
+  await page.goto("/privacy");
+  await expect(page.getByRole("heading", { name: "Website analytics" })).toBeVisible();
+  await expect(page.getByText("Updated September 22, 2026")).toBeVisible();
+  await expect(page.getByText(/Local development and preview deployments do not collect these analytics/)).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.getByRole("heading", { name: "Website analytics" }).scrollIntoViewIfNeeded();
+  await page.screenshot({ path: "test-results/analytics-privacy-mobile.png" });
+  await page.goto("/terms");
+  await expect(page.getByText("Updated September 16, 2026")).toBeVisible();
+  await expect(page.locator('script[data-sdkn^="@vercel/analytics"]')).toHaveCount(0);
+  expect(analyticsRequests).toEqual([]);
+});
+
 test("tokenless sample supports match selection and URL restoration", async ({ page, request }) => {
   await installDeterministicGameAssets(page);
   const liveRequests: string[] = [];
