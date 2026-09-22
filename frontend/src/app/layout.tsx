@@ -10,6 +10,7 @@ import "../components/match-development/rune-view.css";
 import "../components/player-profile.css";
 import { PRODUCT_NAME } from "../lib/product";
 import { SiteBanner } from "../components/site-banner";
+import { SiteAnalytics } from "../components/site-analytics";
 
 const description = "Explore League of Legends match history, timelines, and player comparisons.";
 const socialCard = {
@@ -48,5 +49,8 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
-  return <html lang="en"><body className="site-shell"><SiteBanner />{children}</body></html>;
+  const analyticsEnabled = process.env.VERCEL === "1" && process.env.VERCEL_ENV === "production"
+    && process.env.LEAGUE_ANALYSIS_RUNTIME !== "local"
+    && process.env.LEAGUE_ANALYSIS_RUNTIME !== "verification";
+  return <html lang="en"><body className="site-shell"><SiteBanner />{children}<SiteAnalytics enabled={analyticsEnabled} /></body></html>;
 }
