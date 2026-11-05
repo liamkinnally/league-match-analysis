@@ -49,7 +49,7 @@ it("revalidates successful metadata and labels the same-patch cached source stal
   expect((await resolveGameAssetCatalog("16.19.1", { includeRunes: true })).runePerformanceState?.status).toBe("available");
 });
 it("keeps performance identities available when no matching Data Dragon build or layout exists", async () => {
-  vi.stubGlobal("fetch", vi.fn(async (url: string) => url.endsWith("versions.json") ? Response.json(["16.18.1"]) : url.endsWith("/perks.json") ? Response.json(perks) : new Response("missing", { status: 404 })));
+  vi.stubGlobal("fetch", vi.fn(async (url: string) => url.endsWith("versions.json") ? Response.json(["16.18.1"]) : url.endsWith("/json/") ? Response.json([{ type: "directory", name: "16.19" }]) : url.endsWith("/perks.json") ? Response.json(perks) : new Response("missing", { status: 404 })));
   const catalog = await resolveGameAssetCatalog("16.19.1", { includeRunes: true });
   expect(catalog.assetVersion).toBe("");
   expect(catalog.runePerformanceState?.status).toBe("available");
@@ -90,4 +90,65 @@ it("keeps the previous source hash and descriptors explicitly stale when refresh
   expect(stale.runePerformanceState?.sha256).toBe(first.runePerformanceState?.sha256);
   expect(stale.runePerformance?.["8437"].metrics).toEqual(first.runePerformance?.["8437"].metrics);
   expect(stale.runePerformanceState?.retryAt).toBe(new Date(86_561_000).toISOString());
+});
+
+it("never fetches invented patch paths through the public rune catalog route", async () => {
+  const index = "https://raw.communitydragon.org/json/";
+  const fetcher = vi.fn(async (url: string) => {
+    if (url.endsWith("/versions.json")) return Response.json(["16.18.1"]);
+    if (url === index) return Response.json([{ type: "directory", name: "16.19" }, { type: "file", name: "802.1" }]);
+    return new Response(null, { status: 404 });
+  });
+  vi.stubGlobal("fetch", fetcher);
+  const { GET } = await import("../../app/api/game-assets/route");
+  for (const versions of ["800.1,801.1,802.1", "803.1,804.1"]) {
+    const response = await GET(new Request("http://localhost/api/game-assets?versions=" + versions + "&runes=1"));
+    expect(response.status).toBe(200);
+    expect(Object.values(await response.json())).toEqual(versions.split(",").map(() => null));
+  }
+  expect(fetcher.mock.calls.map(([url]) => url)).toEqual([
+    "https://ddragon.leagueoflegends.com/api/versions.json", index,
+  ]);
+});
+
+it("discovers a newly published CommunityDragon patch with one shared index refresh", async () => {
+  const index = "https://raw.communitydragon.org/json/";
+  const now = vi.spyOn(Date, "now").mockReturnValue(100_000);
+  let published = false;
+  let outage = false;
+  const fetcher = vi.fn(async (url: string) => {
+    if (url.endsWith("/versions.json")) return Response.json(["16.18.1"]);
+    if (url === index) {
+      if (outage) return new Response(null, { status: 503 });
+      return Response.json(published ? [{ type: "directory", name: "16.19" }] : []);
+    }
+    return Response.json(fetchData(url));
+  });
+  vi.stubGlobal("fetch", fetcher);
+  const { GET } = await import("../../app/api/game-assets/route");
+  async function lookup(versions: string) {
+    const response = await GET(new Request("http://localhost/api/game-assets?versions=" + versions + "&runes=1"));
+    expect(response.status).toBe(200);
+    return response.json();
+  }
+  const versions = "16.19.810.4348,800.1,801.1";
+  expect((await lookup(versions))["16.19.810.4348"]).toBeNull();
+  published = true;
+  now.mockReturnValue(159_999);
+  expect((await lookup(versions))["16.19.810.4348"]).toBeNull();
+  expect(fetcher).toHaveBeenCalledTimes(2);
+
+  now.mockReturnValue(160_000);
+  const catalog = await lookup(versions);
+  expect(catalog["16.19.810.4348"]?.runePerformanceState?.status).toBe("available");
+  expect(catalog["800.1"]).toBeNull();
+  expect(catalog["801.1"]).toBeNull();
+  expect(fetcher.mock.calls.filter(([url]) => url === index)).toHaveLength(2);
+  expect(fetcher.mock.calls.filter(([url]) => url.endsWith("/versions.json"))).toHaveLength(1);
+  expect(fetcher.mock.calls.some(([url]) => /\/(800|801)\.1\//.test(url))).toBe(false);
+
+  outage = true;
+  now.mockReturnValue(220_000);
+  expect((await lookup(versions))["16.19.810.4348"]?.runePerformanceState?.status).toBe("available");
+  expect(fetcher.mock.calls.filter(([url]) => url === index)).toHaveLength(3);
 });

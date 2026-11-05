@@ -20,6 +20,8 @@
 !frontend/playwright.config.ts
 !frontend/playwright.package.config.ts
 !frontend/playwright.visual.config.ts
+!frontend/test-browser.cjs
+!frontend/playwright-browser-check.ts
 !frontend/vercel.json
 
 # Exclude hidden files, credentials and generated output within allowed paths.

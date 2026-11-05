@@ -61,7 +61,7 @@ assert_ordered \
 
 visual_output=$(VERIFY_DRY_RUN=1 ./scripts/verify ui visual '--grep' 'Investigation wide')
 assert_contains "$visual_output" "--platform linux/amd64"
-assert_contains "$visual_output" "league-analysis-visual:playwright-1.63.0"
+assert_contains "$visual_output" "league-analysis-visual:chrome-157.0.8103.38"
 assert_contains "$visual_output" "npm run test:visual:raw -- --grep Investigation\\ wide"
 
 if VERIFY_DRY_RUN=1 ./scripts/verify focused frontend >/dev/null 2>&1; then
@@ -112,6 +112,12 @@ for (const [front, back, database] of [[undefined, undefined, undefined], ["3200
   assert.equal(config.use.baseURL, `http://127.0.0.1:${front ?? "3100"}`);
   assert.equal(config.webServer[0].reuseExistingServer, false);
   assert.equal(config.webServer[0].env.DEV_BACKEND_PORT, process.env.E2E_BACKEND_PORT);
+}
+const { executablePath } = await import("./frontend/test-browser.cjs");
+for (const suffix of ["", ".sample", ".package", ".visual"]) {
+  const { default: config } = await import(`./frontend/playwright${suffix}.config.ts`);
+  assert.equal(config.use.launchOptions.executablePath, executablePath);
+  assert.equal(config.use.launchOptions.chromiumSandbox, true);
 }
 const { ESLint } = await import('./frontend/node_modules/eslint/lib/api.js');
 const lint = new ESLint({ cwd: `${process.cwd()}/frontend` });

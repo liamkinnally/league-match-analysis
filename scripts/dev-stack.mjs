@@ -86,7 +86,9 @@ async function main() {
   }
   const backend = supervisor.start('./mvnw', args, { cwd: backendDir, env: config.backendEnv });
   await supervisor.ready(`${config.backendOrigin}/actuator/health`, backend);
-  const frontend = supervisor.start('npm', ['run', 'dev', '--', '--port', String(config.frontendPort)], {
+  // Turbopack can repeatedly restart the fixture browser on an HMR hash mismatch.
+  const bundlerArgs = mode === 'fixture' ? ['--webpack'] : [];
+  const frontend = supervisor.start('npm', ['run', 'dev', '--', ...bundlerArgs, '--port', String(config.frontendPort)], {
     cwd: join(repository, 'frontend'), env: config.frontendEnv,
   });
   await Promise.race([

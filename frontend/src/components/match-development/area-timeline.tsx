@@ -235,7 +235,6 @@ export function AreaTimeline({
               },
             }}
             className="graph-chart"
-            initialDimension={{ width: 1100, height: 264 }}
           >
             <ComposedChart
               data={rows}

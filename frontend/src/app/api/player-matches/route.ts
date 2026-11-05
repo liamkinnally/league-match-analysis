@@ -1,12 +1,12 @@
+import { readBoundedText } from "../../../lib/request-body";
 import { isPlatform, validRiotIdentity } from "../../../lib/player-lookup/regions";
 import { lookupError, proxyLookup } from "../../../lib/player-lookup/proxy";
 import { isHistoryFilter } from "../../../lib/player-lookup/types";
 export const dynamic = "force-dynamic";
 export async function POST(request: Request): Promise<Response> {
   try {
-    if (Number(request.headers.get("Content-Length")) > 4096) return lookupError(400);
-    const raw = await request.text();
-    if (raw.length > 4096) return lookupError(400);
+    const raw = await readBoundedText(request, 4096);
+    if (raw === null) return lookupError(400);
     const body: unknown = JSON.parse(raw);
     if (!body || typeof body !== "object" || !("gameName" in body) || !("tagLine" in body)
         || typeof body.gameName !== "string" || typeof body.tagLine !== "string"

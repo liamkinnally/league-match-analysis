@@ -1,3 +1,4 @@
+import { acceptsEmptyCommand } from "../../../../../lib/request-body";
 import { matchIdPattern } from "../../../../../lib/player-lookup/regions";
 import { backendFetch } from "../../../../../lib/backend-transport";
 import { parseTimeline } from "../../../../../lib/development/timeline";
@@ -8,10 +9,8 @@ export const dynamic = "force-dynamic";
 async function proxy(request: Request, { params }: { params: Promise<{ matchId: string }> }) {
   const { matchId } = await params;
   if (!matchIdPattern.test(matchId)) return Response.json({ error: "INVALID_MATCH_ID" }, { status: 400, headers });
-  if (request.method === "POST" && request.body !== null) {
-    if (Number(request.headers.get("Content-Length")) > 64) return Response.json({ error: "INVALID_BODY" }, { status: 400, headers });
-    const body = await request.text();
-    if (body.trim() && body.trim() !== "{}") return Response.json({ error: "INVALID_BODY" }, { status: 400, headers });
+  if (request.method === "POST" && !await acceptsEmptyCommand(request)) {
+    return Response.json({ error: "INVALID_BODY" }, { status: 400, headers });
   }
   if (isSamplePreview()) return Response.json({ error: "TIMELINE_UNAVAILABLE" }, { status: 503, headers });
   try {

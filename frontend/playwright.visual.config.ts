@@ -1,6 +1,8 @@
+import { executablePath } from "./test-browser.cjs";
 import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
+  globalSetup: "./playwright-browser-check.ts",
   testDir: "./e2e-visual",
   fullyParallel: false,
   forbidOnly: true,
@@ -9,6 +11,7 @@ export default defineConfig({
   reporter: [["list"]],
   snapshotPathTemplate: "{testDir}/snapshots/{arg}{ext}",
   use: {
+    launchOptions: { executablePath, chromiumSandbox: process.env.LEAGUE_VISUAL_CONTAINER !== "1" },
     baseURL: "http://127.0.0.1:3000",
     colorScheme: "light",
     locale: "en-US",

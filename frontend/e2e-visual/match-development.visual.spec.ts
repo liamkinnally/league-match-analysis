@@ -74,6 +74,14 @@ async function openStableDevelopment(page: Page, route: string, waitForImage = t
     }));
     expect(labelsFitOneLine).toBe(true);
   }
+  if (route.includes("/development")) {
+    const chart = page.locator(".graph-chart");
+    await expect(chart.locator(".recharts-surface")).toBeVisible();
+    await expect.poll(() => chart.evaluate(container => {
+      const svg = container.querySelector("svg")!;
+      return Math.abs(svg.getBoundingClientRect().width - container.getBoundingClientRect().width);
+    })).toBeLessThanOrEqual(1);
+  }
   const clippedLabels = await page.locator('.graph-boundary-label').evaluateAll(labels => labels.filter(label => {
     const box = label.getBoundingClientRect(), chart = label.closest('svg')!.getBoundingClientRect();
     return box.left < chart.left || box.right > chart.right;
@@ -89,6 +97,18 @@ test("sample development wide", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Scoreboard" })).toBeVisible();
   expect(errors).toEqual([]);
   await expect(page).toHaveScreenshot("sample-development-wide.png", { animations: "disabled", fullPage: true });
+});
+
+test.describe("before hydration", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test("the server-rendered chart fits the narrow page", async ({ page }) => {
+    // Keep the server markup visible while deferring framework hydration.
+    await page.route("**/_next/static/chunks/*.js", route => route.abort());
+    await page.goto("/matches/__lab_development/development?focus=6&compare=1");
+    await expect(page.locator(".graph-chart")).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBe(0);
+  });
 });
 
 test("sample development narrow", async ({ page }) => {

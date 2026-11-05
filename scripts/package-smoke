@@ -36,6 +36,15 @@ trap cleanup EXIT
 "${compose[@]}" build
 "${compose[@]}" up --detach --wait postgres backend frontend
 
+expected_node=$(cat "$repo_dir/.node-version")
+packaged_node=$("${compose[@]}" exec --no-TTY frontend node -p 'process.versions.node')
+[[ "$packaged_node" == "$expected_node" ]] || {
+  echo "Packaged Node.js is $packaged_node; expected $expected_node" >&2
+  exit 1
+}
+echo "Verified packaged Node.js $packaged_node"
+"${compose[@]}" exec --no-TTY backend java -version
+
 "${compose[@]}" exec --no-TTY frontend node -e \
   "fetch('http://backend:8080/api/v1/demo').then(response => { if (response.status !== 401) throw new Error('expected direct unauthenticated backend access to return 401, received ' + response.status); }).catch(error => { console.error(error); process.exit(1); })"
 

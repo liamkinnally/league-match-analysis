@@ -25,9 +25,14 @@ java_version=$(java -version 2>&1 | awk -F '"' 'NR == 1 { print $2 }')
   exit 1
 }
 
-node_version=$(node --version)
-[[ $node_version == v24.* ]] || {
-  echo "Node.js 24 is required; found $node_version" >&2
+minimum_node=$(cat "$repo_dir/.node-version")
+node -e '
+  const [major, minor, patch] = process.versions.node.split(".").map(Number);
+  const [requiredMajor, requiredMinor, requiredPatch] = process.argv[1].split(".").map(Number);
+  const supported = major === requiredMajor && (minor > requiredMinor || (minor === requiredMinor && patch >= requiredPatch));
+  process.exitCode = supported ? 0 : 1;
+' "$minimum_node" || {
+  echo "Use Node.js $minimum_node or a later patch on the same major; found $(node --version)" >&2
   exit 1
 }
 
@@ -38,6 +43,6 @@ docker info >/dev/null
 [[ -e "$frontend_dir/.env.local" ]] || cp "$frontend_dir/.env.example" "$frontend_dir/.env.local"
 
 (cd "$frontend_dir" && npm ci)
-(cd "$frontend_dir" && npx playwright install chromium)
+node "$frontend_dir/test-browser.cjs" install
 
 echo "League Analysis development dependencies are ready."

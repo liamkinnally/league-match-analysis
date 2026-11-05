@@ -1,19 +1,21 @@
 # syntax=docker/dockerfile:1.7
 
-FROM node:24-bookworm-slim AS dependencies
+FROM node:24.22.2-bookworm-slim@sha256:01d566e8d94d8c619591d78652babfccd3c6992a3dffa9ed5ab39e11cf6c70e9 AS node-base
+
+FROM node-base AS dependencies
 
 WORKDIR /workspace/frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 
-FROM node:24-bookworm-slim AS build
+FROM node-base AS build
 
 WORKDIR /workspace/frontend
 COPY --from=dependencies /workspace/frontend/node_modules ./node_modules
 COPY frontend/ ./
 RUN npm run build
 
-FROM node:24-bookworm-slim AS runtime
+FROM node-base AS runtime
 
 RUN groupadd --system --gid 1001 nodejs \
     && useradd --system --uid 1001 --gid nodejs --home-dir /app nextjs

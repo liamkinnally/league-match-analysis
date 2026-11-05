@@ -1,8 +1,8 @@
 import "server-only";
 
 import type { GameAsset, GameAssetCatalog, GameAssetOptions } from "./types";
-import { DATA_DRAGON, descriptionText, safeAssetPath } from "./urls";
-import { assetManifest, CURRENT_PROFILE_ART_PATCH } from "./manifest";
+import { COMMUNITY_DRAGON_INDEX, DATA_DRAGON, descriptionText, safeAssetPath } from "./urls";
+import { assetManifest, CURRENT_PROFILE_ART_PATCH, reviewedAssetPatch } from "./manifest";
 import { resolveRuneAssets } from "./dynamic-runes";
 import { readAssetSource } from "./source";
 import { championAbilities } from "./abilities";
@@ -119,10 +119,19 @@ function assets(
 }
 
 export async function resolveGameAssetCatalog(gameVersion: string, options: GameAssetOptions = {}): Promise<GameAssetCatalog> {
-  patchPrefix(gameVersion);
+  const patch = patchPrefix(gameVersion);
   let assetVersion = "";
   try { assetVersion = newestMatchingVersion(await cachedJson(`${DATA_DRAGON}/api/versions.json`), gameVersion); }
-  catch (error) { if (!options.includeRunes) throw error; }
+  catch (error) {
+    if (!options.includeRunes) throw error;
+    // CommunityDragon can publish a patch before Data Dragon has artwork for it.
+    if (!reviewedAssetPatch(gameVersion)) {
+      const index = (await readAssetSource(COMMUNITY_DRAGON_INDEX, Array.isArray)).body;
+      if (!Array.isArray(index) || !index.some(entry => entry?.type === "directory" && entry.name === patch)) {
+        throw new Error("MATCHING_ASSET_VERSION_NOT_FOUND");
+      }
+    }
+  }
   const runeAssets = options.includeRunes ? resolveRuneAssets(gameVersion, assetVersion) : null;
   const [championBody, itemBody, spellBody] = assetVersion ? await Promise.all(["champion", "item", "summoner"].map((kind) => cachedJson(`${DATA_DRAGON}/cdn/${assetVersion}/data/en_US/${kind}.json`).catch(() => null))) : [null, null, null];
   const partial = (body: unknown, kind: "champion" | "item" | "spell" | "profileicon") => { try { return assets(body, assetVersion, kind); } catch { return {}; } };
