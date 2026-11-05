@@ -163,7 +163,7 @@ Keep the [deployment guide](deployment.md) release gates. For a meaningful relea
 
 The full composition includes backend/frontend tasks, browser behavior, sample and visual checks, and repository hygiene. CI also runs the packaged-container smoke test. For a changed UI release, inspect the rendered result and complete the pinned visual check with `./scripts/verify ui visual`; reuse its result when the same check is already covered by `full` with unchanged inputs.
 
-Each browser suite checks the launched Chrome version before running tests. Host browser tests enable the Chromium sandbox. On Ubuntu systems that restrict unprivileged user namespaces, allow the executable printed by `node frontend/test-browser.cjs path` in a path-specific AppArmor profile. Hosted CI creates that profile on its disposable runner.
+Each browser suite checks the launched Chrome version before running tests. Host browser tests enable the Chromium sandbox. On persistent Ubuntu systems that restrict user namespaces, follow [Chromium’s sandbox setup guidance](https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md). An executable granted extra privileges must be protected from replacement by unprivileged users. The checkout-path exception in `scripts/ci-browser` is restricted to disposable GitHub-hosted runners.
 
 Visual snapshots use the same Chrome release’s Headless Shell to preserve text rendering. They run without external network access in a non-root container with capabilities dropped. The visual runner uses container isolation because the default Docker policy restricts nested Chromium sandbox namespaces. Update a snapshot only after inspecting the rendered change, then rerun the comparison.
 

@@ -7,7 +7,7 @@ type Entry = { source?: AssetSource; expiresAt: number; retryAt: number };
 export class AssetSourceUnavailable extends Error {
   constructor(readonly retryAt: string) { super("ASSET_SOURCE_UNAVAILABLE"); }
 }
-const DAY = 86_400_000, RETRY = 60_000, MAX_BYTES = 4_000_000;
+const DAY = 86_400_000, MINUTE = 60_000, MAX_BYTES = 4_000_000;
 
 function allowedSource(url: string): boolean {
   return url === COMMUNITY_DRAGON_INDEX || isAllowedAssetUrl(url);
@@ -47,10 +47,11 @@ export function createAssetSourceReader() {
         const body: unknown = JSON.parse(new TextDecoder().decode(bytes));
         if (!validate(body)) throw new Error("INVALID_ASSET_CATALOG");
         const source: AssetSource = { body, sourceUrl: url, sha256: createHash("sha256").update(bytes).digest("hex"), retrievedAt: new Date().toISOString(), status: "available" };
-        cache.set(url, { source, expiresAt: Date.now() + DAY, retryAt: 0 });
+        const ttl = url === COMMUNITY_DRAGON_INDEX ? MINUTE : DAY;
+        cache.set(url, { source, expiresAt: Date.now() + ttl, retryAt: 0 });
         return source;
       } catch {
-        const retryAt = Date.now() + RETRY;
+        const retryAt = Date.now() + MINUTE;
         cache.set(url, { source: old?.source, expiresAt: old?.expiresAt ?? 0, retryAt });
         if (old?.source) return { ...old.source, status: "stale", retryAt: new Date(retryAt).toISOString() };
         throw new AssetSourceUnavailable(new Date(retryAt).toISOString());
