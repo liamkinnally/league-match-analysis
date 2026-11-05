@@ -61,7 +61,8 @@ assert_ordered \
 
 visual_output=$(VERIFY_DRY_RUN=1 ./scripts/verify ui visual '--grep' 'Investigation wide')
 assert_contains "$visual_output" "--platform linux/amd64"
-assert_contains "$visual_output" "league-analysis-visual:chrome-157.0.8103.38"
+browser_version=$(node -p 'require("./frontend/test-browser-pins.json").browserVersion')
+assert_contains "$visual_output" "league-analysis-visual:chrome-$browser_version"
 assert_contains "$visual_output" "npm run test:visual:raw -- --grep Investigation\\ wide"
 
 if VERIFY_DRY_RUN=1 ./scripts/verify focused frontend >/dev/null 2>&1; then

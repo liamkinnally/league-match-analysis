@@ -23,6 +23,14 @@ With the required tools installed and Docker running, run this once:
 
 `setup` checks the required tools, creates missing local environment files without overwriting existing values, installs locked frontend dependencies and installs the pinned Chrome for Testing build. After a separate `npm ci`, run `node frontend/test-browser.cjs install` to restore the browser. The installer verifies the official archive against its pinned SHA-256 digest and uses only the checkout’s dependency cache. It requires curl and unzip on macOS/Linux or curl and tar on Windows. On a fresh Linux host, run `./node_modules/.bin/playwright install-deps chromium` from `frontend` to install browser system libraries.
 
+### Dependency update PRs
+
+Dependabot checks frontend npm dependencies on weekdays and backend Maven dependencies and GitHub Actions weekly. Playwright gets its own PR so a compatibility failure is easy to diagnose. Dependabot security updates can open a PR as soon as GitHub identifies an available fix.
+
+The **Update test browser** workflow checks Google’s Chrome for Testing Stable channel daily. When Google publishes a higher version for all supported platforms, the workflow verifies the six Chrome and two Linux Headless Shell archives and opens a PR with their SHA-256 pins. The browser and Playwright can update independently. The workflow explicitly starts CI on the browser PR branch. Review the backend, frontend, browser and packaged-app results before merging. If GitHub asks for approval to run the separate pull-request checks, use **Approve workflows to run**. Review any visual differences before updating snapshots.
+
+After merging a dependency PR, pull the changes and run `./scripts/setup` to use the new pins locally. Desktop Chrome uses Google’s own updater. The project installs its test browser in the checkout’s dependency cache.
+
 ## Daily development
 
 Put your development `RIOT_API_KEY` in the ignored root `.env`, then run:
