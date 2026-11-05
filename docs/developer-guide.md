@@ -122,6 +122,8 @@ Current ranks are loaded separately through the rank endpoint. A successful Riot
 
 ## Tests
 
+When adding or reviewing a test, ask **“What bug would slip through if we deleted this test?”** Use the cheapest layer that can expose that bug. Extend an existing test when it already exercises the same behavior. Keep browser coverage for failures that depend on navigation, rendering, or services working together. The packaged smoke test should catch failures specific to the shipped images.
+
 ### During iteration
 
 Start with selectors that cover the changed behavior:
@@ -153,6 +155,8 @@ The sample browser check starts a separate frontend with synthetic preview data 
 The preview sample is derived from the backend's canonical synthetic seed inputs. After changing those inputs, run `node frontend/scripts/generate-preview-sample.mjs` and rerun the sample tests. This frontend projection is only for synthetic previews; normal match calculations remain in the backend.
 
 ### Releases and CI
+
+GitHub Actions runs all four required checks on pull requests, pushes to `main`, and tags. New commits to a PR cancel its superseded CI run. To check a branch before opening a PR, run the CI workflow manually.
 
 Keep the [deployment guide](deployment.md) release gates. For a meaningful release, run:
 

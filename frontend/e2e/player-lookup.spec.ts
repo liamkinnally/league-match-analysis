@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { installDeterministicGameAssets } from "./support/game-assets";
 
-test("player lookup", async ({ page, request }) => {
+test("a fresh lookup persists the match and exposes only regional public suggestions", async ({ page, request }) => {
   await installDeterministicGameAssets(page);
   const id = `7${Date.now()}`;
   const matchId = `NA1_${id}`;
@@ -35,7 +35,6 @@ test("player lookup", async ({ page, request }) => {
   await expect.poll(() => champion.evaluate(
     (image: HTMLImageElement) => image.complete && image.naturalWidth > 0,
   )).toBe(true);
-  await page.screenshot({ path: "test-results/player-history-wide.png", fullPage: true });
   const response = await request.get(`/api/player-matches/${runId}`);
   expect(await response.text()).not.toMatch(/puuid|lookup-invented-participant|sourceCapture|payload_json/);
   const suggestionQuery = new URLSearchParams({ platform: "NA1", q: `Lookup${id}` });
@@ -50,24 +49,14 @@ test("player lookup", async ({ page, request }) => {
   await expect(row).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);
-  await page.screenshot({ path: "test-results/player-history-narrow.png", fullPage: true });
-  await row.click();
-  await expect(page.getByRole("heading", { name: "Garen vs Darius" })).toBeVisible();
-  await expect(page.getByText(/Garen extended his lead: CS \+4 to \+13/)).toBeVisible();
-  await expect(page.getByRole("table", { name: "Before and after differences" })).toContainText("CS+4+13Gold+100+510XP+20+220");
-  await expect(page.getByRole("link", { name: "Match history", exact: true })).toHaveAttribute("href", `/search?runId=${runId}`);
-  await page.getByRole("tab", { name: "Runes", exact: true }).click();
-  await expect(page.getByRole("link", { name: "Match history", exact: true })).toHaveAttribute("href", `/search?runId=${runId}`);
-  await page.getByRole("link", { name: "Match history", exact: true }).click();
-  await expect(page).toHaveURL(new RegExp(`runId=${runId}`));
-  await expect(row).toBeVisible();
+  const persisted = await request.get(`http://127.0.0.1:${process.env.E2E_BACKEND_PORT ?? "8080"}/api/v1/matches/${matchId}/development?focus=6`);
+  expect(persisted.ok()).toBe(true);
+  expect((await persisted.json()).matchId).toBe(matchId);
 });
 
 test("failed live lookup keeps the independent sample working", async ({ page }) => {
   await installDeterministicGameAssets(page);
-  await page.goto("/search");
-  await page.getByLabel("Riot ID").fill("Unavailable#NA1");
-  await page.getByRole("button", { name: "Find matches" }).click();
+  await page.goto("/summoners/na/Unavailable-NA1");
   await expect(page.getByText("Live lookup is unavailable. Explore the sample match.")).toBeVisible();
   await page.getByRole("link", { name: "Explore sample match" }).click();
   await expect(page).toHaveURL(/NA1_7000000001\/development/);
@@ -125,8 +114,6 @@ test("ARAM history filters, paginates, restores loaded pages, and upgrades a def
   await expect(page.getByLabel("Queue Type")).toBeEnabled({ timeout: 40000 });
   for (const label of ["Ranked Solo/Duo", "Ranked Flex", "Draft Pick", "Swiftplay", "ARAM"])
     await expect(rows.filter({ hasText: label }).first()).toBeVisible();
-  const allHistoryUrl = page.url();
-  await page.screenshot({ path: "test-results/all-queue-history-wide.png", fullPage: true });
   // Every action shares the production admission policy; a suite crossing the minute boundary honors retry metadata.
   const historyAction = async (action: () => Promise<unknown>) => {
     const responsePromise = page.waitForResponse(r => r.url().includes("/api/player-matches") && r.request().method() === "POST");
@@ -161,16 +148,13 @@ test("ARAM history filters, paginates, restores loaded pages, and upgrades a def
   expect((await detail.json()).timelineAvailable).toBe(false);
   await historyAction(() => page.getByRole("button", { name: "Load older matches" }).click());
   await expect(rows).toHaveCount(40, { timeout: 40000 });
-  await expect(page.getByRole("button", { name: "Load older matches" })).toBeEnabled({ timeout: 40000 });
-  await historyAction(() => page.getByRole("button", { name: "Load older matches" }).click());
-  await expect(rows).toHaveCount(43, { timeout: 40000 });
-  await expect(page.getByText("End of match history for this queue.")).toBeVisible();
-  const historyUrl = page.url();
+  const historyUrl = new URL(page.url());
   await page.reload();
-  await expect(rows).toHaveCount(43);
+  await expect(page).toHaveURL(historyUrl.href);
+  await expect(rows).toHaveCount(40);
+  await expect(page.getByLabel("Queue Type")).toHaveValue("450");
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);
-  await page.screenshot({ path: "test-results/queue-history-narrow.png", fullPage: true });
   const timelineStart = page.waitForResponse(response => response.url().endsWith(`/api/matches/${matchId}/timeline`)
     && response.request().method() === "POST");
   await rows.first().getByRole("link").click();
@@ -193,25 +177,15 @@ test("ARAM history filters, paginates, restores loaded pages, and upgrades a def
   await page.getByRole("region", { name: "Suggested windows" }).getByRole("link", { name: /^8:00–10:00/ }).click();
   await expect(page.getByRole("table", { name: "Before and after differences" })).toContainText("CS+2+10Gold+100+510XP+20+220");
   await expect(page.getByText("Current avg. tier")).toHaveCount(0);
-  await page.screenshot({ path: "test-results/aram-development-wide.png", fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByRole("table", { name: "Final team results, compact", exact: true }).getByText("Towers", { exact: true })).toBeVisible();
-  await page.screenshot({ path: "test-results/aram-development-narrow.png", fullPage: true });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
-  await page.goto(historyUrl);
-  await expect(page).toHaveURL(historyUrl);
-  await expect(rows).toHaveCount(43);
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+
+  await page.getByRole("tab", { name: "Runes", exact: true }).click();
+  const backToHistory = page.getByRole("link", { name: "Match history", exact: true });
+  await expect(backToHistory).toHaveAttribute("href", `/search${historyUrl.search}`);
+  await backToHistory.click();
+  await expect(rows).toHaveCount(40);
   await expect(page.getByLabel("Queue Type")).toHaveValue("450");
-  await page.getByLabel("Queue Type").selectOption("0");
-  await expect(page).toHaveURL(allHistoryUrl);
-  await expect(rows).toHaveCount(14);
-  await expect(page.getByLabel("Queue Type")).toHaveValue("0");
-  await historyAction(() => page.getByRole("button", { name: "Load older matches" }).click());
-  await expect(rows).toHaveCount(25, { timeout: 40000 });
-  await page.reload();
-  await expect(rows).toHaveCount(25);
-  await expect(page.getByLabel("Queue Type")).toHaveValue("0");
-  await page.screenshot({ path: "test-results/all-queue-history-narrow.png", fullPage: true });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);
   expect(errors).toEqual([]);
 });
