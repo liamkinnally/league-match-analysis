@@ -28,7 +28,7 @@ function ranked(tier: string, division: string, lp: number, wins: number, losses
 const current = snapshots[0];
 export const samplePlayerProfile: Omit<PlayerProfile, "recentSolo"> = {
   identity: { gameName: "Northline", tagLine: "DEMO", platform: "NA1" },
-  summoner: { ...saved, status: "available", profileIconId: 29, summonerLevel: 417, revisionAt: updatedAt },
+  summoner: { ...saved, status: "available", profileIconId: 5177, summonerLevel: 417, revisionAt: updatedAt },
   soloRank: ranked("CHALLENGER", "I", current.lp, current.wins, current.losses),
   flexRank: ranked("DIAMOND", "II", 63, 42, 31),
   rankHistory: { trackingSince: observations[observations.length - 1].observedAt, observations, nextCursor: null },

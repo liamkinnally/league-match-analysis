@@ -17,6 +17,10 @@ function progression(row: RankObservation): number | null {
   return tier < 0 || division < 0 ? null : tier * 400 + division * 100 + row.leaguePoints;
 }
 
+function recordFell(before: number | null, after: number | null) {
+  return before !== null && after !== null && after < before;
+}
+
 export function buildRankHistorySeries(rows: RankObservation[]): { points: Point[]; connections: [Point, Point][] } {
   const points: Point[] = [], connections: [Point, Point][] = [];
   const ordered = [...new Map(rows.map(row => [row.id, row])).values()].sort((a, b) => Date.parse(a.observedAt) - Date.parse(b.observedAt));
@@ -25,7 +29,11 @@ export function buildRankHistorySeries(rows: RankObservation[]): { points: Point
     const value = progression(row), time = Date.parse(row.observedAt);
     if (value === null || !Number.isFinite(time)) { previous = null; continue; }
     const point = { row, value, time };
-    if (previous && row.period !== null && row.period === previous.row.period) connections.push([previous, point]);
+    // The rank provider can omit the period for every update, including repeated snapshots.
+    if (previous && previous.row.period === row.period
+      && !recordFell(previous.row.wins, row.wins) && !recordFell(previous.row.losses, row.losses)) {
+      connections.push([previous, point]);
+    }
     points.push(point); previous = point;
   }
   return { points, connections };
@@ -73,6 +81,6 @@ export function RankHistoryChart({ history, timeZone }: { history: PlayerProfile
       </circle>)}
     </svg>
     <div className="player-rank-chart__dates"><time dateTime={first.row.observedAt}>{formatDate(first.row)}</time><time dateTime={last.row.observedAt}>{formatDate(last.row)}</time></div>
-    <figcaption>Data based on profile updates.</figcaption>
+    <figcaption>Each point is a profile update. Lines connect consecutive recorded ranks.</figcaption>
   </figure>;
 }
