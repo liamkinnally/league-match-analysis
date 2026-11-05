@@ -15,7 +15,10 @@ test("packaged application serves the persisted sample through the browser", asy
     expect(asset.headers()["content-type"]).toMatch(/^image\//);
   }
 
-  await page.getByRole("link", { name: "Explore sample match" }).click();
+  await page.getByRole("link", { name: "Explore sample profile" }).click();
+  await expect(page.getByRole("heading", { name: /Northline.*#DEMO/ })).toBeVisible();
+  // Check the persisted backend sample independently of the built-in sample profile.
+  await page.goto("/matches/NA1_7000000001/development?focus=6&compare=1");
   await expect(page.getByText("Sample match — synthetic data")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Garen vs Darius" })).toBeVisible();
   await page.getByRole("tab", { name: "XP" }).click();

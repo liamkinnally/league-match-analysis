@@ -18,6 +18,7 @@
 .profile-header__actions small { font-size: 0.7rem; color: var(--development-muted); font-variant-numeric: tabular-nums; }
 .entry-app .profile-update { min-inline-size: 6rem; background: var(--development-accent); border-color: var(--development-accent); color: #111722; font-weight: 650; }
 .entry-app .profile-update:hover:not(:disabled) { background: var(--brand-accent-hover); }
+.entry-app .entry-button.sample-history-shortcut { display: none; }
 .profile-layout { display: grid; grid-template-columns: 18rem minmax(0, 1fr); gap: 1.2rem; align-items: start; }
 .profile-sidebar, .profile-ranks { display: grid; gap: 0.9rem; min-inline-size: 0; }
 .profile-history { min-inline-size: 0; container-type: inline-size; }
@@ -109,6 +110,9 @@
   .profile-rank__value > strong { font-size: 1rem; }
 }
 @media (max-width: 48rem) {
+  .entry-app .entry-button.sample-history-shortcut { display: inline-flex; }
+  .entry-app .entry-button.sample-profile-update { display: none; }
+  .profile-history #match-history { scroll-margin-block-start: 4rem; }
   .entry-app.profile-app .entry-page { inline-size: min(100% - 2rem, 40rem); padding-block-start: 1rem; }
   .profile-layout { grid-template-columns: minmax(0, 1fr); }
   .profile-header { flex-wrap: wrap; gap: 0.8rem; margin-block-end: 1rem; padding-block-end: 1.2rem; }

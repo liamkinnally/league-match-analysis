@@ -19,6 +19,20 @@ vi.mock("next/navigation", () => ({
   },
 }));
 
+it("opens catalog games outside preview mode without asking a backend for a match or a demo marker", async () => {
+  const fetcher = vi.fn();
+  vi.stubGlobal("fetch", fetcher);
+  const page = await DevelopmentPage({
+    params: Promise.resolve({ matchId: "sample-01" }),
+    searchParams: Promise.resolve({ focus: "1", compare: "6" }),
+  });
+  expect(page.props.data.matchId).toBe("sample-01");
+  expect(page.props.invented).toBe(true);
+  expect(page.props.sampleRanks.players.find((rank: { participantId: number }) => rank.participantId === 1))
+    .toMatchObject({ status: "ranked", tier: "CHALLENGER", leaguePoints: 1284 });
+  expect(fetcher).not.toHaveBeenCalled();
+});
+
 it("loads the real development contract into the sample page", async () => {
   vi.stubEnv("BACKEND_URL", "http://127.0.0.1:8080");
   vi.stubGlobal("fetch", vi.fn()

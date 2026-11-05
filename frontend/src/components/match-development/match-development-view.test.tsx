@@ -54,6 +54,15 @@ const assets = {
   spells: {},
 };
 
+it("labels the sample ranks as fictional values in the summary and the scoreboard", () => {
+  const players = developmentFixture.roster.map(({ participantId }) => ({ participantId, status: "ranked" as const, tier: "CHALLENGER", division: "I", leaguePoints: 1284 }));
+  render(<MatchDevelopmentView data={developmentFixture} interval={{ from: 480000, to: 600000 }} invented assets={null}
+    sampleRanks={{ matchId: developmentFixture.matchId, queueType: "RANKED_SOLO_5x5", refreshing: false, players }} />);
+  expect(screen.getByText("Sample avg. tier")).toBeVisible();
+  expect(screen.getByText("Sample Solo/Duo ranks")).toBeVisible();
+  expect(screen.getByRole("link", { name: "Sample profile" })).toHaveAttribute("href", "/sample/profile");
+});
+
 it("opens rune inspection without changing focus, comparison, interval or metric", () => {
   window.history.replaceState(null, "", "/matches/NA1_7000000001/development?focus=6&compare=1&from=480000&to=600000&metric=xp");
   render(<MatchDevelopmentView data={developmentFixture} interval={{ from: 480000, to: 600000 }} invented assets={assets} />);

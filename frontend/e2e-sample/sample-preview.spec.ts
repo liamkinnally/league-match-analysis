@@ -24,16 +24,45 @@ test("tokenless sample supports match selection and URL restoration", async ({ p
   await installDeterministicGameAssets(page);
   const liveRequests: string[] = [];
   page.on("request", (request) => {
-    if (/\/api\/(player-matches|matches\/.*\/ranks)/.test(request.url())) liveRequests.push(request.url());
+    if (/\/api\/(player-matches|player-suggestions|matches\/.*\/(ranks|timeline))/.test(request.url())) liveRequests.push(request.url());
   });
   const health = await request.get("/api/health");
   expect(await health.json()).toEqual({ status: "UP", dataSource: "sample", backend: "NOT_USED" });
 
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Explore a sample match" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sample player profile" })).toBeVisible();
   await expect(page.getByText(/Live player search is unavailable in this sample preview/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Find matches" })).toHaveCount(0);
-  await page.getByRole("link", { name: "Explore sample match" }).click();
+  await page.getByRole("link", { name: "Explore sample profile" }).click();
+  const history = page.getByRole("list", { name: "Recent match history" });
+  await expect(history.getByRole("link")).toHaveCount(8);
+  await expect(page.getByRole("heading", { name: /Northline.*#DEMO/ })).toBeVisible();
+  await expect(page.getByText("Challenger", { exact: true }).first()).toBeVisible();
+  const update = page.getByRole("button", { name: "Update", exact: true });
+  const jump = page.getByRole("link", { name: "View match history", exact: true });
+  await expect(jump).toBeHidden();
+  await update.click();
+  await expect(page.getByText("Sample profile is up to date.")).toBeVisible();
+  const links = await history.getByRole("link").evaluateAll(rows => rows.map(row => row.getAttribute("href")));
+  expect(new Set(links).size).toBe(8);
+  for (const index of [0, 1]) {
+    await history.getByRole("link").nth(index).click();
+    await expect(page.getByText("Sample match — synthetic data")).toBeVisible();
+    await expect(page.getByRole("heading", { name: /gold difference over time/i })).toBeVisible();
+    await page.getByRole("tab", { name: "Runes", exact: true }).click();
+    await page.getByRole("link", { name: "Sample profile", exact: true }).click();
+    await expect(history.getByRole("link")).toHaveCount(8);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await expect(update).toBeHidden();
+  await jump.click();
+  await expect(page).toHaveURL(/#match-history$/);
+  await expect(page.getByRole("heading", { name: "Match history", exact: true })).toBeInViewport();
+  await page.screenshot({ path: "test-results/sample-profile-mobile.png", fullPage: true });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.screenshot({ path: "test-results/sample-profile-desktop.png", fullPage: true });
+  await page.goto("/matches/NA1_7000000001/development?focus=6&compare=1");
   await expect(page.getByText("Sample match — synthetic data")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Garen vs Darius" })).toBeVisible();
   await page.getByRole("link", { name: /^8:00–10:00 Garen's recorded comparison:/ }).click();

@@ -51,6 +51,7 @@ it("wires the SDK to redact page identifiers and query strings before collection
     ["/search?runId=private-run", "/search"],
     ["/?utm_source=portfolio", "/"],
     ["/privacy", "/privacy"],
+    ["/sample/profile?utm_source=portfolio", "/sample/profile"],
   ];
   for (const [path, expected] of cases) {
     const event = { type: "pageview" as const, url: `https://lolmatchanalysis.app${path}` };

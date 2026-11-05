@@ -13,7 +13,7 @@ function analyticsRoute(pathname: string): string | null {
   if (/^\/matches\/[^/]+\/?$/.test(pathname)) {
     return "/matches/[matchId]";
   }
-  return ["/", "/search", "/privacy", "/terms"].includes(pathname) ? pathname : null;
+  return ["/", "/search", "/sample/profile", "/privacy", "/terms"].includes(pathname) ? pathname : null;
 }
 
 function beforeSend(event: BeforeSendEvent): BeforeSendEvent | null {

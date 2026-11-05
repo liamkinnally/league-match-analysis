@@ -7,17 +7,17 @@ export function rankValue(value: Pick<RankObservation, "status" | "tier" | "divi
   const division = ["MASTER", "GRANDMASTER", "CHALLENGER"].includes(value.tier) ? "" : ` ${value.division}`;
   return `${tier}${division} · ${value.leaguePoints} LP`;
 }
-export function ProfileTime({ value }: { value: string }) {
-  return <time dateTime={value}>{new Date(value).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}</time>;
+export function ProfileTime({ value, timeZone }: { value: string; timeZone?: string }) {
+  return <time dateTime={value}>{new Date(value).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", timeZone, timeZoneName: timeZone ? "short" : undefined })}</time>;
 }
-export function RankObservations({ history, busy, loadOlder }: { history: PlayerProfile["rankHistory"]; busy: boolean; loadOlder: () => void }) {
+export function RankObservations({ history, busy, loadOlder, timeZone }: { history: PlayerProfile["rankHistory"]; busy: boolean; loadOlder?: () => void; timeZone?: string }) {
   return <details className="player-rank-observations">
     <summary>View rank observations <span>{history.observations.length}</span></summary>
     <p>Recorded snapshots only. Gaps and ranked resets may occur between observations; changes are not attributed to individual matches.</p>
     {history.observations.length ? <ol aria-label="Observed Solo/Duo ranks">{history.observations.map(row => <li key={row.id}>
-      <ProfileTime value={row.observedAt} /><strong>{rankValue(row)}</strong>
+      <ProfileTime value={row.observedAt} timeZone={timeZone} /><strong>{rankValue(row)}</strong>
       {row.wins !== null && row.losses !== null && <span>{row.wins}W–{row.losses}L</span>}
     </li>)}</ol> : <p>No rank observations recorded yet.</p>}
-    {history.nextCursor && <button type="button" className="entry-button" disabled={busy} onClick={loadOlder}>{busy ? "Loading observations…" : "Load older observations"}</button>}
+    {history.nextCursor && loadOlder && <button type="button" className="entry-button" disabled={busy} onClick={loadOlder}>{busy ? "Loading observations…" : "Load older observations"}</button>}
   </details>;
 }

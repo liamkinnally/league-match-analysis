@@ -29,6 +29,7 @@ import { useGameAssetCatalogs } from "../../lib/game-assets/use-game-assets";
 import { matchResult } from "../../lib/match-result";
 import type { GameAssetCatalog } from "../../lib/game-assets/types";
 import type {
+  CurrentRanks,
   DevelopmentInterval,
   MatchDevelopment,
   MatchDevelopmentWindow,
@@ -60,11 +61,13 @@ export function MatchDevelopmentView({
   data,
   interval,
   invented,
+  sampleRanks,
   assets: initialAssets,
 }: {
   data: MatchDevelopment;
   interval: DevelopmentInterval;
   invented: boolean;
+  sampleRanks?: CurrentRanks;
   assets?: GameAssetCatalog | null;
 }) {
   const search = useSearchParams();
@@ -90,12 +93,13 @@ export function MatchDevelopmentView({
     initialAssets === undefined
       ? (loadedAssets[data.summary.gameVersion] ?? null)
       : initialAssets;
-  const ranks = useCurrentRanks(
+  const liveRanks = useCurrentRanks(
     data.matchId,
     data.summary.queueId,
     data.roster.map((p) => p.participantId),
     invented,
   );
+  const ranks = sampleRanks ?? liveRanks;
   const focal = data.roster.find(
     (p) => p.participantId === data.summary.focusParticipantId,
   )!;
@@ -124,11 +128,13 @@ export function MatchDevelopmentView({
         <SiteBrand />
         <nav aria-label="Product navigation">
           <Link href="/">Home</Link>
-          <Link href={runeState.historyRunId ? `/search?runId=${runeState.historyRunId}` : "/search"}>Match history</Link>
+          {sampleRanks
+            ? <Link href="/sample/profile">Sample profile</Link>
+            : <Link href={runeState.historyRunId ? `/search?runId=${runeState.historyRunId}` : "/search"}>Match history</Link>}
           <span aria-current="page">Match detail</span>
         </nav>
         <span className="development-region">
-          {data.matchId.split("_")[0]} — {queueShort(data.summary.queueId)}
+          {sampleRanks ? "NA1" : data.matchId.split("_")[0]} — {queueShort(data.summary.queueId)}
         </span>
       </header>
       <div id="match-content" className="development-page" tabIndex={-1}>
@@ -146,7 +152,7 @@ export function MatchDevelopmentView({
             </span>
             <strong>{result.label}</strong>
             <span>{gameTime(data.summary.durationMs)}</span>
-            <AverageRank ranks={ranks} totalPlayers={data.roster.length} />
+            <AverageRank ranks={ranks} totalPlayers={data.roster.length} sample={Boolean(sampleRanks)} />
           </div>
           <div className="development-result__identity">
             <p className="development-kicker">
@@ -394,6 +400,7 @@ export function MatchDevelopmentView({
           interval={interval}
           assets={assets}
           ranks={ranks}
+          sampleRanks={Boolean(sampleRanks)}
           metric={metric}
           finalState={finalState}
         />

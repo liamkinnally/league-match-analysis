@@ -19,7 +19,9 @@ Player profiles have shareable `/summoners/{region}/{gameName}-{tagLine}` routes
 
 The match-development route reads normalized data and returns final results, the roster, timestamped samples, recorded events and selectable comparison windows. Participant, opponent, interval, metric, final-state tab and inspected rune participant selections are encoded in the URL so the view is shareable and restorable.
 
-The synthetic demo goes through the same decoder and persistence layer as normal match data. It is added only by the explicit seed command and is never inserted automatically at startup.
+The homepage links to `/sample/profile`, a fictional Challenger profile. Its eight built-in games use reserved `sample-*` match IDs. The profile summaries and playable timelines come from the same synthetic game catalog. These routes use the normal profile and match views without initiating a player lookup or writing to PostgreSQL.
+
+The separate seeded sample match goes through the same backend decoder and persistence layer as normal match data. The explicit seed command adds it to the database.
 
 ## Backend structure
 

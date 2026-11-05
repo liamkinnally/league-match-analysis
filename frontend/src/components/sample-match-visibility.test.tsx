@@ -1,7 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import Link from "next/link";
-import Home from "../app/page";
 import SearchPage from "../app/search/page";
 import ProfilePage from "../app/summoners/[region]/[riotId]/page";
 
@@ -24,11 +23,6 @@ const history = {
     position: "TOP", win: true, startedAtMs: 1788890400000, durationSeconds: 1800,
     kills: 7, deaths: 2, assists: 9, cs: 180, gold: 12500, timelineAvailable: true }],
 };
-
-it("keeps the sample on Home", () => {
-  render(<Home />);
-  expect(screen.getByRole("link", { name: "Explore sample match" })).toBeVisible();
-});
 
 it("offers the sample before searching and removes it when a search displays matches", async () => {
   vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => Response.json(history)));
