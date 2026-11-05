@@ -1,0 +1,90 @@
+name: Update test browser
+
+on:
+  schedule:
+    - cron: "37 9 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: test-browser-updates
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      publish: ${{ steps.pending.outputs.publish }}
+      version: ${{ steps.stable.outputs.version }}
+      manifest: ${{ steps.hashes.outputs.manifest }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: stable
+        name: Check Google Stable
+        run: python3 scripts/ci/update_test_browser.py --check | tee -a "$GITHUB_OUTPUT"
+      - id: pending
+        if: steps.stable.outputs.changed == 'true'
+        name: Check for an existing update
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          BASE: ${{ github.event.repository.default_branch }}
+          VERSION: ${{ steps.stable.outputs.version }}
+        run: |
+          branch="automation/chrome-$VERSION"
+          state=$(gh api --method GET "repos/$GH_REPO/pulls" -f state=all -f base="$BASE" \
+            -f head="${GH_REPO%%/*}:$branch" --jq '.[0].state // "missing"')
+          if [[ "$state" == closed ]]; then
+            echo "A maintainer already closed the update for $VERSION."
+            exit 0
+          fi
+          echo "publish=true" >> "$GITHUB_OUTPUT"
+          if [[ "$state" == missing ]]; then echo "download=true" >> "$GITHUB_OUTPUT"; fi
+      - id: hashes
+        if: steps.pending.outputs.download == 'true'
+        name: Verify all platform archives and prepare the pin manifest
+        env:
+          VERSION: ${{ steps.stable.outputs.version }}
+        run: |
+          python3 scripts/ci/update_test_browser.py --expected-version "$VERSION"
+          manifest=$(jq -ce --arg version "$VERSION" 'select(.browserVersion == $version)' frontend/test-browser-pins.json)
+          echo "manifest=$manifest" >> "$GITHUB_OUTPUT"
+
+  publish:
+    needs: discover
+    if: needs.discover.outputs.publish == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Open the version PR and start CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          BASE_BRANCH: ${{ github.event.repository.default_branch }}
+          VERSION: ${{ needs.discover.outputs.version }}
+          MANIFEST: ${{ needs.discover.outputs.manifest }}
+        run: |
+          if [[ -n "$MANIFEST" ]]; then
+            jq . <<< "$MANIFEST" > frontend/test-browser-pins.json
+          fi
+          bash scripts/ci/publish_test_browser.sh

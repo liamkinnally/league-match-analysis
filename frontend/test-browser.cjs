@@ -5,20 +5,7 @@ const { createReadStream, existsSync } = require("node:fs");
 const { mkdir, mkdtemp, rename, rm } = require("node:fs/promises");
 const { join } = require("node:path");
 
-// Hashes of the corresponding official Chrome for Testing archives.
-const browserVersion = "157.0.8103.38";
-const chromeHashes = {
-  "mac-arm64": "3406b38b52b7d341d74450eb7b369be038c9fec9894c8b8a9e9e9f97333caf2f",
-  "mac-x64": "c6fcc2869b0d5a421e880d7bcdabe96e4261c4100e125fc4e4daf6346474efa6",
-  "linux-arm64": "5517510e61657ff43ee9ab804ecd1a499b3d5bd3caf72f097516bd6565ba5a17",
-  linux64: "8cdeb344e9b2cefe59f4aea8d1d93d5d93054c03cde217665c16fc1f62e72a66",
-  win32: "be61f767e50b6d94586710afa138535306084b438d9e30bee600a538e16a278a",
-  win64: "ae0deef27d449e1d7529df7705d609bab102de48464da13567ed3dd2ee1a0586",
-};
-const visualShellHashes = {
-  linux64: "deafffa74660b34853a4119c361fd427ac8c9fcb62db51ddb8a797cd83a4ba2d",
-  "linux-arm64": "b9b910a57b2a15eb3e55000a2339f93a973934a413ebfc6e585a50ec6c42fd6c",
-};
+const { browserVersion, chromeHashes, visualShellHashes } = require("./test-browser-pins.json");
 const platform = {
   "darwin-arm64": "mac-arm64", "darwin-x64": "mac-x64",
   "linux-arm64": "linux-arm64", "linux-x64": "linux64",

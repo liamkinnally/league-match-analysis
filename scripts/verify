@@ -8,7 +8,6 @@ script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
 repo_dir=$(cd "$script_dir/.." && pwd -P)
 backend_dir="$repo_dir/backend"
 frontend_dir="$repo_dir/frontend"
-visual_image="league-analysis-visual:chrome-157.0.8103.38"
 
 usage() {
   cat <<'EOF'
@@ -94,6 +93,9 @@ ui_sample() {
 }
 
 ui_visual() {
+  local browser_version visual_image
+  browser_version=$(node -p 'require(process.argv[1]).browserVersion' "$frontend_dir/test-browser-pins.json")
+  visual_image="league-analysis-visual:chrome-$browser_version"
   run_in "$repo_dir" docker build --platform linux/amd64 -f frontend/Dockerfile.visual -t "$visual_image" .
   run_in "$repo_dir" docker run --rm --network none --cap-drop ALL --security-opt no-new-privileges --platform linux/amd64 \
     -v "$frontend_dir/e2e-visual/snapshots:/workspace/frontend/e2e-visual/snapshots" \
