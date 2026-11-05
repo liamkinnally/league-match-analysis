@@ -17,7 +17,7 @@ RUN npm ci
 RUN ./node_modules/.bin/playwright install-deps chromium && rm -rf /var/lib/apt/lists/*
 
 ENV LEAGUE_VISUAL_CONTAINER=1
-COPY frontend/test-browser.cjs ./
+COPY frontend/test-browser.cjs frontend/test-browser-pins.json ./
 RUN node test-browser.cjs install
 
 COPY frontend/ ./

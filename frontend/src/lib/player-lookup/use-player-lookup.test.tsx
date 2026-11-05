@@ -12,10 +12,12 @@ const page = (n: number, ids: number[], extra: Partial<PlayerLookup> = {}): Play
   status: "COMPLETE", message: null, retryNotBefore: null, lastUpdated: "2026-09-12T00:00:00Z", nextRefreshAt: null,
   previousRunId: null, hasMore: true, matches: ids.map(id => ({ ...match(id), queueId: extra.queueId ?? 420 })), ...extra });
 afterEach(() => { vi.useRealTimers(); push.mockClear(); });
-it("appends and deduplicates older results, retries against the original parent, and saves the final handle", async () => {
-  const fetcher = vi.fn().mockResolvedValueOnce(Response.json(page(1, [1, 2])))
+it("retries older all-queues results, deduplicates matches and saves the final run in the URL", async () => {
+  const first = { ...page(1, [1, 2]), queueId: 0 };
+  const older = { ...page(2, [2, 3]), queueId: 0, previousRunId: first.runId };
+  const fetcher = vi.fn().mockResolvedValueOnce(Response.json(first))
     .mockResolvedValueOnce(Response.json({}, { status: 503 }))
-    .mockResolvedValueOnce(Response.json(page(2, [2, 3], { previousRunId: id(1) })));
+    .mockResolvedValueOnce(Response.json(older));
   vi.stubGlobal("fetch", fetcher);
   const hook = renderHook(() => usePlayerLookup(id(1)));
   await act(async () => {});
