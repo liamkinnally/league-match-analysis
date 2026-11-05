@@ -162,7 +162,7 @@ it("searches all queues before exposing a result filter and labels each match by
     if (url.startsWith("/api/game-assets")) return Response.json({});
     const input = JSON.parse(String(options.body));
     return Response.json({ ...running, runId: input.queueId === 0 ? runId : "00000000-0000-0000-0000-000000000002",
-      gameName: input.gameName, queueId: input.queueId, status: "COMPLETE",
+      gameName: input.gameName, queueId: input.queueId, status: "COMPLETE", hasMore: input.queueId === 0,
       matches: input.queueId === 0 ? [match, { ...match, matchId: "NA1_22", queueId: 480 }] : [{ ...match, matchId: "NA1_23", queueId: 480 }] });
   });
   vi.stubGlobal("fetch", fetcher);
@@ -184,6 +184,7 @@ it("searches all queues before exposing a result filter and labels each match by
   expect(JSON.parse(posts[1][1].body)).toEqual({ gameName: "Invented", tagLine: "NA1", platform: "NA1", queueId: 480 });
   expect(screen.getByLabelText("Queue Type")).toHaveValue("480");
   expect(within(screen.getByRole("list", { name: "Recent match history" })).queryByText("Ranked Solo/Duo")).not.toBeInTheDocument();
+  expect(screen.getByText("End of match history for this queue.")).toBeVisible();
   await act(async () => fireEvent.click(screen.getByRole("button", { name: "Find matches" })));
   expect(screen.getByLabelText("Queue Type")).toHaveValue("0");
 });
