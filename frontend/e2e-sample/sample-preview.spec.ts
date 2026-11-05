@@ -38,6 +38,11 @@ test("tokenless sample supports match selection and URL restoration", async ({ p
   await expect(history.getByRole("link")).toHaveCount(8);
   await expect(page.getByRole("heading", { name: /Northline.*#DEMO/ })).toBeVisible();
   await expect(page.getByText("Challenger", { exact: true }).first()).toBeVisible();
+  const update = page.getByRole("button", { name: "Update", exact: true });
+  const jump = page.getByRole("link", { name: "View match history", exact: true });
+  await expect(jump).toBeHidden();
+  await update.click();
+  await expect(page.getByText("Sample profile is up to date.")).toBeVisible();
   const links = await history.getByRole("link").evaluateAll(rows => rows.map(row => row.getAttribute("href")));
   expect(new Set(links).size).toBe(8);
   for (const index of [0, 1]) {
@@ -50,6 +55,10 @@ test("tokenless sample supports match selection and URL restoration", async ({ p
   }
   await page.setViewportSize({ width: 390, height: 844 });
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await expect(update).toBeHidden();
+  await jump.click();
+  await expect(page).toHaveURL(/#match-history$/);
+  await expect(page.getByRole("heading", { name: "Match history", exact: true })).toBeInViewport();
   await page.screenshot({ path: "test-results/sample-profile-mobile.png", fullPage: true });
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.screenshot({ path: "test-results/sample-profile-desktop.png", fullPage: true });

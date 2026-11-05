@@ -17,12 +17,15 @@ function sampleMatchHref(match: MatchSummary) {
 
 export function SamplePlayerProfile({ matches }: { matches: MatchSummary[] }) {
   const [queueId, setQueueId] = useState(0);
+  const [checkedForUpdate, setCheckedForUpdate] = useState(false);
   const selected = queueId === 0 ? matches : matches.filter(match => match.queueId === queueId);
   const catalogs = useGameAssetCatalogs(matches.map(match => match.gameVersion));
   return <>
     <PlayerProfileHeader identity={samplePlayerProfile.identity} profile={samplePlayerProfile} label="Sample player profile">
-      <a className="entry-button" href="#match-history">View match history</a>
-      <small>Sample profile · Synthetic data</small>
+      <button className="entry-button profile-update sample-profile-update" type="button" disabled={checkedForUpdate}
+        onClick={() => setCheckedForUpdate(true)}>Update</button>
+      <a className="entry-button sample-history-shortcut" href="#match-history">View match history</a>
+      <small aria-live="polite">{checkedForUpdate ? "Sample profile is up to date." : "Sample profile · Synthetic data"}</small>
     </PlayerProfileHeader>
     <div className="profile-layout">
       <aside className="profile-sidebar" aria-label="Player ranks and champions">

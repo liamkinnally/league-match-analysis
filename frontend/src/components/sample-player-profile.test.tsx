@@ -22,6 +22,9 @@ it("filters the sample history and recent stats together while preserving the Ch
   render(<SamplePlayerProfile matches={[solo, earlier, flex]} />);
 
   expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Northline#DEMO");
+  fireEvent.click(screen.getByRole("button", { name: "Update" }));
+  expect(screen.getByText("Sample profile is up to date.")).toBeVisible();
+  expect(fetcher).not.toHaveBeenCalled();
   const ranked = within(screen.getByRole("region", { name: "Ranked Solo/Duo" }));
   expect(ranked.getByText("Challenger")).toBeVisible();
   expect(ranked.getByText("1,284")).toHaveTextContent("1,284 LP");
