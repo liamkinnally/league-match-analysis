@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { expect, it } from "vitest";
 import type { RankObservation } from "../lib/player-lookup/profile";
 import { buildRankHistorySeries, RankHistoryChart } from "./rank-history-chart";
@@ -39,7 +40,13 @@ it("shows truthful empty and single-observation states without an invented histo
   expect(screen.queryByRole("img", { name: /LP history/ })).not.toBeInTheDocument();
 });
 
-it("gives the chart a text alternative with the exact recorded ranks", () => {
-  render(<RankHistoryChart history={{ trackingSince: "2026-09-01T10:00:00Z", observations: [rank(1), rank(3, { leaguePoints: 70 })], nextCursor: null }} />);
-  expect(screen.getByRole("img", { name: "LP history from 2 rank updates" })).toHaveAccessibleDescription(/Diamond I · 99 LP.*Diamond I · 70 LP/);
+it("server-renders each chart point's timestamp and rank along with the chart description", () => {
+  const html = renderToString(<RankHistoryChart timeZone="UTC" history={{ trackingSince: "2026-09-01T10:00:00Z", observations: [rank(1), rank(3, { leaguePoints: 70 })], nextCursor: null }} />);
+  render(<div dangerouslySetInnerHTML={{ __html: html }} />);
+  const chart = screen.getByRole("img", { name: "LP history from 2 rank updates" });
+  expect(chart).toHaveAccessibleDescription(/Diamond I · 99 LP.*Diamond I · 70 LP/);
+  expect(Array.from(chart.querySelectorAll("circle title"), title => title.textContent)).toEqual([
+    "9/1/2026, 10:00:00 AM: Diamond I · 99 LP",
+    "9/3/2026, 10:00:00 AM: Diamond I · 70 LP",
+  ]);
 });

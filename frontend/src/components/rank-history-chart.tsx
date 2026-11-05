@@ -69,7 +69,7 @@ export function RankHistoryChart({ history, timeZone }: { history: PlayerProfile
       </g>)}
       {connections.map(([a, b]) => <path key={`${a.row.id}-${b.row.id}`} className="player-rank-chart__line" d={`M ${x(a)} ${y(a)} L ${x(b)} ${y(b)}`} />)}
       {points.map(point => <circle key={point.row.id} className="player-rank-chart__point" cx={x(point)} cy={y(point)} r="4">
-        <title>{timestamp(point.time)}: {rankValue(point.row)}</title>
+        <title>{`${timestamp(point.time)}: ${rankValue(point.row)}`}</title>
       </circle>)}
     </svg>
     <div className="player-rank-chart__dates"><time dateTime={first.row.observedAt}>{formatDate(first.row)}</time><time dateTime={last.row.observedAt}>{formatDate(last.row)}</time></div>
