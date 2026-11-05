@@ -8,6 +8,7 @@ import {
 } from "../../../../lib/development/backend-client";
 import {
   developmentHref,
+  isSampleMatchRoute,
   parseDevelopmentSearch,
   type DevelopmentSearchParams,
 } from "../../../../lib/development/route";
@@ -20,14 +21,24 @@ type Props = {
 export default async function DevelopmentPage({ params, searchParams }: Props) {
   const [{ matchId }, rawSearch] = await Promise.all([params, searchParams]);
   const selection = parseDevelopmentSearch(rawSearch);
+  const fromSampleProfile = isSampleMatchRoute(matchId);
 
   let data;
+  let sampleRanks;
   let demo = null;
   try {
-    [data, demo] = await Promise.all([
-      getMatchDevelopment(matchId, selection.focus, selection.compare),
-      getDemoMatch().catch(() => null),
-    ]);
+    if (fromSampleProfile) {
+      const { getSampleDevelopment } = await import("../../../../sample/catalog");
+      data = getSampleDevelopment(matchId, selection.focus, selection.compare);
+      if (!data) return notFound();
+      const { sampleMatchRanks } = await import("../../../../sample/match-ranks");
+      sampleRanks = sampleMatchRanks(data);
+    } else {
+      [data, demo] = await Promise.all([
+        getMatchDevelopment(matchId, selection.focus, selection.compare),
+        getDemoMatch().catch(() => null),
+      ]);
+    }
   } catch (error) {
     if (error instanceof DevelopmentNotFoundError) notFound();
     throw error;
@@ -102,8 +113,9 @@ export default async function DevelopmentPage({ params, searchParams }: Props) {
     <MatchDevelopmentView
       data={data}
       interval={interval}
+      sampleRanks={sampleRanks}
       invented={
-        (developmentLabEnabled() && matchId.startsWith("__lab_development")) ||
+        fromSampleProfile || (developmentLabEnabled() && matchId.startsWith("__lab_development")) ||
         (demo?.invented === true && demo.matchId === data.matchId)
       }
     />

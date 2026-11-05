@@ -9,8 +9,7 @@ test("sample development wide", async ({ page, request }) => {
   const endpointResponse = await request.get(`http://127.0.0.1:${process.env.E2E_BACKEND_PORT ?? "8080"}/api/v1${sampleRoute}`);
   expect(endpointResponse.ok()).toBe(true);
   const endpoint = await endpointResponse.json();
-  await page.goto("/");
-  await page.getByRole("link", { name: "Explore sample match" }).click();
+  await page.goto(sampleRoute);
   await expect(page.getByText("Sample match — synthetic data")).toBeVisible();
   await expect(page.getByRole("tab", { name: "Gold" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Garen vs Darius" })).toBeVisible();

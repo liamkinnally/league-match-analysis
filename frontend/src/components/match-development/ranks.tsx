@@ -10,6 +10,8 @@ import {
 } from "../../lib/development/results";
 import type { CurrentRanks, PlayerRank } from "../../lib/development/types";
 
+const sampleAverageMethod = "The average uses the fictional tiers shown on this scoreboard. Each tier contributes one step above Diamond I.";
+
 function Emblem({ url }: { url: string | null }) {
   return (
     <GameAssetIcon
@@ -22,13 +24,15 @@ function Emblem({ url }: { url: string | null }) {
 export function RankBadge({
   record,
   queueId,
+  sample = false,
 }: {
   record?: PlayerRank;
   queueId: number;
+  sample?: boolean;
 }) {
   if (!queueType(queueId)) return null;
   const rank = rankDisplay(record);
-  const current = `Current ${queueShort(queueId)} rank: ${rank.label}`;
+  const current = `${sample ? "Sample" : "Current"} ${queueShort(queueId)} rank: ${rank.label}`;
   return (
     <CompactTooltip
       label={current}
@@ -38,7 +42,7 @@ export function RankBadge({
           <strong>{current}</strong>
           <p>
             {rank.status === "ranked"
-              ? `${numberText(record?.leaguePoints)} LP. Current rank, not rank at match time or MMR.`
+              ? sample ? `${numberText(record?.leaguePoints)} LP in this sample.` : `${numberText(record?.leaguePoints)} LP. Current rank, not rank at match time or MMR.`
               : rank.status === "unranked"
                 ? "Riot returned no ranked entry for this queue."
                 : rank.status === "loading"
@@ -71,26 +75,29 @@ export function RankBadge({
 export function AverageRank({
   ranks,
   totalPlayers,
+  sample = false,
 }: {
   ranks: CurrentRanks;
   totalPlayers: number;
+  sample?: boolean;
 }) {
   if (!ranks.queueType) return null;
   const average = currentRankAverage(ranks.players, totalPlayers);
   const label =
     average.label ?? (ranks.refreshing ? "Loading…" : "Unavailable");
+  const prefix = sample ? "Sample" : "Current";
   return (
     <div className="refined-rank-average" aria-live="polite" aria-atomic="true">
-      <span className="refined-average-caption">Current avg. tier</span>
+      <span className="refined-average-caption">{prefix} avg. tier</span>
       <CompactTooltip
-        label={`Current average tier: ${label}. ${average.contributors} of ${totalPlayers} players contribute.`}
+        label={`${prefix} average tier: ${label}. ${average.contributors} of ${totalPlayers} players contribute.`}
         content={
           <>
-            <strong>Current average tier: {label}</strong>
+            <strong>{prefix} average tier: {label}</strong>
             <p>
               {average.contributors} of {totalPlayers} players contribute.
             </p>
-            <p>{AVERAGE_RANK_METHOD}</p>
+            <p>{sample ? sampleAverageMethod : AVERAGE_RANK_METHOD}</p>
           </>
         }
       >
@@ -106,10 +113,12 @@ export function RankDetails({
   ranks,
   totalPlayers,
   queueId,
+  sample = false,
 }: {
   ranks: CurrentRanks;
   totalPlayers: number;
   queueId: number;
+  sample?: boolean;
 }) {
   if (!ranks.queueType) return null;
   const average = currentRankAverage(ranks.players, totalPlayers);
@@ -117,15 +126,15 @@ export function RankDetails({
     ranks.players.filter((p) => rankDisplay(p).status === status).length;
   return (
     <div className="refined-rank-note">
-      <span>Current {queueShort(queueId)} ranks</span>
+      <span>{sample ? "Sample" : "Current"} {queueShort(queueId)} ranks</span>
       <details>
         <summary>Rank details</summary>
         <div className="refined-rank-explanation">
-          <p>
+          {sample ? <p>Ranks and LP in this match are fictional sample values.</p> : <p>
             Current queue-specific ranks from Riot’s League API; these are not
             match-time ranks or MMR. Names are the identities recorded in this
             match.
-          </p>
+          </p>}
           <p>
             {average.contributors} ranked, {counts("unranked")} confirmed
             unranked, {counts("unavailable")} unavailable, {counts("loading")}{" "}
@@ -140,7 +149,7 @@ export function RankDetails({
                 : "Each rank’s tooltip includes its check time."}
             </p>
           ) : null}
-          <p>{AVERAGE_RANK_METHOD}</p>
+          <p>{sample ? sampleAverageMethod : AVERAGE_RANK_METHOD}</p>
         </div>
       </details>
     </div>

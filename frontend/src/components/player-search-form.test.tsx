@@ -1,10 +1,31 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { afterEach, expect, it, vi } from "vitest";
 import { PlayerSearchForm } from "./player-search-form";
 
 vi.mock("../lib/game-assets/use-game-assets", () => ({ useCurrentProfileAssets: () => null }));
 afterEach(() => { vi.useRealTimers(); });
 const suggestion = (gameName: string, platform = "NA1") => ({ gameName, tagLine: "000", platform, profileIconId: null, summonerLevel: 50 });
+
+it("enables region, Riot ID and submit only when the search handlers are connected", () => {
+  const submit = vi.fn();
+  const form = <PlayerSearchForm onSubmit={submit} submitting={false} />;
+  const container = document.body.appendChild(document.createElement("div"));
+  container.innerHTML = renderToString(form);
+  const view = within(container);
+  const region = view.getByRole("combobox", { name: "Region" });
+  const input = view.getByRole("combobox", { name: "Riot ID" });
+  const button = view.getByRole("button", { name: "Find matches" });
+  for (const control of [region, input, button]) expect(control).toBeDisabled();
+
+  render(form, { container, hydrate: true });
+  for (const control of [region, input, button]) expect(control).toBeEnabled();
+  fireEvent.change(region, { target: { value: "KR" } });
+  expect(input).toHaveAttribute("placeholder", "Game name + #KR1");
+  fireEvent.change(input, { target: { value: "Player#KR1" } });
+  fireEvent.click(button);
+  expect(submit).toHaveBeenCalledWith({ platform: "KR", gameName: "Player", tagLine: "KR1", queueId: 0 });
+});
 
 it("updates cached suggestions per character, limits to five, and selects by keyboard", async () => {
   vi.useFakeTimers();

@@ -1,12 +1,16 @@
 "use client";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { GameAssetIcon } from "./game-asset-icon";
 import { useCurrentProfileAssets } from "../lib/game-assets/use-game-assets";
 import { isPlatform, parseRiotId, regions, regionFor, type PlayerIdentity, type Platform } from "../lib/player-lookup/regions";
 import { parseSuggestions, type PlayerSuggestion } from "../lib/player-lookup/suggestions";
 
 type Props = { identity?: PlayerIdentity; submitting: boolean; profile?: boolean; onSubmit: (input: PlayerIdentity & { queueId: number }) => unknown };
+// Readiness changes once when React switches from the server snapshot to the client.
+const subscribeToHydration = () => () => {};
+
 export function PlayerSearchForm({ identity, submitting, profile = false, onSubmit }: Props) {
+  const ready = useSyncExternalStore(subscribeToHydration, () => true, () => false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [editedValue, setEditedValue] = useState<string | null>(null);
   const [editedPlatform, setEditedPlatform] = useState<Platform | null>(null);
@@ -55,13 +59,13 @@ export function PlayerSearchForm({ identity, submitting, profile = false, onSubm
       <label className="player-search__riot-label" htmlFor={`${id}-riot`}>Riot ID</label>
       <div className="player-search__input-group">
         <label className="player-search__region"><span className="profile-sr-only">Region</span>
-          <select name="platform" title={regionFor(platform).name} value={platform} onChange={event => {
+          <select name="platform" title={regionFor(platform).name} value={platform} disabled={!ready} onChange={event => {
             if (isPlatform(event.target.value)) setEditedPlatform(event.target.value);
             setActive(-1); setDismissed(false); setError(null);
           }}>{regions.map(region => <option value={region.platform} key={region.platform}>{region.label}</option>)}</select>
         </label>
         <div className="player-search__identity-input">
-        <input ref={inputRef} id={`${id}-riot`} name="riotId" role="combobox" aria-autocomplete="list" aria-expanded={open}
+        <input ref={inputRef} id={`${id}-riot`} name="riotId" role="combobox" disabled={!ready} aria-autocomplete="list" aria-expanded={open}
           aria-controls={open ? listId : undefined} aria-activedescendant={open && active >= 0 && suggestions[active] ? `${id}-option-${active}` : undefined}
           aria-describedby={error ? `${id}-error` : undefined} aria-invalid={error ? true : undefined}
           placeholder={`Game name + #${regionFor(platform).exampleTag}`} maxLength={81} required autoComplete="off" autoCapitalize="none" spellCheck={false} value={value}
@@ -94,7 +98,7 @@ export function PlayerSearchForm({ identity, submitting, profile = false, onSubm
         {!suggestions.length && <p className="player-search__suggestions-empty" role="status">{result?.key !== key ? "Searching cached profiles…" : result.unavailable ? "Suggestions unavailable. Enter a full Riot ID to search." : "No cached profiles. Enter a full Riot ID to search."}</p>}
       </div>}
     </div>
-    <button type="submit" disabled={submitting}>{submitting ? "Finding matches…" : "Find matches"}<span aria-hidden="true">→</span></button>
+    <button type="submit" disabled={!ready || submitting}>{submitting ? "Finding matches…" : "Find matches"}<span aria-hidden="true">→</span></button>
     {error && <p id={`${id}-error`} role="alert" className="player-search__error">{error}</p>}
   </form>;
 }

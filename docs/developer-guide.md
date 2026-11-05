@@ -85,6 +85,7 @@ This manual check exercises current Riot responses. Automated fixtures provide r
 | Route | Purpose |
 | --- | --- |
 | `/` | Player lookup and sample entry point |
+| `/sample/profile` | Built-in Challenger profile and playable synthetic match history |
 | `/search?run=...` | Polls and displays a live lookup |
 | `/matches/{matchId}/development` | Current match-development view |
 | `/api/player-matches` | Next.js proxy for starting a lookup |
@@ -150,7 +151,7 @@ Reuse passing evidence while the relevant code and environment remain unchanged.
 
 The sample browser check starts a separate frontend with synthetic preview data and no backend URL or service token. It verifies the sample entry and match controls without starting Spring or PostgreSQL. Run it for changes to sample preview behavior; it is also included in the full and cross-layer checks.
 
-The preview sample is derived from the backend's canonical synthetic seed inputs. After changing those inputs, run `node frontend/scripts/generate-preview-sample.mjs` and rerun the sample tests. This frontend projection is only for synthetic previews; normal match calculations remain in the backend.
+The homepage sample profile uses the same built-in game catalog in every environment. The separate preview of the seeded match is derived from the backend's canonical synthetic seed inputs. After changing those inputs, run `node frontend/scripts/generate-preview-sample.mjs` and rerun the sample tests. This frontend projection is only for synthetic previews; normal match calculations remain in the backend.
 
 ### Releases and CI
 

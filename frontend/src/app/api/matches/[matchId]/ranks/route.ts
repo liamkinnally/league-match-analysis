@@ -1,12 +1,13 @@
 import { parseCurrentRanks } from "../../../../../lib/development/response-guards";
 import { backendFetch } from "../../../../../lib/backend-transport";
+import { isSampleMatchRoute } from "../../../../../lib/development/route";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ matchId: string }> },
 ) {
   const { matchId } = await params;
-  if (!/^[A-Za-z0-9_-]{1,100}$/.test(matchId))
+  if (isSampleMatchRoute(matchId) || !/^[A-Za-z0-9_-]{1,100}$/.test(matchId))
     return Response.json({ error: "INVALID_MATCH_ID" }, { status: 400 });
   try {
     const response = await backendFetch(

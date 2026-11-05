@@ -7,18 +7,18 @@ import { useCurrentProfileAssets } from "../lib/game-assets/use-game-assets";
 import type { PlayerProfile, ProfileIdentity, SoloRank } from "../lib/player-lookup/profile";
 
 type ProfileState = {
-  identity: ProfileIdentity; profile: PlayerProfile | null; loading: boolean;
-  issue: { message: string; retryNotBefore: string | null } | null;
-  loadingOlder: boolean; busy: boolean; loadOlder: () => void; reload: () => void;
+  identity: ProfileIdentity; profile: Omit<PlayerProfile, "recentSolo"> | null; loading?: boolean;
+  issue?: { message: string; retryNotBefore: string | null } | null;
+  loadingOlder?: boolean; busy?: boolean; loadOlder?: () => void; reload?: () => void;
 };
 
-export function PlayerProfileHeader({ identity, profile, loading, issue, busy, reload, children }: Pick<ProfileState, "identity" | "profile" | "loading" | "issue" | "busy" | "reload"> & { children?: ReactNode }) {
+export function PlayerProfileHeader({ identity, profile, loading, issue, busy, reload, children, label = "Searched player profile" }: Pick<ProfileState, "identity" | "profile" | "loading" | "issue" | "busy" | "reload"> & { children?: ReactNode; label?: string }) {
   const assets = useCurrentProfileAssets();
   const player = profile?.identity ?? identity;
   const region = regionFor(player.platform);
   const iconId = profile?.summoner.profileIconId;
   const level = profile?.summoner.summonerLevel;
-  return <header className="profile-header" aria-label="Searched player profile">
+  return <header className="profile-header" aria-label={label}>
     <div className="profile-header__portrait">
       <GameAssetIcon asset={iconId == null ? undefined : assets?.profileIcons?.[String(iconId)]} fallback={player.gameName.slice(0, 2)} className="profile-header__icon" />
       {level != null && <span className="profile-header__level" aria-label={`Level ${level}`}>{level.toLocaleString("en-US")}</span>}
@@ -28,15 +28,15 @@ export function PlayerProfileHeader({ identity, profile, loading, issue, busy, r
       {!profile && <small>{loading ? "Loading profile…" : "Profile details unavailable"}</small>}
       {profile?.summoner.refreshing && <small>Updating profile…</small>}
       {profile && (profile.summoner.stale || profile.summoner.error) && <small>Profile may be out of date</small>}
-      {issue && <div className="profile-header__issue" role="status">{issue.message} <button type="button" className="entry-button" disabled={busy} onClick={reload}>Check profile</button></div>}
+      {issue && <div className="profile-header__issue" role="status">{issue.message} {reload && <button type="button" className="entry-button" disabled={busy} onClick={reload}>Check profile</button>}</div>}
     </div>
     {children && <div className="profile-header__actions">{children}</div>}
   </header>;
 }
 
-function RankUpdatedAt({ value, now }: { value: string; now: number }) {
+function RankUpdatedAt({ value, now, timeZone }: { value: string; now: number; timeZone?: string }) {
   const elapsed = now - Date.parse(value);
-  if (now <= 0 || elapsed > 24 * 60 * 60 * 1000) return <ProfileTime value={value} />;
+  if (now <= 0 || elapsed > 24 * 60 * 60 * 1000) return <ProfileTime value={value} timeZone={timeZone} />;
   const minutes = Math.max(0, Math.floor(elapsed / 60000));
   const hours = Math.floor(minutes / 60);
   const label = hours > 0 ? `${hours} ${hours === 1 ? "hour" : "hours"} ago`
@@ -44,7 +44,7 @@ function RankUpdatedAt({ value, now }: { value: string; now: number }) {
   return <time dateTime={value}>{label}</time>;
 }
 
-function RankDetails({ rank, now, compact = false }: { rank: SoloRank; now: number; compact?: boolean }) {
+function RankDetails({ rank, now, timeZone, compact = false }: { rank: SoloRank; now: number; timeZone?: string; compact?: boolean }) {
   const assets = useCurrentProfileAssets();
   const tier = rank.tier ? rank.tier[0] + rank.tier.slice(1).toLowerCase() : "";
   const division = rank.tier && ["MASTER", "GRANDMASTER", "CHALLENGER"].includes(rank.tier) ? "" : ` ${rank.division ?? ""}`;
@@ -60,19 +60,19 @@ function RankDetails({ rank, now, compact = false }: { rank: SoloRank; now: numb
       <span className="profile-rank__record-label">{compact ? "Ranked Flex" : "Ranked Solo/Duo"}</span>
       {total > 0 ? <><strong>{rank.wins}W <span>–</span> {rank.losses}L</strong><span className={`profile-rank__rate${!compact && rank.wins! < rank.losses! ? " profile-rank__rate--losing" : ""}`}>{Number((100 * rank.wins! / total).toFixed(1))}% <small>win rate</small></span></> : <span>No ranked games recorded</span>}
     </div>}
-    {rank.fetchedAt && <small className="profile-rank__freshness">Last updated: <RankUpdatedAt value={rank.fetchedAt} now={now} /></small>}
+    {rank.fetchedAt && <small className="profile-rank__freshness">Last updated: <RankUpdatedAt value={rank.fetchedAt} now={now} timeZone={timeZone} /></small>}
     {(rank.refreshing || rank.error) && <small className="profile-rank__freshness">{rank.refreshing ? "Updating rank…" : "Update unavailable · Showing saved rank"}</small>}
   </div>;
 }
 
-export function PlayerProfilePanel({ profile, loading, loadingOlder, busy, loadOlder, now = 0 }: Pick<ProfileState, "profile" | "loading" | "issue" | "loadingOlder" | "busy" | "loadOlder"> & { now?: number }) {
+export function PlayerProfilePanel({ profile, loading, loadingOlder = false, busy = false, loadOlder, now = 0, timeZone }: Pick<ProfileState, "profile" | "loading" | "issue" | "loadingOlder" | "busy" | "loadOlder"> & { now?: number; timeZone?: string }) {
   return <div className="profile-ranks">
     <section className="profile-panel profile-panel--rank" aria-labelledby="solo-rank-title">
       <h2 id="solo-rank-title">Ranked Solo/Duo</h2>
       {profile ? <>
-        <RankDetails rank={profile.soloRank} now={now} />
-        <div className="profile-lp-history"><RankHistoryChart history={profile.rankHistory} /></div>
-        <RankObservations history={profile.rankHistory} busy={loadingOlder || busy} loadOlder={loadOlder} />
+        <RankDetails rank={profile.soloRank} now={now} timeZone={timeZone} />
+        <div className="profile-lp-history"><RankHistoryChart history={profile.rankHistory} timeZone={timeZone} /></div>
+        <RankObservations history={profile.rankHistory} busy={loadingOlder || busy} loadOlder={loadOlder} timeZone={timeZone} />
       </> : <p className="profile-panel__empty">{loading ? "Loading rank…" : "Rank unavailable. Update this profile to try again."}</p>}
     </section>
     {profile?.flexRank.status === "unranked" ? <section className="profile-panel profile-flex" aria-label="Ranked Flex"><div className="profile-flex__summary"><span>Ranked Flex</span><span>Unranked</span></div></section>
@@ -80,7 +80,7 @@ export function PlayerProfilePanel({ profile, loading, loadingOlder, busy, loadO
         <summary className="profile-flex__summary"><span>Ranked Flex</span>
           {profile.flexRank.status !== "ranked" && <span>{profile.flexRank.status === "loading" ? "Loading…" : "Unavailable"}</span>}
         </summary>
-        <RankDetails rank={profile.flexRank} now={now} compact />
+        <RankDetails rank={profile.flexRank} now={now} timeZone={timeZone} compact />
       </details>}
   </div>;
 }

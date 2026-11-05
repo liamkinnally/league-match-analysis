@@ -59,6 +59,7 @@ export function Scoreboard({
   interval,
   assets,
   ranks,
+  sampleRanks = false,
   metric,
   finalState,
 }: {
@@ -66,6 +67,7 @@ export function Scoreboard({
   interval: DevelopmentInterval;
   assets: GameAssetCatalog | null;
   ranks: CurrentRanks;
+  sampleRanks?: boolean;
   metric: Metric;
   finalState?: FinalStateSelection;
 }) {
@@ -87,6 +89,7 @@ export function Scoreboard({
         </div>
         <RankDetails
           ranks={ranks}
+          sample={sampleRanks}
           totalPlayers={data.roster.length}
           queueId={data.summary.queueId}
         />
@@ -205,6 +208,7 @@ export function Scoreboard({
                             <span className="refined-player-line">
                               <strong>{name}</strong>
                               <RankBadge
+                                sample={sampleRanks}
                                 record={rank}
                                 queueId={data.summary.queueId}
                               />

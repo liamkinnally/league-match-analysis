@@ -4,7 +4,7 @@ A League of Legends match-history and timeline application built with Java, Spri
 
 [Open the site](https://lolmatchanalysis.app) · [Architecture](docs/architecture.md) · [Development guide](docs/developer-guide.md)
 
-Live lookup is subject to Riot API availability and request limits. The included synthetic match can be explored without a Riot API key.
+Live lookup is subject to Riot API availability and request limits. Choose **Explore sample profile** on the homepage to browse a fictional Challenger player’s match history and open any of its eight games without a Riot API key.
 
 ## Match review
 
@@ -64,7 +64,7 @@ Put your development `RIOT_API_KEY` in the ignored root `.env`, then start the l
 
 Open [localhost:3000](http://127.0.0.1:3000). The command starts a dedicated local PostgreSQL database, Spring backend and Next.js frontend. The key is passed only to the backend. Frontend edits reload automatically; restart the command after backend or environment changes. Ctrl+C stops the processes and PostgreSQL started by the command and preserves the database.
 
-Use `./scripts/dev app` for the real backend with live lookup disabled, or `./scripts/dev fixture` for deterministic browser fixtures on [localhost:3100](http://127.0.0.1:3100). Both modes run without a Riot key. To add the synthetic match to the live/offline development database, run `./scripts/seed-demo` from a second terminal after the app starts.
+Use `./scripts/dev app` for the real backend with live lookup disabled, or `./scripts/dev fixture` for deterministic browser fixtures on [localhost:3100](http://127.0.0.1:3100). Both modes run without a Riot key. To add the separate, persisted sample match to the live/offline development database, run `./scripts/seed-demo` from a second terminal after the app starts.
 
 See the [development guide](docs/developer-guide.md) for ports, focused checks, live lookup checks and troubleshooting.
 
@@ -80,7 +80,7 @@ docker compose --project-name league-analysis-app --file compose.app.yaml --env-
 docker compose --project-name league-analysis-app --file compose.app.yaml --env-file .env run --rm --no-deps backend --spring.main.web-application-type=none --seed-demo
 ```
 
-Open [localhost:3416](http://127.0.0.1:3416) and choose **Explore sample match**. Keep `RIOT_API_KEY` blank and `RIOT_PUBLIC_LOOKUP_ENABLED=false` to use only the synthetic sample.
+Open [localhost:3416](http://127.0.0.1:3416) and choose **Explore sample profile**. The profile works as soon as the frontend starts. The seed command also makes the separate synthetic match available from the search page.
 
 ## Tests
 

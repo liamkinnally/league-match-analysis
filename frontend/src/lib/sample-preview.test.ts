@@ -85,6 +85,13 @@ it("blocks backend transport even when credentials are accidentally present", as
   expect(fetch).not.toHaveBeenCalled();
 });
 
+it("keeps the reserved sample identifiers out of the live rank proxy in backend mode", async () => {
+  vi.stubEnv("PREVIEW_DATA_SOURCE", "backend");
+  const response = await ranks(new Request("https://app.example.test"), { params: Promise.resolve({ matchId: "sample-01" }) });
+  expect(response.status).toBe(400);
+  expect(fetch).not.toHaveBeenCalled();
+});
+
 it("reports sample readiness and unavailable live APIs without contacting a backend", async () => {
   const status = await health();
   expect(status.status).toBe(200);

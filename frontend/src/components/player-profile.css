@@ -21,6 +21,7 @@
 .profile-layout { display: grid; grid-template-columns: 18rem minmax(0, 1fr); gap: 1.2rem; align-items: start; }
 .profile-sidebar, .profile-ranks { display: grid; gap: 0.9rem; min-inline-size: 0; }
 .profile-history { min-inline-size: 0; container-type: inline-size; }
+.profile-history #match-history { scroll-margin-block-start: 4rem; }
 .profile-panel { border: 1px solid var(--development-line); border-radius: 0.3rem; background: var(--development-panel); overflow: hidden; }
 .profile-panel > h2 { margin: 0; padding: 0.9rem 1rem; border-block-end: 1px solid var(--development-line); font-size: 0.86rem; font-weight: 600; }
 .profile-panel__empty { padding: 1rem; margin: 0; font-size: 0.8rem; color: var(--development-muted); }

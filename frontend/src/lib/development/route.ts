@@ -6,6 +6,8 @@ export type DevelopmentSearchParams = Record<
   string | string[] | undefined
 >;
 
+export const isSampleMatchRoute = (matchId: string) => matchId.startsWith("sample-");
+
 const one = (value: string | string[] | undefined) =>
   Array.isArray(value) ? value[0] : value;
 export type FinalStateSelection = {
