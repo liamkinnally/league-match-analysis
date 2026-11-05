@@ -1,6 +1,8 @@
+import { executablePath } from "./test-browser.cjs";
 import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
+  globalSetup: "./playwright-browser-check.ts",
   testDir: "./e2e-package",
   fullyParallel: false,
   forbidOnly: true,
@@ -9,6 +11,7 @@ export default defineConfig({
   reporter: "list",
   outputDir: "test-results/package-smoke",
   use: {
+    launchOptions: { executablePath, chromiumSandbox: true },
     baseURL: process.env.PACKAGE_SMOKE_BASE_URL ?? "http://127.0.0.1:3416",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",

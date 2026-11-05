@@ -21,7 +21,7 @@ With the required tools installed and Docker running, run this once:
 ./scripts/setup
 ```
 
-`setup` checks the required tools, creates missing local environment files without overwriting existing values, installs locked frontend dependencies and installs Playwright Chromium. Run it again when dependency installation needs refreshing.
+`setup` checks the required tools, creates missing local environment files without overwriting existing values, installs locked frontend dependencies and installs the pinned Chrome for Testing build. After a separate `npm ci`, run `node frontend/test-browser.cjs install` to restore the browser. The installer verifies the official archive against its pinned SHA-256 digest and uses only the checkout’s dependency cache. It requires curl and unzip on macOS/Linux or curl and tar on Windows. On a fresh Linux host, run `./node_modules/.bin/playwright install-deps chromium` from `frontend` to install browser system libraries.
 
 ## Daily development
 
@@ -163,7 +163,9 @@ Keep the [deployment guide](deployment.md) release gates. For a meaningful relea
 
 The full composition includes backend/frontend tasks, browser behavior, sample and visual checks, and repository hygiene. CI also runs the packaged-container smoke test. For a changed UI release, inspect the rendered result and complete the pinned visual check with `./scripts/verify ui visual`; reuse its result when the same check is already covered by `full` with unchanged inputs.
 
-Visual snapshots are compared in the pinned Playwright environment. Update a snapshot only after inspecting the rendered change, then rerun the comparison.
+Each browser suite checks the launched Chrome version before running tests. Host browser tests enable the Chromium sandbox. On Ubuntu systems that restrict unprivileged user namespaces, allow the executable printed by `node frontend/test-browser.cjs path` in a path-specific AppArmor profile. Hosted CI creates that profile on its disposable runner.
+
+Visual snapshots use the same Chrome release’s Headless Shell to preserve text rendering. They run without external network access in a non-root container with capabilities dropped. The visual runner uses container isolation because the default Docker policy restricts nested Chromium sandbox namespaces. Update a snapshot only after inspecting the rendered change, then rerun the comparison.
 
 ## Project layout
 

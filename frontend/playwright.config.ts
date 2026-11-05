@@ -1,3 +1,4 @@
+import { executablePath } from "./test-browser.cjs";
 import { defineConfig, devices } from "@playwright/test";
 import { localConfig } from "../scripts/lib/dev-config.cjs";
 
@@ -17,6 +18,7 @@ Object.assign(process.env, runtime.databaseEnv, {
 });
 
 export default defineConfig({
+  globalSetup: "./playwright-browser-check.ts",
   testDir: "./e2e",
   fullyParallel: false,
   forbidOnly: Boolean(process.env.CI),
@@ -24,6 +26,7 @@ export default defineConfig({
   workers: 1,
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
+    launchOptions: { executablePath, chromiumSandbox: true },
     baseURL: runtime.frontendOrigin,
     trace: "on-first-retry",
     screenshot: "only-on-failure",

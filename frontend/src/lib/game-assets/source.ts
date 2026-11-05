@@ -1,6 +1,6 @@
 import "server-only";
 import { createHash } from "node:crypto";
-import { isAllowedAssetUrl } from "./urls";
+import { COMMUNITY_DRAGON_INDEX, isAllowedAssetUrl } from "./urls";
 
 export type AssetSource = { body: unknown; sourceUrl: string; sha256: string; retrievedAt: string; status: "available" | "stale"; retryAt?: string };
 type Entry = { source?: AssetSource; expiresAt: number; retryAt: number };
@@ -9,11 +9,15 @@ export class AssetSourceUnavailable extends Error {
 }
 const DAY = 86_400_000, RETRY = 60_000, MAX_BYTES = 4_000_000;
 
+function allowedSource(url: string): boolean {
+  return url === COMMUNITY_DRAGON_INDEX || isAllowedAssetUrl(url);
+}
+
 /** One bounded cache for the resolver. Failed reads retry after one minute, never after the success TTL. */
 export function createAssetSourceReader() {
   const cache = new Map<string, Entry>(), pending = new Map<string, Promise<AssetSource>>();
   return async function read(url: string, validate: (body: unknown) => boolean = () => true): Promise<AssetSource> {
-    if (!isAllowedAssetUrl(url)) throw new Error("INVALID_ASSET_SOURCE");
+    if (!allowedSource(url)) throw new Error("INVALID_ASSET_SOURCE");
     const now = Date.now(), old = cache.get(url);
     if (old?.source && old.expiresAt > now) return old.source;
     if (old && old.retryAt > now) {
@@ -26,7 +30,7 @@ export function createAssetSourceReader() {
       try {
         // Cache ownership stays here so framework caching cannot prolong an unavailable response.
         const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(2_500), redirect: "error" });
-        if (!response.ok || (response.url && !isAllowedAssetUrl(response.url))) throw new Error("ASSET_REQUEST_FAILED");
+        if (!response.ok || (response.url && !allowedSource(response.url))) throw new Error("ASSET_REQUEST_FAILED");
         if (Number(response.headers.get("content-length")) > MAX_BYTES) throw new Error("ASSET_PAYLOAD_TOO_LARGE");
         const reader = response.body?.getReader();
         if (!reader) throw new Error("INVALID_ASSET_CATALOG");

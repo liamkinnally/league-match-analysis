@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+[[ ${GITHUB_ACTIONS:-} == true && ${RUNNER_ENVIRONMENT:-} == github-hosted ]] || {
+  echo "This setup is for disposable GitHub-hosted runners." >&2
+  exit 1
+}
+cd "$(dirname "$0")/../frontend"
+./node_modules/.bin/playwright install-deps chromium
+node test-browser.cjs install
+
+# Let only this Chrome executable create its renderer sandbox on Ubuntu 24.04.
+if [[ $(sysctl -n kernel.apparmor_restrict_unprivileged_userns 2>/dev/null || true) == 1 ]]; then
+  browser=$(node test-browser.cjs path)
+  [[ $browser =~ ^/[a-zA-Z0-9_./-]+$ ]] || { echo "Unexpected CI browser path" >&2; exit 1; }
+  sudo apparmor_parser -r <<PROFILE
+abi <abi/4.0>,
+include <tunables/global>
+profile league-test-chrome "$browser" flags=(unconfined) {
+  userns,
+}
+PROFILE
+fi

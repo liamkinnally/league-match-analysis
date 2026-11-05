@@ -1,15 +1,18 @@
+import { executablePath } from "./test-browser.cjs";
 import { defineConfig, devices } from "@playwright/test";
 
 const port = process.env.E2E_SAMPLE_PORT ?? "3543";
 const origin = `http://127.0.0.1:${port}`;
 
 export default defineConfig({
+  globalSetup: "./playwright-browser-check.ts",
   testDir: "./e2e-sample",
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
   workers: 1,
   reporter: [["list"]],
   use: {
+    launchOptions: { executablePath, chromiumSandbox: true },
     baseURL: origin,
     trace: "on-first-retry",
     screenshot: "only-on-failure",

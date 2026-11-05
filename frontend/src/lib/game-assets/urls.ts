@@ -1,5 +1,6 @@
 export const DATA_DRAGON = "https://ddragon.leagueoflegends.com";
 export const COMMUNITY_DRAGON = "https://raw.communitydragon.org";
+export const COMMUNITY_DRAGON_INDEX = `${COMMUNITY_DRAGON}/json/`;
 export const validAssetVersion = (version: string) => /^\d+\.\d+\.\d+$/.test(version);
 export const validPatch = (version: string) => /^\d+\.\d+$/.test(version);
 
