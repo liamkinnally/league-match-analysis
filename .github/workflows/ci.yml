@@ -1,6 +1,9 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -49,6 +52,11 @@ jobs:
           node-version-file: .node-version
           cache: npm
           cache-dependency-path: frontend/package-lock.json
+      - name: Test the browser update automation
+        working-directory: .
+        run: |
+          python3 -B -m unittest discover -s scripts/ci -p 'test_update_test_browser.py'
+          bash scripts/ci/test_publish_test_browser.sh
       - name: Install locked dependencies
         run: npm ci
       - name: Verify frontend task
