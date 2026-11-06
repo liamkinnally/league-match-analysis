@@ -94,11 +94,13 @@ This manual check exercises current Riot responses. Automated fixtures provide r
 | --- | --- |
 | `/` | Player lookup and sample entry point |
 | `/sample/profile` | Built-in Challenger profile and playable synthetic match history |
+| `/leaderboard` | Cached NA Challenger roster, estimated promotion cutoffs and profile links |
 | `/search?run=...` | Polls and displays a live lookup |
 | `/matches/{matchId}/development` | Current match-development view |
 | `/api/player-matches` | Next.js proxy for starting a lookup |
 | `/api/player-matches/{runId}` | Next.js proxy for polling a lookup |
 | `/api/health` | Frontend-to-backend health check |
+| `/api/leaderboard` | Cached NA leaderboard projection; does not initiate Riot requests |
 
 The match-development page preserves `focus`, `compare`, `from`, `to`, `metric`, `finalView`, `runeParticipant` and the originating `historyRunId` selections in the URL. Timeline endpoints are exact recorded sample timestamps.
 

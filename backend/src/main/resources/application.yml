@@ -24,3 +24,7 @@ management:
     health:
       show-details: never
       show-components: never
+
+league-analysis:
+  leaderboard:
+    enabled: ${RIOT_LEADERBOARD_ENABLED:true}

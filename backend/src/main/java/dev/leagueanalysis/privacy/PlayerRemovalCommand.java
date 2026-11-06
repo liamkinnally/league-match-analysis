@@ -86,7 +86,8 @@ public final class PlayerRemovalCommand {
                                     league_analysis.riot_participant, league_analysis.participant_state_observation,
                                     league_analysis.match_event, league_analysis.evidence_coverage,
                                     league_analysis.player_profile_current, league_analysis.rank_refresh_state,
-                                    league_analysis.rank_observation in access exclusive mode
+                                    league_analysis.rank_observation, league_analysis.leaderboard_entry,
+                                    league_analysis.leaderboard_member in access exclusive mode
                                     """);
                         }
                         var planner = new RemovalPlanner(jdbc, JSON);

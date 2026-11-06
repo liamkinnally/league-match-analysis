@@ -45,6 +45,7 @@ Important runtime values include:
 | `PREVIEW_DATA_SOURCE` | Selects `backend` or `sample` data for preview deployments |
 | `RIOT_API_KEY` | Server-only Riot API key |
 | `RIOT_PUBLIC_LOOKUP_ENABLED` | Enables or disables live player lookup |
+| `RIOT_LEADERBOARD_ENABLED` | Defaults to `true`; set `false` to stop background NA standings/name/icon collection. Collection also requires public lookup enabled and a Riot key; cached standings remain readable. |
 | `PROTOTYPE_CONTACT_EMAIL` | Contact shown on policy pages |
 | `RIOT_VERIFICATION_TOKEN` | Public website-verification value, not an API key |
 

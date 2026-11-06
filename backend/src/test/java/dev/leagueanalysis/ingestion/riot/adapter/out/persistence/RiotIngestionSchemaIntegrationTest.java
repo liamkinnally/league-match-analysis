@@ -28,6 +28,10 @@ class RiotIngestionSchemaIntegrationTest {
             "evidence_coverage",
             "ingestion_item",
             "ingestion_run",
+            "leaderboard_cutoff",
+            "leaderboard_entry",
+            "leaderboard_member",
+            "leaderboard_state",
             "match_event",
             "participant_state_observation",
             "player_profile_current",
@@ -62,6 +66,31 @@ class RiotIngestionSchemaIntegrationTest {
                         order by table_name
                         """, String.class))
                 .containsExactlyElementsOf(P1_TABLES);
+    }
+
+    @Test void fullChallengerUpgradeMakesRefreshDueWithoutResettingProviderCooldownOrLeases() throws Exception {
+        var database="leaderboard_upgrade_"+UUID.randomUUID().toString().replace("-","");
+        try(var connection=DriverManager.getConnection(jdbcUrl(postgres.getDatabaseName()),postgres.getUsername(),postgres.getPassword());var sql=connection.createStatement()) {sql.execute("create database "+database);}
+        try {
+            var url=jdbcUrl(database);
+            Flyway.configure().dataSource(url,postgres.getUsername(),postgres.getPassword()).target(MigrationVersion.fromVersion("14")).load().migrate();
+            var source=new org.springframework.jdbc.datasource.DriverManagerDataSource(url,postgres.getUsername(),postgres.getPassword());
+            var databaseJdbc=new JdbcTemplate(source);
+            var cooldown=OffsetDateTime.parse("2099-01-01T00:00:00Z");var token=UUID.randomUUID();
+            databaseJdbc.update("update league_analysis.leaderboard_state set ladder_due_at=?,request_due_at=?,na_request_due_at=?,americas_request_due_at=?,lease_until=?,lease_id=?,initial_fill_completed_at=now()",cooldown,cooldown,cooldown,cooldown,cooldown,token);
+            databaseJdbc.execute("insert into league_analysis.leaderboard_entry values(false,'old-c','CHALLENGER',1000,10,10),(false,'old-gm','GRANDMASTER',900,10,10)");
+            databaseJdbc.execute("insert into league_analysis.leaderboard_member(puuid) values('old-c'),('old-gm')");
+            Flyway.configure().dataSource(url,postgres.getUsername(),postgres.getPassword()).load().migrate();
+            assertThat(databaseJdbc.queryForObject("select ladder_due_at<=now() from league_analysis.leaderboard_state",Boolean.class)).isTrue();
+            for(var column:List.of("request_due_at","na_request_due_at","americas_request_due_at","lease_until"))
+                assertThat(databaseJdbc.queryForObject("select "+column+" from league_analysis.leaderboard_state",OffsetDateTime.class)).isEqualTo(cooldown);
+            assertThat(databaseJdbc.queryForObject("select lease_id from league_analysis.leaderboard_state",UUID.class)).isEqualTo(token);
+            assertThat(databaseJdbc.queryForObject("select initial_fill_ready from league_analysis.leaderboard_state",Boolean.class)).isFalse();
+            assertThat(databaseJdbc.queryForObject("select initial_fill_completed_at from league_analysis.leaderboard_state",OffsetDateTime.class)).isNull();
+            assertThat(databaseJdbc.queryForList("select puuid from league_analysis.leaderboard_member",String.class)).containsExactly("old-c");
+        } finally {
+            try(var connection=DriverManager.getConnection(jdbcUrl(postgres.getDatabaseName()),postgres.getUsername(),postgres.getPassword());var sql=connection.createStatement()){sql.execute("drop database "+database+" with (force)");}
+        }
     }
 
     @Test

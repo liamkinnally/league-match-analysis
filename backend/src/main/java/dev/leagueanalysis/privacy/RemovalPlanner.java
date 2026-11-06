@@ -19,7 +19,8 @@ public final class RemovalPlanner {
     private static final List<String> TABLES = List.of("ingestion_run", "source_payload", "source_capture",
             "ingestion_item", "riot_identity", "riot_match", "riot_team", "riot_participant",
             "participant_state_observation", "match_event", "evidence_coverage",
-            "player_profile_current", "rank_refresh_state", "rank_observation");
+            "player_profile_current", "rank_refresh_state", "rank_observation",
+            "leaderboard_entry", "leaderboard_member");
     private final JdbcTemplate jdbc;
     private final ObjectMapper json;
 
@@ -185,14 +186,14 @@ public final class RemovalPlanner {
         for (String table : TABLES) counts.put(table, 0L);
         counts.put("ingestion_run", (long)runs.size()); counts.put("source_capture", (long)captures.size());
         counts.put("source_payload", (long)payloads.size()); counts.put("ingestion_item", (long)items.size());
-        counts.put("riot_identity", data.identities.stream().filter(i -> identities.contains(i.puuid)).count());
+        counts.put("riot_identity", identities.stream().mapToLong(p -> jdbc.queryForObject("select count(*) from league_analysis.riot_identity where puuid=?",Long.class,p)).sum());
         counts.put("riot_identity_reanchored", (long)reanchors.size());
         for (String table : List.of("riot_match", "riot_team", "riot_participant", "participant_state_observation", "match_event", "evidence_coverage")) {
             long count = 0;
             for (String match : matches) count += jdbc.queryForObject("select count(*) from league_analysis." + table + " where match_id=?", Long.class, match);
             counts.put(table, count);
         }
-        for(String table:List.of("player_profile_current","rank_refresh_state","rank_observation")) {
+        for(String table:List.of("player_profile_current","rank_refresh_state","rank_observation","leaderboard_entry","leaderboard_member")) {
             long count=0;
             for(String identity:identities) count+=jdbc.queryForObject("select count(*) from league_analysis."+table+" where puuid=?",Long.class,identity);
             counts.put(table,count);
@@ -213,6 +214,10 @@ public final class RemovalPlanner {
         var changes = current.changes;
         for (String id : current.matchIds()) jdbc.update("delete from league_analysis.riot_match where match_id=?", id);
         for (var item : changes.items) jdbc.update("delete from league_analysis.ingestion_item where ingestion_run_id=? and match_id=?", item.run, item.match);
+        for (String puuid : changes.identities) {
+            jdbc.update("delete from league_analysis.leaderboard_entry where puuid=?",puuid);
+            jdbc.update("delete from league_analysis.leaderboard_member where puuid=?",puuid);
+        }
         for (String puuid : changes.identities) jdbc.update("delete from league_analysis.riot_identity where puuid=?", puuid);
         for (var row : changes.reanchors) jdbc.update("""
                 update league_analysis.riot_identity set last_source_capture_id=?,game_name=?,tag_line=?,platform_route=?,
@@ -234,6 +239,12 @@ public final class RemovalPlanner {
         });
         var identities = jdbc.query("select puuid,game_name,tag_line,last_source_capture_id from league_analysis.riot_identity order by puuid",
                 (rs,n) -> new Identity(rs.getString(1),rs.getString(2),rs.getString(3),rs.getObject(4,UUID.class)));
+        // Minimized ladder observations verify provider PUUIDs without fabricated ingestion captures.
+        identities.addAll(jdbc.query("""
+            select e.puuid,m.game_name,m.tag_line from (select distinct puuid from league_analysis.leaderboard_entry
+                union select puuid from league_analysis.leaderboard_member) e
+            left join league_analysis.leaderboard_member m on m.puuid=e.puuid
+            """,(rs,n)->new Identity(rs.getString(1),rs.getString(2),rs.getString(3),null)));
         var participants = jdbc.query("select match_id,puuid from league_analysis.riot_participant order by match_id,participant_id", (rs,n) -> new Participant(rs.getString(1),rs.getString(2)));
         var runs = jdbc.query("select id,requested_game_name,requested_tag_line,resolved_puuid from league_analysis.ingestion_run order by id", (rs,n) -> new Run(rs.getObject(1,UUID.class),rs.getString(2),rs.getString(3),rs.getString(4)));
         var items = jdbc.query("select ingestion_run_id,match_id,detail_capture_id,timeline_capture_id from league_analysis.ingestion_item order by ingestion_run_id,match_id", (rs,n) -> new Item(rs.getObject(1,UUID.class),rs.getString(2),rs.getObject(3,UUID.class),rs.getObject(4,UUID.class)));
