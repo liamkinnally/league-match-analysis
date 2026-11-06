@@ -131,6 +131,7 @@ export function MatchDevelopmentView({
           {sampleRanks
             ? <Link href="/sample/profile">Sample profile</Link>
             : <Link href={runeState.historyRunId ? `/search?runId=${runeState.historyRunId}` : "/search"}>Match history</Link>}
+          <Link href="/leaderboard">Leaderboard</Link>
           <span aria-current="page">Match detail</span>
         </nav>
         <span className="development-region">

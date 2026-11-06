@@ -48,7 +48,7 @@ class RemovalPlannerIntegrationTest {
     @BeforeEach void clean() {
         tx.executeWithoutResult(status -> {
             jdbc.execute("set local league_analysis.removal_operator = 'on'");
-            jdbc.execute("truncate league_analysis.ingestion_run, league_analysis.source_payload cascade");
+            jdbc.execute("truncate league_analysis.ingestion_run, league_analysis.source_payload, league_analysis.leaderboard_entry, league_analysis.leaderboard_member cascade");
         });
     }
 
@@ -109,6 +109,13 @@ class RemovalPlannerIntegrationTest {
         assertThat(normalizedChanged.affectedRecords()).isEqualTo(rawChanged.affectedRecords());
         assertThat(normalizedChanged.fingerprint()).isEqualTo(legacyFingerprint(normalizedChanged)).isNotEqualTo(rawChanged.fingerprint());
         assertThatThrownBy(() -> execute(rawChanged)).hasMessageContaining("REMOVAL_PLAN_CHANGED");
+
+        jdbc.update("insert into league_analysis.leaderboard_entry values(false,'unrelated-ladder','CHALLENGER',1000,20,10)");
+        jdbc.update("insert into league_analysis.leaderboard_member(puuid,game_name,tag_line) values('unrelated-ladder','Unrelated','NA1')");
+        var ladderChanged=planner.plan(TARGET);
+        assertThat(ladderChanged.affectedRecords()).isEqualTo(normalizedChanged.affectedRecords());
+        assertThat(ladderChanged.fingerprint()).isEqualTo(legacyFingerprint(ladderChanged)).isNotEqualTo(normalizedChanged.fingerprint());
+        assertThatThrownBy(() -> execute(normalizedChanged)).hasMessageContaining("REMOVAL_PLAN_CHANGED");
     }
 
     @Test void deletesDuplicateRawCapturesAndInterruptedLookupButPreservesOtherMatchAndReanchorsIdentity() throws Exception {
@@ -265,14 +272,14 @@ class RemovalPlannerIntegrationTest {
         return jdbc.queryForList("select 'run' kind, to_jsonb(t)::text data from league_analysis.ingestion_run t union all select 'identity',to_jsonb(t)::text from league_analysis.riot_identity t union all select 'capture',to_jsonb(t)::text from league_analysis.source_capture t order by kind,data");
     }
     private static String legacyFingerprint(RemovalPlan plan) {
-        // Frozen v1 encoding verifies compatibility with confirmations issued
-        // before the streaming implementation, against actual PostgreSQL JSON.
+        // Preserve v1 encoding independently of the streaming implementation.
+        // New retained tables participate in confirmation drift detection too.
         var content = new StringBuilder("removal-plan-v1\n");
         for (var group : List.of(plan.puuidHashes(), plan.aliasHashes(), plan.matchHashes()))
             content.append(new TreeSet<>(group)).append('\n');
         for (String table : List.of("ingestion_run", "source_payload", "source_capture", "ingestion_item", "riot_identity",
                 "riot_match", "riot_team", "riot_participant", "participant_state_observation", "match_event", "evidence_coverage",
-                "player_profile_current", "rank_refresh_state", "rank_observation")) {
+                "player_profile_current", "rank_refresh_state", "rank_observation", "leaderboard_entry", "leaderboard_member")) {
             content.append(table.length()).append(':').append(table).append('\n');
             for (String row : jdbc.queryForList("select to_jsonb(t)::text from league_analysis." + table + " t order by to_jsonb(t)::text", String.class))
                 content.append(row.length()).append(':').append(row).append('\n');

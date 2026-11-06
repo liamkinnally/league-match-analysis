@@ -19,7 +19,7 @@ export default defineConfig({
   },
   projects: [{ name: "chromium-sample", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: `npm run dev -- --port ${port}`,
+    command: `npm run dev -- --webpack --port ${port}`,
     url: `${origin}/api/health`,
     reuseExistingServer: false,
     timeout: 120_000,

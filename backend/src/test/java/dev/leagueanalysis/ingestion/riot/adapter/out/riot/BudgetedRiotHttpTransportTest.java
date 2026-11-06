@@ -33,6 +33,15 @@ class BudgetedRiotHttpTransportTest {
         return next;
     }, clock);
 
+    @Test void ladderAndAccountLookupHaveIndependentMethodBudgets() throws Exception {
+        next=response(200,Map.of("X-Method-Rate-Limit","1:10","X-Method-Rate-Limit-Count","1:10"));
+        assertThat(send("/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5").statusCode()).isEqualTo(200);
+        next=response(200,Map.of());
+        assertThat(send("/lol/league/v4/challengerleagues/by-queue/RANKED_FLEX_SR").statusCode()).isEqualTo(429);
+        assertThat(send("/lol/league/v4/grandmasterleagues/by-queue/RANKED_SOLO_5x5").statusCode()).isEqualTo(200);
+        assertThat(send("/riot/account/v1/accounts/by-puuid/one").statusCode()).isEqualTo(200);
+    }
+
     @Test void summonerHasExplicitMethodBudgetSharedAcrossIdentitiesButSeparateFromRanks() throws Exception {
         next=response(200,Map.of("X-Method-Rate-Limit","1:10","X-Method-Rate-Limit-Count","1:10"));
         assertThat(send("/lol/summoner/v4/summoners/by-puuid/invented-one").statusCode()).isEqualTo(200);

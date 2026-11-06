@@ -247,6 +247,12 @@ public final class BudgetedRiotHttpTransport implements RiotHttpTransport {
             } else if (path.startsWith("/lol/match/v5/matches/")) {
                 service = "match-v5";
                 method = path.endsWith("/timeline") ? "match-timeline" : "match-detail";
+            } else if (path.matches("/lol/league/v4/(challenger|grandmaster|master)leagues/by-queue/[^/]+")) {
+                service = "league-v4";
+                method = path.split("/")[4];
+            } else if (path.startsWith("/riot/account/v1/accounts/by-puuid/")) {
+                service = "account-v1";
+                method = "account-by-puuid";
             } else if (path.startsWith("/lol/league/v4/entries/by-puuid/")) {
                 service = "league-v4";
                 method = "league-entries-by-puuid";

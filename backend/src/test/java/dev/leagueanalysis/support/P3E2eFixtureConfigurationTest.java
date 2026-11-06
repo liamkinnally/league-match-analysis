@@ -27,14 +27,15 @@ class P3E2eFixtureConfigurationTest {
             .withUserConfiguration(RiotClientConfiguration.class, P3E2eFixtureConfiguration.class)
             .withBean(ObjectMapper.class, ObjectMapper::new)
             .withBean(P3SanitizedMatchFixture.class, () -> mock(P3SanitizedMatchFixture.class))
-            .withBean(DemoSeedCommand.class, () -> mock(DemoSeedCommand.class));
+            .withBean(DemoSeedCommand.class, () -> mock(DemoSeedCommand.class))
+            .withBean(org.springframework.jdbc.core.JdbcTemplate.class, () -> mock(org.springframework.jdbc.core.JdbcTemplate.class));
 
     @Test
     void explicitE2eStartupProvidesBothBrowserFixtures() throws Exception {
         var p3 = mock(P3SanitizedMatchFixture.class);
         var demo = mock(DemoSeedCommand.class);
 
-        new P3E2eFixtureConfiguration().p3E2eFixture(p3, demo).run(null);
+        new P3E2eFixtureConfiguration().p3E2eFixture(p3, demo, mock(org.springframework.jdbc.core.JdbcTemplate.class)).run(null);
 
         verify(p3).replaceFixtureMatch();
         verify(p3).prepareBrowserEvidence();

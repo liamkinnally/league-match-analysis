@@ -31,6 +31,7 @@ The main backend responsibilities are split into a few areas:
 - `analysis/match` loads stored match data and calculates the values used by the match pages.
 - `analysis/rank` shares cached current rank responses across roster and profile views.
 - `analysis/profile` owns current profile snapshots, bounded recent Solo/Duo records and discrete rank observations.
+- `analysis/leaderboard` maintains the current NA Solo/Duo ladder snapshot and paced identity/icon enrichment. Leaderboard reads use stored data; opening a player uses the existing profile lookup.
 - `privacy` contains the private operator workflow for removing stored player data.
 - Flyway migrations in `src/main/resources/db/migration` own the PostgreSQL schema.
 
