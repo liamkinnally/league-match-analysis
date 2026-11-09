@@ -431,6 +431,11 @@ html:has(.development-app) .graph-caption > span:last-child {
   outline: 1px solid var(--development-accent);
   outline-offset: -1px;
 }
+.refined-samples-scroll table {
+  /* Keep the top border attached to the sticky header as rows scroll behind it. */
+  border-collapse: separate;
+  border-spacing: 0;
+}
 .refined-samples-scroll thead th {
   position: sticky;
   top: 0;
