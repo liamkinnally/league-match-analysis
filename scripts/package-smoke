@@ -57,8 +57,56 @@ echo "Verified packaged Node.js $packaged_node"
 "${compose[@]}" exec --no-TTY frontend node -e \
   "fetch('http://backend:8080/api/v1/matches/NA1_7000000001/development?focus=6&compare=1', {headers: {Authorization: 'Bearer ' + process.env.BACKEND_SERVICE_TOKEN}}).then(async response => { if (!response.ok) throw new Error('match endpoint returned ' + response.status); const body = await response.json(); if (body.matchId !== 'NA1_7000000001' || body.summary.focusParticipantId !== 6) throw new Error('unexpected persisted match response'); }).catch(error => { console.error(error); process.exit(1); })"
 
-"${compose[@]}" restart backend
-"${compose[@]}" up --detach --wait backend frontend
+# Only the disposable package database is fault-injected. A lost privacy lease
+# must recycle the process through the container restart policy without help.
+backend_container=$("${compose[@]}" ps --quiet backend)
+restart_count_before=$(docker inspect --format '{{.RestartCount}}' "$backend_container")
+lease_pid=$("${compose[@]}" exec --no-TTY postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc \
+  "select pid from pg_stat_activity where datname=current_database() and application_name='league-analysis-privacy-lease'")
+[[ "$lease_pid" =~ ^[0-9]+$ ]] || {
+  echo "Expected exactly one package-test privacy lease before fault injection" >&2
+  exit 1
+}
+terminated=$("${compose[@]}" exec --no-TTY postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc \
+  "select pg_terminate_backend(pid) from pg_stat_activity where pid=$lease_pid and datname=current_database() and application_name='league-analysis-privacy-lease'")
+[[ "$terminated" == "t" ]] || {
+  echo "Package-test privacy lease was not terminated" >&2
+  exit 1
+}
+
+recovery_deadline=$((SECONDS + 120))
+while true; do
+  read -r restart_count health_status < <(docker inspect --format '{{.RestartCount}} {{.State.Health.Status}}' "$backend_container")
+  if (( restart_count > restart_count_before )) && [[ "$health_status" == "healthy" ]]; then
+    break
+  fi
+  if (( SECONDS >= recovery_deadline )); then
+    echo "Backend did not automatically restart and recover after privacy lease loss" >&2
+    exit 1
+  fi
+  sleep 1
+done
+[[ "$restart_count" -eq $((restart_count_before + 1)) ]] || {
+  echo "Expected one backend restart after privacy lease loss, observed repeated restarts" >&2
+  exit 1
+}
+recovered_pid=$("${compose[@]}" exec --no-TTY postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc \
+  "select pid from pg_stat_activity where datname=current_database() and application_name='league-analysis-privacy-lease'")
+[[ "$recovered_pid" =~ ^[0-9]+$ && "$recovered_pid" != "$lease_pid" ]] || {
+  echo "Recovered backend did not acquire a new privacy lease" >&2
+  exit 1
+}
+recovery_logs=$("${compose[@]}" logs --no-color backend)
+[[ "$recovery_logs" == *"RUNTIME_LEASE_LOST_RESTART_REQUIRED"* && \
+   "$recovery_logs" == *"PRIVACY_RUNTIME_LEASE_READY backendPid=$recovered_pid "* ]] || {
+  echo "Privacy lease failure or recovered-session diagnostics are missing" >&2
+  exit 1
+}
+[[ "$recovery_logs" != *"$BACKEND_SERVICE_TOKEN"* && "$recovery_logs" != *"$POSTGRES_PASSWORD"* ]] || {
+  echo "Recovery diagnostics exposed a package-test credential" >&2
+  exit 1
+}
+echo "Verified automatic backend recovery after privacy lease loss"
 
 "${compose[@]}" exec --no-TTY frontend node -e \
   "fetch('http://backend:8080/api/v1/demo', {headers: {Authorization: 'Bearer ' + process.env.BACKEND_SERVICE_TOKEN}}).then(async response => { if (!response.ok) throw new Error('post-restart demo locator returned ' + response.status); const body = await response.json(); if (body.matchId !== 'NA1_7000000001' || body.invented !== true) throw new Error('unexpected persisted demo locator'); }).catch(error => { console.error(error); process.exit(1); })"

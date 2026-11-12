@@ -6,6 +6,9 @@ import java.util.*;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.testcontainers.postgresql.PostgreSQLContainer;
@@ -115,8 +118,10 @@ class PlayerRemovalCommandTest {
             assertThat(count()).isEqualTo(1);
         }
     }
-    @Test void terminatedRuntimeLeaseBlocksRequestsUntilProcessRestart() throws Exception {
-        var guard=new PrivacyRuntimeGuard(source,ledger.toString());
+    @Test @ExtendWith(OutputCaptureExtension.class)
+    void terminatedRuntimeLeaseBlocksRequestsUntilProcessRestart(CapturedOutput output) throws Exception {
+        var events = new ArrayList<Object>();
+        var guard=new PrivacyRuntimeGuard(source,ledger.toString(),events::add);
         try {
             jdbc.execute("select pg_terminate_backend(pid) from pg_stat_activity where application_name='league-analysis-privacy-lease'");
             assertThatThrownBy(guard::requireHealthy).hasMessageContaining("RUNTIME_LEASE_LOST");
@@ -126,7 +131,52 @@ class PlayerRemovalCommandTest {
             assertThat(response.getStatus()).isEqualTo(503);
             assertThat(response.getHeader("Cache-Control")).isEqualTo("no-store");
             assertThatThrownBy(guard::requireHealthy).hasMessageContaining("RUNTIME_LEASE_LOST");
+            assertThat(output.getOut()).contains("RUNTIME_LEASE_LOST_RESTART_REQUIRED", "backendPid=", "sqlState=");
+            assertThat(output.getOut().split("RUNTIME_LEASE_LOST_RESTART_REQUIRED", -1)).hasSize(2);
+            assertThat(events).singleElement().isInstanceOf(PrivacyLeaseLostEvent.class);
         } finally { guard.close(); }
+        try (var restarted = new GuardClose(source, ledger.toString())) { restarted.guard.requireHealthy(); }
+    }
+    @Test void monitorDetectsLostLeaseWithoutRequestsAndNormalCloseDoesNotTriggerRecovery() throws Exception {
+        var events = new java.util.concurrent.LinkedBlockingQueue<Object>();
+        var stopped = new PrivacyRuntimeGuard(source, ledger.toString(), events::add);
+        stopped.startMonitoring();
+        stopped.close();
+        assertThatThrownBy(stopped::requireHealthy).hasMessageContaining("RUNTIME_LEASE_LOST");
+        assertThat(events).isEmpty();
+
+        var guard = new PrivacyRuntimeGuard(source, ledger.toString(), events::add);
+        try {
+            guard.startMonitoring();
+            jdbc.execute("select pg_terminate_backend(pid) from pg_stat_activity where application_name='league-analysis-privacy-lease'");
+            assertThat(events.poll(15, java.util.concurrent.TimeUnit.SECONDS)).isInstanceOf(PrivacyLeaseLostEvent.class);
+            assertThatThrownBy(guard::requireHealthy).hasMessageContaining("RUNTIME_LEASE_LOST");
+            assertThat(events).isEmpty();
+        } finally { guard.close(); }
+    }
+    @Test @ExtendWith(OutputCaptureExtension.class)
+    void concurrentFailuresEmitOneSanitizedDiagnosticAndRecoveryEvent(CapturedOutput output) throws Exception {
+        try (var connection = source.getConnection()) {
+            var lease = org.mockito.Mockito.mock(java.sql.Connection.class, org.mockito.AdditionalAnswers.delegatesTo(connection));
+            var dataSource = org.mockito.Mockito.mock(javax.sql.DataSource.class);
+            org.mockito.Mockito.when(dataSource.getConnection()).thenReturn(lease);
+            var events = new java.util.concurrent.CopyOnWriteArrayList<Object>();
+            var guard = new PrivacyRuntimeGuard(dataSource, ledger.toString(), events::add);
+            org.mockito.Mockito.doThrow(new java.sql.SQLException("must-not-log-password", "08006", 0,
+                    new java.net.SocketTimeoutException("must-not-log-provider-body"))).when(lease).createStatement();
+            try (var callers = java.util.concurrent.Executors.newFixedThreadPool(4)) {
+                var calls = new ArrayList<java.util.concurrent.Callable<Void>>();
+                for (int i = 0; i < 8; i++) calls.add(() -> {
+                    assertThatThrownBy(guard::requireHealthy).hasMessage("RUNTIME_LEASE_LOST_RESTART_REQUIRED");
+                    return null;
+                });
+                for (var result : callers.invokeAll(calls)) result.get();
+                assertThat(events).singleElement().isInstanceOf(PrivacyLeaseLostEvent.class);
+                assertThat(output.getOut()).contains("sqlState=08006", "causeType=SocketTimeoutException", "lastHealthyAgeMs=", "probeDurationMs=")
+                        .doesNotContain("must-not-log-password", "must-not-log-provider-body");
+                assertThat(output.getOut().split("RUNTIME_LEASE_LOST_RESTART_REQUIRED", -1)).hasSize(2);
+            } finally { guard.close(); }
+        }
     }
     @Test void prepareOlderRestoreMigratesWithoutResettingLedgerOrServing() throws Exception {
         String database="legacy_restore_"+UUID.randomUUID().toString().replace("-","");
@@ -172,7 +222,7 @@ class PlayerRemovalCommandTest {
     record Result(int code,String out,String err) {}
     static class GuardClose implements AutoCloseable {
         PrivacyRuntimeGuard guard;
-        GuardClose(DriverManagerDataSource source,String path) throws Exception { guard=new PrivacyRuntimeGuard(source,path); }
+        GuardClose(DriverManagerDataSource source,String path) throws Exception { guard=new PrivacyRuntimeGuard(source,path,event -> {}); }
         public void close() throws Exception { guard.close(); }
     }
 }
