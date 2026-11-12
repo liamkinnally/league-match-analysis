@@ -1,11 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { profileHref, type PlayerIdentity, type Platform } from "./regions";
 import { parseLookup, retryDate, runIdPattern, type PlayerLookup } from "./types";
 
-const unavailable = "Live lookup is unavailable. Explore the sample match.";
+const unavailable = "Live lookup is unavailable. Try again later.";
 type Input = { gameName: string; tagLine: string; queueId: number; platform?: Platform };
 type LookupIssue = { message: string; retryNotBefore?: string | null; retryable?: boolean };
 type Command = { kind: "search" | "filter" | "restore" | "older" | "refresh"; runId?: string; input?: Input };
@@ -35,7 +35,10 @@ async function requestLookup(url: string, signal: AbortSignal, method: "GET" | "
         retryNotBefore: retry, retryable: response.status !== 404,
       });
     }
-    return parseLookup(body);
+    const result = parseLookup(body);
+    if (result.message === "Live lookup is unavailable. Explore the sample match.") result.message = unavailable;
+    if (result.message === "Lookup could not finish. Search again or explore the sample match.") result.message = "Lookup could not finish. Search again to retry.";
+    return result;
   } catch (error) {
     if (timedOut) throw new LookupRequestError({ message: "Match history is taking longer than expected. Retry loading to check this lookup.", retryable: true });
     throw error;
@@ -88,13 +91,15 @@ export function usePlayerLookup(initialRunId?: string, initialIdentity?: PlayerI
     const controller = new AbortController();
     controllerRef.current = controller;
     const { signal } = controller;
+    const active = () => !signal.aborted && controllerRef.current === controller;
     retryCommand.current = { command, continueRestore };
     setIssue(null); setBusy(command.kind);
     const publish = (next: PlayerLookup[]) => {
-      if (signal.aborted) return;
+      if (!active()) return;
       pagesRef.current = next; setPages(next);
     };
     const navigate = (result: PlayerLookup) => {
+      if (!active()) return;
       const identity = result.gameName ? result : command.input ? { ...command.input, platform: command.input.platform ?? "NA1" } : null;
       if (!identity) return;
       const identityPath = profileHref(identity);
@@ -139,7 +144,7 @@ export function usePlayerLookup(initialRunId?: string, initialIdentity?: PlayerI
           chain = [result, ...chain];
           cursor = result.previousRunId;
         }
-        publish(chain); setRestoreCursor(cursor);
+        publish(chain); if (active()) setRestoreCursor(cursor);
       } else {
         const base = [...pagesRef.current];
         const parent = base.at(-1);
@@ -174,13 +179,13 @@ export function usePlayerLookup(initialRunId?: string, initialIdentity?: PlayerI
         if (result.status === "FAILED" && base.length) throw new LookupRequestError({ message: result.message ?? "Lookup could not finish. Retry loading to try again.", retryable: true, retryNotBefore: result.retryNotBefore });
         // Cached search may point to an older page; the search endpoint normally returns the newest page.
         if (command.kind !== "older" && result.previousRunId) throw new Error("UNEXPECTED_HISTORY_PARENT");
-        adopt(result); setRestoreCursor(null);
+        adopt(result); if (active()) setRestoreCursor(null);
         if (!navigated) navigate(result);
       }
     } catch (error) {
-      if (!signal.aborted) setIssue(error instanceof LookupRequestError ? error.issue : { message: unavailable, retryable: true });
+      if (active()) setIssue(error instanceof LookupRequestError ? error.issue : { message: unavailable, retryable: true });
     } finally {
-      if (!signal.aborted) { setBusy(null); controllerRef.current = null; }
+      if (active()) { setBusy(null); controllerRef.current = null; }
     }
   }, []);
 
@@ -192,13 +197,18 @@ export function usePlayerLookup(initialRunId?: string, initialIdentity?: PlayerI
     currentIdentity.current = identity;
     if (expectedNavigation && ((initialRunId && sameId(expectedNavigation.runId, initialRunId)) ||
         (!initialRunId && !expectedNavigation.preserveRun && identity && profileHref(identity).toLowerCase() === expectedNavigation.identityPath.toLowerCase()))) return;
-    if (initialRunId && !runIdPattern.test(initialRunId)) return;
-    if (!initialRunId && !identity) return;
     const previousController = controllerRef.current;
+    previousController?.abort();
     let cancelled = false;
     let controller: AbortController | null = null;
     void Promise.resolve().then(() => {
       if (cancelled || controllerRef.current !== previousController) return;
+      controllerRef.current = null;
+      retryCommand.current = null;
+      if ((initialRunId && !runIdPattern.test(initialRunId)) || (!initialRunId && !identity)) {
+        pagesRef.current = []; setPages([]); setIssue(null); setBusy(null); setRestoreCursor(null);
+        return;
+      }
       if (identity && pagesRef.current.some(page => page.platform !== identity.platform || (page.gameName &&
           (!sameId(page.gameName, identity.gameName) || !sameId(page.tagLine, identity.tagLine))))) {
         pagesRef.current = []; setPages([]); setRestoreCursor(null);
@@ -209,7 +219,7 @@ export function usePlayerLookup(initialRunId?: string, initialIdentity?: PlayerI
     return () => { cancelled = true; controller?.abort(); };
   }, [initialRunId, identityKey, execute]);
   useEffect(() => () => controllerRef.current?.abort(), []);
-  const lookup = mergeHistory(pages);
+  const lookup = useMemo(() => mergeHistory(pages), [pages]);
   const visibleIssue = issue ?? (initialRunId && !runIdPattern.test(initialRunId) ? { message: "Lookup not found. Search again." } : null);
   return {
     lookup, issue: visibleIssue, submitting: busy === "search", loading: busy === "restore" || (!!initialRunId && !lookup && !visibleIssue),

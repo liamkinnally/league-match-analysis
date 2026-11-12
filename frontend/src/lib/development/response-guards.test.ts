@@ -29,6 +29,21 @@ it("retains a legacy match when optional rune data is absent or null", () => {
   expect(parseMatchDevelopment({ ...developmentFixture, roster: developmentFixture.roster.map(person => ({ ...person, runes: null })) }).roster).toHaveLength(4);
 });
 
+it("retains nullable remake classifications and accepts legacy summaries without one", () => {
+  expect(parseMatchDevelopment(developmentFixture).summary.remake).toBeUndefined();
+  for (const remake of [true, false, null]) {
+    const data = { ...developmentFixture, summary: { ...developmentFixture.summary, remake } };
+    expect(parseMatchDevelopment(data).summary).toMatchObject({ win: true, remake });
+  }
+});
+
+it("rejects malformed nonboolean remake classifications", () => {
+  for (const remake of ["true", "false", 0, 1, {}, []]) {
+    const data = { ...developmentFixture, summary: { ...developmentFixture.summary, remake } };
+    expect(() => parseMatchDevelopment(data)).toThrow("INVALID_MATCH_DEVELOPMENT_RESPONSE");
+  }
+});
+
 it("rejects a response with a missing sample field", () => {
   const malformed = structuredClone(developmentFixture) as Record<string, unknown>;
   const samples = malformed.samples as Array<Record<string, unknown>>;

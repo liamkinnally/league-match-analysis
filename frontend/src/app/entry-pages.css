@@ -17,6 +17,10 @@
 .entry-app .player-lookup__identity h2 span { display: inline-block; white-space: nowrap; color: var(--development-muted); font-weight: 450; font-size: 0.85em; margin-inline-start: 0.25rem; }
 .entry-app .player-lookup__identity > span { color: var(--development-muted); font-size: 0.72rem; }
 .entry-app .player-lookup__status p { margin-block: 0.35rem; font-size: 0.8rem; line-height: 1.55; }
+.entry-app .player-lookup__status--search { max-inline-size: 42rem; margin: 0.5rem auto 0; }
+.entry-app .player-lookup__status--profile { margin-inline-end: 0; }
+.entry-app .player-lookup__status > .player-lookup__feedback { display: flex; align-items: center; gap: 0.5rem; min-block-size: 1.5rem; margin: 0; color: var(--development-muted); line-height: 1.5; }
+.entry-app .player-lookup__feedback .entry-spinner { margin-block-start: 0; }
 .entry-app .player-lookup__status [role="alert"] { color: var(--development-text); }
 .entry-app .entry-notice { padding: 0.9rem 1rem; border: 1px solid var(--development-line); border-radius: 0.2rem; background: var(--development-panel); }
 .entry-app .entry-notice strong { font-size: 0.85rem; font-weight: 600; }
@@ -133,7 +137,10 @@
 .entry-app .player-search__suggestions-empty { margin: 0; padding: 0.2rem 0.8rem 0.8rem; color: var(--development-muted); font-size: 0.76rem; line-height: 1.5; }
 .entry-app .player-search__error { grid-column: 1 / -1; margin: 0; color: var(--development-text); font-size: 0.78rem; line-height: 1.5; }
 @media (max-width: 35rem) {
-  .entry-app .player-search--combined { grid-template-columns: minmax(0, 1fr); }
+  .entry-app .player-lookup__status > .player-lookup__feedback { min-block-size: 2lh; }
+  .entry-app .player-lookup__status--search + .player-lookup__results { margin-block-start: 0.8rem; }
+  .entry-app .player-search--combined { position: relative; grid-template-columns: minmax(0, 1fr); }
+  .entry-app .player-search__field { position: static; }
   .entry-app .player-search--combined > button { grid-column: 1; justify-content: center; }
   .entry-app .player-search__input-group input { font-size: 1rem; }
   .entry-app .player-search__suggestion-identity strong { font-size: 0.82rem; }

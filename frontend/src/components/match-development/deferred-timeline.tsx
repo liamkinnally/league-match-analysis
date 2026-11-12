@@ -58,7 +58,7 @@ export function DeferredTimeline({ matchId }: { matchId: string }) {
   const ready = state?.status === "AVAILABLE";
   const retryBlocked = state?.retryNotBefore && Date.parse(state.retryNotBefore) > now;
   return <div className="development-timeline-notice" role={failed ? "alert" : "status"}>
-    <h3>{unavailable ? "Timeline unavailable" : failed ? "Timeline could not load" : ready ? "Timeline ready" : state?.status === "RUNNING" ? "Loading timeline…" : "Preparing timeline…"}</h3>
+    <h3 id="timeline-heading">{unavailable ? "Timeline unavailable" : failed ? "Timeline could not load" : ready ? "Timeline ready" : state?.status === "RUNNING" ? "Loading timeline…" : "Preparing timeline…"}</h3>
     <p>{unavailable ? "Riot has no timeline for this match. Final statistics remain available."
       : failed ? "Final statistics remain available. Retry to load the timeline."
         : ready ? "Updating this view with recorded timeline samples."

@@ -1,7 +1,9 @@
 package dev.leagueanalysis.ingestion.riot.adapter.out.persistence;
 
 import dev.leagueanalysis.ingestion.riot.application.IngestionItemStatus;
+import dev.leagueanalysis.ingestion.riot.application.IngestionRunStatus;
 import dev.leagueanalysis.ingestion.riot.application.RiotIngestionCommand;
+import dev.leagueanalysis.analysis.profile.JdbcPlayerProfileStore;
 import dev.leagueanalysis.evidence.domain.CanonicalEventKind;
 import dev.leagueanalysis.evidence.domain.CoverageStatus;
 import dev.leagueanalysis.ingestion.riot.domain.CapturedDocument;
@@ -12,11 +14,16 @@ import dev.leagueanalysis.ingestion.riot.domain.ParticipantFact;
 import dev.leagueanalysis.ingestion.riot.domain.ParticipantStateObservation;
 import dev.leagueanalysis.ingestion.riot.domain.ProviderDocument;
 import dev.leagueanalysis.ingestion.riot.domain.RiotAccount;
+import dev.leagueanalysis.ingestion.riot.domain.RiotId;
 import dev.leagueanalysis.ingestion.riot.domain.RiotMatchMaterialization;
 import dev.leagueanalysis.ingestion.riot.domain.SourceKind;
 import dev.leagueanalysis.ingestion.riot.domain.TeamFact;
 import dev.leagueanalysis.support.PostgresTestConfiguration;
+import dev.leagueanalysis.support.PublicLookupGatewayFixture;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -26,12 +33,15 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -49,6 +59,12 @@ class JdbcRiotIngestionStoreIntegrationTest {
     @Autowired
     JdbcTemplate jdbc;
 
+    @Autowired
+    JdbcPlayerProfileStore profiles;
+
+    @Autowired
+    ObjectMapper json;
+
     @BeforeEach
     void clearDatabase() {
         jdbc.execute("truncate table league_analysis.ingestion_run, league_analysis.source_payload cascade");
@@ -57,6 +73,41 @@ class JdbcRiotIngestionStoreIntegrationTest {
     @AfterEach
     void leaveDatabaseClean() {
         clearDatabase();
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = IngestionRunStatus.class, names = {"RUNNING", "COMPLETE"})
+    void restartClearsAbandonedProfileWorkAndPreservesItsOrderingFence(IngestionRunStatus historyStatus) {
+        var command = new RiotIngestionCommand("Invented", "NA1", 20);
+        var run = store.startPublicRun(command, FIRST);
+        var fixture = new PublicLookupGatewayFixture(json, Clock.fixed(FIRST, ZoneOffset.UTC));
+        var account = fixture.resolveAccount(new RiotId(command.gameName(), command.tagLine()));
+        store.recordResolvedAccount(run, account.account(), store.saveCapture(run, account.source()));
+        store.recordVerifiedRequestedIdentity(run, command);
+        var subject = profiles.subject(run).orElseThrow();
+        var deadline = FIRST.plusSeconds(900);
+        profiles.markProfilePending(subject, run, deadline);
+        if (historyStatus == IngestionRunStatus.COMPLETE)
+            store.finishRun(run, historyStatus, null, null, FIRST.plusSeconds(1));
+        var older = store.startPublicRun(command, FIRST.minusSeconds(1));
+
+        store.failInterrupted(FIRST.plusSeconds(10));
+
+        assertThat(jdbc.queryForObject("select profile_pending_run_id from league_analysis.player_profile_current where puuid=? and platform=?",
+                UUID.class, subject.puuid(), subject.platform())).isNull();
+        assertThat(jdbc.queryForObject("select profile_pending_until from league_analysis.player_profile_current where puuid=? and platform=?",
+                OffsetDateTime.class, subject.puuid(), subject.platform()).toInstant()).isEqualTo(deadline);
+        assertThat(profiles.profilePending(subject, run, FIRST.plusSeconds(11))).isFalse();
+        assertThat(jdbc.queryForObject("select status from league_analysis.ingestion_run where id=?", String.class, run))
+                .isEqualTo(historyStatus == IngestionRunStatus.COMPLETE ? "COMPLETE" : "FAILED");
+
+        profiles.markProfilePending(subject, older, FIRST.plusSeconds(899));
+        assertThat(jdbc.queryForObject("select profile_pending_run_id from league_analysis.player_profile_current where puuid=? and platform=?",
+                UUID.class, subject.puuid(), subject.platform())).isNull();
+
+        var newer = store.startPublicRun(command, FIRST.plusSeconds(20));
+        profiles.markProfilePending(subject, newer, FIRST.plusSeconds(920));
+        assertThat(profiles.profilePending(subject, run, FIRST.plusSeconds(21))).isTrue();
     }
 
     @Test

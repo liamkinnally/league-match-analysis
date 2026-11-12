@@ -490,19 +490,31 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
 
     private List<PublicMatchLookup.MatchSummary> publicMatches(UUID runId) {
         var matches = queryPublicMatches(runId);
-        // Only this already admitted page, at most twenty matches. Each enrichment
-        // commits separately and never acquires account/profile locks.
-        for (var match : matches) enrichParticipantDetails(match.matchId());
-        // Another reader may have completed the same backfill while this one waited.
-        return matches.isEmpty() ? matches : queryPublicMatches(runId);
+        boolean attemptedEnrichment = false;
+        // Current rows remain ordinary reads. Only stale rows on this admitted
+        // page enter the existing transaction and its locked eligibility recheck.
+        for (var match : matches) {
+            if (match.needsEnrichment()) {
+                enrichParticipantDetails(match.summary().matchId());
+                attemptedEnrichment = true;
+            }
+        }
+        // Reread even if our attempt wrote nothing: another reader may have
+        // completed the same backfill before we acquired its lock.
+        if (attemptedEnrichment) matches = queryPublicMatches(runId);
+        return matches.stream().map(PublicMatchRow::summary).toList();
     }
 
-    private List<PublicMatchLookup.MatchSummary> queryPublicMatches(UUID runId) {
+    private record PublicMatchRow(PublicMatchLookup.MatchSummary summary, boolean needsEnrichment) {}
+
+    private List<PublicMatchRow> queryPublicMatches(UUID runId) {
         return jdbc.query("""
                 select m.match_id, m.queue_id, p.participant_id, p.champion_name, p.champion_id, m.game_version, p.end_item_ids::text, p.team_position,
                     p.win, coalesce(m.game_start_ms, m.game_creation_ms) started_at_ms, m.game_duration_seconds,
                     p.kills, p.deaths, p.assists, p.total_minions_killed + p.neutral_minions_killed cs,
                     p.gold_earned, m.timeline_source_capture_id is not null timeline_available,
+                    exists(select 1 from league_analysis.riot_participant e
+                        where e.match_id = m.match_id and e.detail_extension_version is null) needs_enrichment,
                     (select case when count(*) = 10 and count(e.game_ended_in_early_surrender) = 10
                         then case when bool_and(e.game_ended_in_early_surrender) then true
                             when not bool_or(e.game_ended_in_early_surrender) then false end
@@ -520,13 +532,14 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
                     and not league_analysis.privacy_blocked('puuid', p.puuid)
                     and not league_analysis.privacy_blocked('match', m.match_id)
                 order by i.ordinal limit 20
-                """, (rs, row) -> new PublicMatchLookup.MatchSummary(rs.getString("match_id"),
+                """, (rs, row) -> new PublicMatchRow(new PublicMatchLookup.MatchSummary(rs.getString("match_id"),
                 rs.getInt("participant_id"), rs.getString("champion_name"), rs.getInt("champion_id"),
                 rs.getString("game_version"), itemIds(rs.getString("end_item_ids")),
                 rs.getString("team_position"), rs.getBoolean("win"), rs.getLong("started_at_ms"),
                 rs.getLong("game_duration_seconds"), rs.getInt("kills"), rs.getInt("deaths"),
                 rs.getInt("assists"), rs.getInt("cs"), rs.getInt("gold_earned"),
-                rs.getBoolean("timeline_available"), rs.getInt("queue_id"), rs.getObject("remake", Boolean.class)), runId);
+                rs.getBoolean("timeline_available"), rs.getInt("queue_id"), rs.getObject("remake", Boolean.class)),
+                rs.getBoolean("needs_enrichment")), runId);
     }
 
     private List<Integer> itemIds(String encoded) {
@@ -562,6 +575,14 @@ public class JdbcRiotIngestionStore implements RiotIngestionStore, dev.leagueana
                         failure_message = 'Lookup interrupted', completed_at = ?
                     where public_request and status = 'RUNNING'
                     """, timestamp(now));
+            // Profile work may outlive a completed history page. Its worker is
+            // gone after restart, but the deadline must still fence older work.
+            jdbc.update("""
+                    update league_analysis.player_profile_current p set profile_pending_run_id = null
+                    from league_analysis.ingestion_run r
+                    where p.profile_pending_run_id = r.id and r.public_request and r.lookup_kind = 'HISTORY'
+                        and not league_analysis.privacy_blocked('puuid', p.puuid)
+                    """);
         });
     }
 

@@ -1,6 +1,10 @@
 package dev.leagueanalysis.ingestion.riot.application;
 
 import dev.leagueanalysis.ingestion.riot.adapter.out.riot.MatchV5Decoder;
+import dev.leagueanalysis.ingestion.riot.adapter.out.riot.JdkRiotHttpTransport;
+import dev.leagueanalysis.ingestion.riot.adapter.out.riot.RiotApiClient;
+import dev.leagueanalysis.ingestion.riot.adapter.out.riot.RiotHttpTransport;
+import dev.leagueanalysis.ingestion.riot.config.RiotProperties;
 import dev.leagueanalysis.ingestion.riot.domain.CapturedDocument;
 import dev.leagueanalysis.ingestion.riot.domain.ProviderDocument;
 import dev.leagueanalysis.ingestion.riot.domain.RiotAccount;
@@ -8,9 +12,15 @@ import dev.leagueanalysis.ingestion.riot.domain.RiotId;
 import dev.leagueanalysis.ingestion.riot.domain.RiotMatchMaterialization;
 import dev.leagueanalysis.ingestion.riot.domain.SourceKind;
 import java.time.*;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.http.HttpRequest;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
+import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.JsonNodeFactory;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -124,6 +134,99 @@ class PublicMatchLookupServiceTest {
         service.submit("Second", "NA1", "peer");
         while (!work.isEmpty()) work.remove().run();
         assertThat(turns).containsExactly("First", "Second", "First", "Second", "First", "Second");
+    }
+
+    @Test void stalledProviderBodyFailsItsLookupAndAllowsTheNextQueuedLookupToComplete() throws Exception {
+        var stalledRequest = new CountDownLatch(1);
+        var releaseResponses = new CountDownLatch(1);
+        var serverWorkers = Executors.newFixedThreadPool(3);
+        var provider = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        provider.setExecutor(serverWorkers);
+        provider.createContext("/", exchange -> {
+            try {
+                var path = exchange.getRequestURI().getPath();
+                if (path.endsWith("/Stalled/NA1")) {
+                    exchange.sendResponseHeaders(200, 100);
+                    exchange.getResponseBody().write('{');
+                    exchange.getResponseBody().flush();
+                    stalledRequest.countDown();
+                    try { releaseResponses.await(); }
+                    catch (InterruptedException interrupted) { Thread.currentThread().interrupt(); }
+                } else {
+                    String payload = path.endsWith("/Next/NA1")
+                            ? "{\"puuid\":\"invented-next-puuid\",\"gameName\":\"Next\",\"tagLine\":\"NA1\"}"
+                            : path.equals("/lol/summoner/v4/summoners/by-puuid/invented-next-puuid")
+                            ? "{\"profileIconId\":29,\"summonerLevel\":180,\"revisionDate\":1720000000000}"
+                            : path.endsWith("/ids") ? "[]" : null;
+                    if (payload == null) exchange.sendResponseHeaders(404, -1);
+                    else {
+                        var bytes = payload.getBytes(StandardCharsets.UTF_8);
+                        exchange.sendResponseHeaders(200, bytes.length);
+                        exchange.getResponseBody().write(bytes);
+                    }
+                }
+            } finally { exchange.close(); }
+        });
+        provider.start();
+        var worker = Executors.newSingleThreadExecutor();
+        var transport = new JdkRiotHttpTransport(Duration.ofSeconds(2));
+        RiotHttpTransport localOnly = (request, timeout, limit) -> {
+            String query = request.uri().getRawQuery();
+            var uri = URI.create("http://127.0.0.1:" + provider.getAddress().getPort()
+                    + request.uri().getRawPath() + (query == null ? "" : "?" + query));
+            return transport.send(HttpRequest.newBuilder(uri).timeout(timeout).GET().build(), timeout, limit);
+        };
+        var properties = new RiotProperties("invented-test-key", "AMERICAS", "NA1", 420, 65536,
+                Duration.ofSeconds(2), Duration.ofMillis(400), Duration.ofSeconds(1));
+        var gateway = new RiotApiClient(properties, localOnly, new ObjectMapper(), clock);
+        var evidence = mock(RiotIngestionStore.class);
+        var pages = new ConcurrentHashMap<UUID, PublicMatchLookup>();
+        var outcomes = new ConcurrentHashMap<UUID, CompletableFuture<IngestionRunStatus>>();
+        var failureCodes = new ConcurrentHashMap<UUID, String>();
+        when(store.latestCooldown(anyString())).thenReturn(Optional.empty());
+        doAnswer(call -> {
+            UUID id = UUID.randomUUID();
+            RiotIngestionCommand command = call.getArgument(0);
+            pages.put(id, new PublicMatchLookup(id, command.gameName(), command.tagLine(),
+                    "RUNNING", null, null, List.of()));
+            outcomes.put(id, new CompletableFuture<>());
+            return id;
+        }).when(store).startPublicRun(any(), any());
+        when(store.readPublicRun(any())).thenAnswer(call -> Optional.ofNullable(pages.get(call.getArgument(0))));
+        when(evidence.saveCapture(any(), any())).thenAnswer(call ->
+                new CapturedDocument(UUID.randomUUID(), UUID.randomUUID(), call.getArgument(1)));
+        doAnswer(call -> {
+            UUID id = call.getArgument(0);
+            IngestionRunStatus status = call.getArgument(1);
+            String code = call.getArgument(2);
+            if (code != null) failureCodes.put(id, code);
+            var previous = pages.get(id);
+            pages.put(id, new PublicMatchLookup(id, previous.gameName(), previous.tagLine(),
+                    status == IngestionRunStatus.COMPLETE ? "EMPTY" : status.name(), null, null, List.of()));
+            outcomes.get(id).complete(status);
+            return null;
+        }).when(evidence).finishRun(any(), any(), any(), any(), any());
+        var ingestionService = new RiotIngestionService(gateway, new MatchV5Decoder(), evidence, clock);
+        var queued = new PublicMatchLookupService(ingestionService, store, clock, true, worker);
+        try {
+            var first = queued.submit("Stalled", "NA1", "first-peer").lookup().runId();
+            assertThat(stalledRequest.await(3, TimeUnit.SECONDS)).isTrue();
+            var next = queued.submit("Next", "NA1", "next-peer").lookup().runId();
+
+            var nextOutcome = outcomes.get(next).get(4, TimeUnit.SECONDS);
+            assertThat(nextOutcome).as("Queued lookup failure code: %s", failureCodes.get(next))
+                    .isEqualTo(IngestionRunStatus.COMPLETE);
+            assertThat(queued.get(next).status()).isEqualTo("EMPTY");
+            assertThat(outcomes.get(first).get(1, TimeUnit.SECONDS)).isEqualTo(IngestionRunStatus.FAILED);
+            assertThat(failureCodes.get(first)).isEqualTo("NETWORK_FAILURE");
+        } finally {
+            releaseResponses.countDown();
+            provider.stop(0);
+            queued.close();
+            worker.awaitTermination(3, TimeUnit.SECONDS);
+            serverWorkers.shutdownNow();
+            serverWorkers.awaitTermination(3, TimeUnit.SECONDS);
+        }
     }
 
     @Test void rateLimitedTurnYieldsAndResumesAtRetryTimeWithoutBusyLoop() {

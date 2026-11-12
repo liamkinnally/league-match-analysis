@@ -149,3 +149,60 @@ it("rejects a different identity when an unresolved profile finishes polling", a
   expect(hook.result.current.lookup?.gameName).not.toBe("Someone else");
   expect(hook.result.current.issue).not.toBeNull();
 });
+
+it.each([undefined, "invalid"])("clears a pending restore when navigation changes to runId %s", async (nextRunId) => {
+  let finish!: (response: Response) => void;
+  let signal!: AbortSignal;
+  const fetcher = vi.fn((_url: string, options: RequestInit) => new Promise<Response>(resolve => {
+    finish = resolve; signal = options.signal!;
+  }));
+  vi.stubGlobal("fetch", fetcher);
+  const hook = renderHook(({ runId }) => usePlayerLookup(runId), { initialProps: { runId: id(1) as string | undefined } });
+  await act(async () => {});
+  expect(hook.result.current.busy).toBe("restore");
+  await act(async () => hook.rerender({ runId: nextRunId }));
+  expect(signal.aborted).toBe(true);
+  expect(hook.result.current.busy).toBeNull();
+  expect(hook.result.current.loading).toBe(false);
+  await act(async () => finish(Response.json(page(1, [1]))));
+  expect(hook.result.current.lookup).toBeNull();
+  expect(hook.result.current.restoreCursor).toBeNull();
+  await act(async () => hook.result.current.retry());
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  expect(push).not.toHaveBeenCalled();
+});
+
+it.each([undefined, "invalid"])("abandons RUNNING history and its in-flight poll when runId becomes %s", async (nextRunId) => {
+  vi.useFakeTimers();
+  let finishPoll!: (response: Response) => void;
+  let pollSignal!: AbortSignal;
+  const fetcher = vi.fn().mockResolvedValueOnce(Response.json(page(1, [1], { status: "RUNNING" })))
+    .mockImplementation((_url: string, options: RequestInit) => new Promise<Response>(resolve => {
+      finishPoll = resolve; pollSignal = options.signal!;
+    }));
+  vi.stubGlobal("fetch", fetcher);
+  const hook = renderHook(({ runId }) => usePlayerLookup(runId), { initialProps: { runId: id(1) as string | undefined } });
+  await act(async () => {});
+  expect(hook.result.current.lookup?.status).toBe("RUNNING");
+  await act(async () => vi.advanceTimersByTime(2000));
+  await act(async () => hook.rerender({ runId: nextRunId }));
+  expect(pollSignal.aborted).toBe(true);
+  expect(hook.result.current.lookup).toBeNull();
+  expect(hook.result.current.busy).toBeNull();
+  expect(hook.result.current.loading).toBe(false);
+  await act(async () => finishPoll(Response.json(page(1, [2], { previousRunId: id(2) }))));
+  await act(async () => vi.advanceTimersByTime(4000));
+  expect(hook.result.current.lookup).toBeNull();
+  expect(hook.result.current.restoreCursor).toBeNull();
+  expect(fetcher).toHaveBeenCalledTimes(2);
+});
+
+it("reuses merged history when its pages have not changed", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(page(1, [1, 2]))));
+  const hook = renderHook(() => usePlayerLookup(id(1)));
+  await act(async () => {});
+  const lookup = hook.result.current.lookup;
+  await act(async () => hook.rerender());
+  expect(hook.result.current.lookup).toBe(lookup);
+  expect(hook.result.current.lookup?.matches.map(match => match.matchId)).toEqual(["NA1_1", "NA1_2"]);
+});

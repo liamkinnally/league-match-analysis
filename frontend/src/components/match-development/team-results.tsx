@@ -90,7 +90,7 @@ export function TeamResults({ data }: { data: MatchDevelopment }) {
     ...objectives,
   ];
   const outcome = (team: FinalTeamResult) => {
-    const result = matchResult(team.win);
+    const result = matchResult(team.win, data.summary.remake);
     return (
       <>
         {teamLabel(team.teamId)}{" "}
@@ -111,7 +111,7 @@ export function TeamResults({ data }: { data: MatchDevelopment }) {
             <Fragment key={team.teamId}>
               {index > 0 ? <span aria-hidden="true">—</span> : null}
               <strong
-                className={`match-result ${matchResult(team.win).className}`}
+                className={`match-result ${matchResult(team.win, data.summary.remake).className}`}
                 aria-label={`${teamLabel(team.teamId)}: ${numberText(team.kills)} kills`}
               >
                 {count(team.kills)}
@@ -139,7 +139,7 @@ export function TeamResults({ data }: { data: MatchDevelopment }) {
             {teams.map((team) => (
               <tr
                 key={team.teamId}
-                className={`match-result ${matchResult(team.win).className}`}
+                className={`match-result ${matchResult(team.win, data.summary.remake).className}`}
               >
                 <th scope="row">{outcome(team)}</th>
                 {columns.map((c) => (
@@ -161,10 +161,10 @@ export function TeamResults({ data }: { data: MatchDevelopment }) {
               <th
                 key={team.teamId}
                 scope="col"
-                className={`match-result ${matchResult(team.win).className}`}
+                className={`match-result ${matchResult(team.win, data.summary.remake).className}`}
               >
                 <span>{teamLabel(team.teamId)}</span>
-                <strong>{matchResult(team.win).label}</strong>
+                <strong>{matchResult(team.win, data.summary.remake).label}</strong>
               </th>
             ))}
           </tr>
@@ -176,7 +176,7 @@ export function TeamResults({ data }: { data: MatchDevelopment }) {
               {teams.map((team) => (
                 <td
                   key={team.teamId}
-                  className={`match-result ${matchResult(team.win).className}`}
+                  className={`match-result ${matchResult(team.win, data.summary.remake).className}`}
                 >
                   {cell(team, c.key)}
                 </td>

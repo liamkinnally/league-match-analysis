@@ -8,6 +8,7 @@ export type MatchDevelopmentSummary = {
   focusParticipantId: number;
   compareParticipantId: number | null;
   win: boolean;
+  remake?: boolean | null;
   kills: number;
   deaths: number;
   assists: number;

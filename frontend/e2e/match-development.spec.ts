@@ -76,6 +76,67 @@ test("development selection restores", async ({ page }) => {
   await expect(page).toHaveURL(/focus=6&compare=1$/);
 });
 
+test("display selections stay local, restore with history, and comparison still fetches new data", async ({ page }) => {
+  await installDeterministicGameAssets(page);
+  const historyRunId = "00000000-0000-0000-0000-000000000001";
+  await page.goto(`${sampleRoute}&from=480000&to=600000&metric=cs&historyRunId=${historyRunId}`);
+  await expect(page.getByLabel("Selected interval 8:00–10:00")).toBeVisible();
+  const navigationRequests: string[] = [];
+  page.on("request", request => {
+    const headers = request.headers();
+    if (new URL(request.url()).pathname === "/matches/NA1_7000000001/development"
+      && headers.rsc === "1" && headers["next-router-prefetch"] !== "1"
+      && !headers["next-router-segment-prefetch"]) navigationRequests.push(request.url());
+  });
+
+  await page.getByRole("tab", { name: "Runes", exact: true }).click();
+  const runes = page.getByRole("tabpanel", { name: "Runes", exact: true });
+  const participant = (id: number) => runes.getByRole("button", { name: new RegExp(`participant ${id}$`) });
+  await expect(participant(6)).toHaveAttribute("aria-pressed", "true");
+  await participant(7).click();
+  await expect(participant(7)).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("heading", { name: "Garen vs Darius" })).toBeVisible();
+  expect(navigationRequests).toEqual([]);
+  await page.goBack();
+  await expect(participant(6)).toHaveAttribute("aria-pressed", "true");
+  await page.goForward();
+  await expect(participant(7)).toHaveAttribute("aria-pressed", "true");
+
+  await page.getByRole("tab", { name: "Scoreboard", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Scoreboard", exact: true })).toBeVisible();
+  await page.goBack();
+  await expect(participant(7)).toHaveAttribute("aria-pressed", "true");
+  await page.goForward();
+  await expect(page.getByRole("heading", { name: "Scoreboard", exact: true })).toBeVisible();
+
+  await page.getByText("Other recorded intervals").click();
+  await page.getByRole("link", { name: /^2:00–4:00/ }).click();
+  await expect(page.getByLabel("Selected interval 2:00–4:00")).toBeVisible();
+  await expect(page.getByRole("table", { name: "Before and after differences" }).getByRole("columnheader", { name: "2:00", exact: true })).toBeVisible();
+  await page.goBack();
+  await expect(page.getByLabel("Selected interval 8:00–10:00")).toBeVisible();
+  await page.goForward();
+  await expect(page.getByLabel("Selected interval 2:00–4:00")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Match history" })).toHaveAttribute("href", `/search?runId=${historyRunId}`);
+  expect(navigationRequests).toEqual([]);
+
+  const comparisonResponse = page.waitForResponse(response => {
+    const url = new URL(response.url());
+    return url.pathname === "/matches/NA1_7000000001/development"
+      && url.searchParams.get("compare") === "2" && response.request().headers().rsc === "1";
+  });
+  await page.getByRole("combobox", { name: "Compare with opponent" }).selectOption("2");
+  expect((await comparisonResponse).ok()).toBe(true);
+  await expect(page.getByRole("heading", { name: "Garen vs Lee Sin" })).toBeVisible();
+  await expect(page.getByLabel("Selected interval 2:00–4:00")).toBeVisible();
+  expect(navigationRequests.length).toBeGreaterThan(0);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Garen vs Lee Sin" })).toBeVisible();
+  await expect(page.getByLabel("Selected interval 2:00–4:00")).toBeVisible();
+  await page.getByRole("tab", { name: "Runes", exact: true }).click();
+  await expect(participant(7)).toHaveAttribute("aria-pressed", "true");
+});
+
 test("development discloses every persisted sample", async ({ page, request }) => {
   await installDeterministicGameAssets(page);
   await page.setViewportSize({ width: 390, height: 844 });

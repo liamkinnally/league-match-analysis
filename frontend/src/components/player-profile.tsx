@@ -1,5 +1,5 @@
 import { regionFor } from "../lib/player-lookup/regions";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { GameAssetIcon } from "./game-asset-icon";
 import { ProfileTime, RankObservations } from "./rank-observations";
 import { RankHistoryChart } from "./rank-history-chart";
@@ -34,7 +34,15 @@ export function PlayerProfileHeader({ identity, profile, loading, issue, busy, r
   </header>;
 }
 
-function RankUpdatedAt({ value, now, timeZone }: { value: string; now: number; timeZone?: string }) {
+function RankUpdatedAt({ value, now: suppliedNow, live = false, timeZone }: { value: string; now: number; live?: boolean; timeZone?: string }) {
+  const [currentTime, setCurrentTime] = useState(0);
+  useEffect(() => {
+    if (!live) return;
+    const tick = () => setCurrentTime(Date.now());
+    tick(); const timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
+  }, [live]);
+  const now = live ? currentTime : suppliedNow;
   const elapsed = now - Date.parse(value);
   if (now <= 0 || elapsed > 24 * 60 * 60 * 1000) return <ProfileTime value={value} timeZone={timeZone} />;
   const minutes = Math.max(0, Math.floor(elapsed / 60000));
@@ -44,7 +52,7 @@ function RankUpdatedAt({ value, now, timeZone }: { value: string; now: number; t
   return <time dateTime={value}>{label}</time>;
 }
 
-function RankDetails({ rank, now, timeZone, compact = false }: { rank: SoloRank; now: number; timeZone?: string; compact?: boolean }) {
+function RankDetails({ rank, now, live, timeZone, compact = false }: { rank: SoloRank; now: number; live?: boolean; timeZone?: string; compact?: boolean }) {
   const assets = useCurrentProfileAssets();
   const tier = rank.tier ? rank.tier[0] + rank.tier.slice(1).toLowerCase() : "";
   const division = rank.tier && ["MASTER", "GRANDMASTER", "CHALLENGER"].includes(rank.tier) ? "" : ` ${rank.division ?? ""}`;
@@ -60,17 +68,17 @@ function RankDetails({ rank, now, timeZone, compact = false }: { rank: SoloRank;
       <span className="profile-rank__record-label">{compact ? "Ranked Flex" : "Ranked Solo/Duo"}</span>
       {total > 0 ? <><strong>{rank.wins}W <span>–</span> {rank.losses}L</strong><span className={`profile-rank__rate${!compact && rank.wins! < rank.losses! ? " profile-rank__rate--losing" : ""}`}>{Number((100 * rank.wins! / total).toFixed(1))}% <small>win rate</small></span></> : <span>No ranked games recorded</span>}
     </div>}
-    {rank.fetchedAt && <small className="profile-rank__freshness">Last updated: <RankUpdatedAt value={rank.fetchedAt} now={now} timeZone={timeZone} /></small>}
+    {rank.fetchedAt && <small className="profile-rank__freshness">Last updated: <RankUpdatedAt value={rank.fetchedAt} now={now} live={live} timeZone={timeZone} /></small>}
     {(rank.refreshing || rank.error) && <small className="profile-rank__freshness">{rank.refreshing ? "Updating rank…" : "Update unavailable · Showing saved rank"}</small>}
   </div>;
 }
 
-export function PlayerProfilePanel({ profile, loading, loadingOlder = false, busy = false, loadOlder, now = 0, timeZone }: Pick<ProfileState, "profile" | "loading" | "issue" | "loadingOlder" | "busy" | "loadOlder"> & { now?: number; timeZone?: string }) {
+export function PlayerProfilePanel({ profile, loading, loadingOlder = false, busy = false, loadOlder, now = 0, live = false, timeZone }: Pick<ProfileState, "profile" | "loading" | "issue" | "loadingOlder" | "busy" | "loadOlder"> & { now?: number; live?: boolean; timeZone?: string }) {
   return <div className="profile-ranks">
     <section className="profile-panel profile-panel--rank" aria-labelledby="solo-rank-title">
       <h2 id="solo-rank-title">Ranked Solo/Duo</h2>
       {profile ? <>
-        <RankDetails rank={profile.soloRank} now={now} timeZone={timeZone} />
+        <RankDetails rank={profile.soloRank} now={now} live={live} timeZone={timeZone} />
         <div className="profile-lp-history"><RankHistoryChart history={profile.rankHistory} timeZone={timeZone} /></div>
         <RankObservations history={profile.rankHistory} busy={loadingOlder || busy} loadOlder={loadOlder} timeZone={timeZone} />
       </> : <p className="profile-panel__empty">{loading ? "Loading rank…" : "Rank unavailable. Update this profile to try again."}</p>}
@@ -80,7 +88,7 @@ export function PlayerProfilePanel({ profile, loading, loadingOlder = false, bus
         <summary className="profile-flex__summary"><span>Ranked Flex</span>
           {profile.flexRank.status !== "ranked" && <span>{profile.flexRank.status === "loading" ? "Loading…" : "Unavailable"}</span>}
         </summary>
-        <RankDetails rank={profile.flexRank} now={now} timeZone={timeZone} compact />
+        <RankDetails rank={profile.flexRank} now={now} live={live} timeZone={timeZone} compact />
       </details>}
   </div>;
 }

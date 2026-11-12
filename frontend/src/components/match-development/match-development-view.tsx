@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import type { MouseEvent } from "react";
 import { DevelopmentFooter } from "../development-footer";
 import { SiteBrand } from "../site-brand";
 import { DeferredTimeline } from "./deferred-timeline";
@@ -57,9 +58,15 @@ function differenceValue(value: number | null) {
     : `${value > 0 ? "+" : ""}${value.toLocaleString("en-US")}`;
 }
 
+function selectDisplayLink(event: MouseEvent<HTMLAnchorElement>) {
+  if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  event.preventDefault();
+  window.history.pushState(null, "", event.currentTarget.href);
+}
+
 export function MatchDevelopmentView({
   data,
-  interval,
+  interval: initialInterval,
   invented,
   sampleRanks,
   assets: initialAssets,
@@ -71,14 +78,26 @@ export function MatchDevelopmentView({
   assets?: GameAssetCatalog | null;
 }) {
   const search = useSearchParams();
-  const router = useRouter();
-  const runeState = parseDevelopmentSearch({ historyRunId: search.getAll("historyRunId").length === 1 ? search.get("historyRunId") ?? undefined : undefined, finalView: search.get("finalView") ?? undefined, runeParticipant: search.get("runeParticipant") ?? undefined });
-  const finalState: FinalStateSelection = { historyRunId: runeState.historyRunId, finalView: runeState.finalView, runeParticipant: search.get("runeParticipant") ?? undefined };
-  const requestedMetric = search.get("metric");
-  const metric: Metric =
-    requestedMetric === "cs" || requestedMetric === "xp"
-      ? requestedMetric
-      : "gold";
+  const selection = parseDevelopmentSearch({
+    historyRunId: search.getAll("historyRunId").length === 1 ? search.get("historyRunId") ?? undefined : undefined,
+    finalView: search.get("finalView") ?? undefined,
+    runeParticipant: search.get("runeParticipant") ?? undefined,
+    from: search.get("from") ?? undefined,
+    to: search.get("to") ?? undefined,
+    metric: search.get("metric") ?? undefined,
+  });
+  const finalState: FinalStateSelection = { historyRunId: selection.historyRunId, finalView: selection.finalView, runeParticipant: search.get("runeParticipant") ?? undefined };
+  const metric = selection.metric;
+  const exactTimes = new Set(data.samples.map(sample => sample.timestampMs));
+  const requestedInterval = selection.interval;
+  const defaultWindow = data.suggestedWindows[0] ?? data.windows[0];
+  const interval = requestedInterval && exactTimes.has(requestedInterval.from) && exactTimes.has(requestedInterval.to)
+    ? requestedInterval
+    : defaultWindow
+      ? { from: defaultWindow.startMs, to: defaultWindow.endMs }
+      : data.samples.length
+        ? { from: data.samples[0].timestampMs, to: data.samples.at(-1)!.timestampMs }
+        : initialInterval;
   const setMetric = (next: Metric) => {
     const url = new URL(window.location.href);
     if (next === "gold") url.searchParams.delete("metric");
@@ -118,7 +137,7 @@ export function MatchDevelopmentView({
   const first = data.samples.find((s) => s.timestampMs === interval.from),
     last = data.samples.find((s) => s.timestampMs === interval.to);
   const intervalLabel = `${gameTime(interval.from)}–${gameTime(interval.to)}`;
-  const result = matchResult(data.summary.win);
+  const result = matchResult(data.summary.win, data.summary.remake);
   return (
     <main className="development-app">
       <a className="development-skip-link" href="#match-content">
@@ -130,7 +149,7 @@ export function MatchDevelopmentView({
           <Link href="/">Home</Link>
           {sampleRanks
             ? <Link href="/sample/profile">Sample profile</Link>
-            : <Link href={runeState.historyRunId ? `/search?runId=${runeState.historyRunId}` : "/search"}>Match history</Link>}
+            : <Link href={selection.historyRunId ? `/search?runId=${selection.historyRunId}` : "/search"}>Match history</Link>}
           <Link href="/leaderboard">Leaderboard</Link>
           <span aria-current="page">Match detail</span>
         </nav>
@@ -222,9 +241,9 @@ export function MatchDevelopmentView({
                       {data.suggestedWindows.map((window) => {
                         const current = window.id === selectedWindow?.id;
                         return (
-                          <Link
+                          <a
                             key={window.id}
-                            scroll={false}
+                            onClick={selectDisplayLink}
                             className={
                               current
                                 ? "development-window-card development-window-card--selected"
@@ -239,7 +258,7 @@ export function MatchDevelopmentView({
                               {gameTime(window.endMs)}
                             </strong>
                             <span>{window.summary}</span>
-                          </Link>
+                          </a>
                         );
                       })}
                     </div>
@@ -270,9 +289,9 @@ export function MatchDevelopmentView({
                             {otherWindows.map((window) => (
                               <tr key={window.id}>
                                 <td>
-                                  <Link
+                                  <a
                                     href={windowHref(data, window, metric, finalState)}
-                                    scroll={false}
+                                    onClick={selectDisplayLink}
                                     aria-current={
                                       window.id === selectedWindow?.id
                                         ? "true"
@@ -281,7 +300,7 @@ export function MatchDevelopmentView({
                                   >
                                     {gameTime(window.startMs)}–
                                     {gameTime(window.endMs)}
-                                  </Link>
+                                  </a>
                                 </td>
                               </tr>
                             ))}
@@ -394,8 +413,8 @@ export function MatchDevelopmentView({
             </div>
           ) : null}
         </section>
-        <FinalStatePanel data={data} assets={assets} view={runeState.finalView} participantId={runeState.runeParticipant} invalidSelection={runeState.hasInvalidRuneSelection}
-          onChange={next => router.push(developmentHref(data.matchId, data.summary.focusParticipantId, data.summary.compareParticipantId ?? undefined, interval, metric, { ...finalState, ...next }), { scroll: false })}>
+        <FinalStatePanel data={data} assets={assets} view={selection.finalView} participantId={selection.runeParticipant} invalidSelection={selection.hasInvalidRuneSelection}
+          onChange={next => window.history.pushState(null, "", developmentHref(data.matchId, data.summary.focusParticipantId, data.summary.compareParticipantId ?? undefined, interval, metric, { ...finalState, ...next }))}>
         <Scoreboard
           data={data}
           interval={interval}

@@ -3,6 +3,32 @@ import { installDeterministicGameAssets } from "./support/game-assets";
 import { profileFixture } from "../src/lib/player-lookup/profile.test-fixture";
 const runId = "00000000-0000-0000-0000-000000000019";
 
+test("mobile search submits by pointer while cached suggestions remain open", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await installDeterministicGameAssets(page);
+  const identity = { gameName: "PointerPlayer", tagLine: "NA1", platform: "NA1" };
+  const submitted: unknown[] = [];
+  await page.route("**/api/player-suggestions?**", route => route.fulfill({ json: { suggestions: [] } }));
+  await page.route("**/api/player-matches", async route => {
+    submitted.push(route.request().postDataJSON());
+    await route.fulfill({ json: { ...identity, runId, status: "EMPTY", queueId: 0, message: null,
+      retryNotBefore: null, lastUpdated: null, nextRefreshAt: null, previousRunId: null, hasMore: false, matches: [] } });
+  });
+  await page.route(`**/api/player-matches/${runId}/profile`, route => route.fulfill({ json: { ...profileFixture, identity } }));
+  await page.goto("/search");
+  const input = page.getByRole("combobox", { name: "Riot ID" });
+  await input.fill("PointerPlayer#NA1");
+  await expect(input).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByText("No cached profiles. Enter a full Riot ID to search.")).toBeVisible();
+  const submit = page.getByRole("button", { name: "Find matches" });
+  await expect(submit).toBeEnabled();
+  // A normal pointer click must reach the button while the suggestion panel is still open.
+  await submit.click({ timeout: 3000 });
+  await expect(page.getByRole("heading", { name: "PointerPlayer #NA1" })).toBeVisible();
+  expect(submitted).toContainEqual({ ...identity, queueId: 0 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+});
+
 test("cached autocomplete stays compact on desktop and mobile and opens a keyboard-selected regional profile", async ({ page }) => {
   await installDeterministicGameAssets(page);
   const errors: string[] = [];

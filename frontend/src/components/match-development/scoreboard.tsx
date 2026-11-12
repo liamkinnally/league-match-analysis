@@ -96,7 +96,7 @@ export function Scoreboard({
       </div>
       {teamIds.map((teamId) => {
         const people = data.roster.filter((p) => p.teamId === teamId),
-          result = matchResult(people[0]?.win);
+          result = matchResult(people[0]?.win, data.summary.remake);
         return (
           <section
             key={teamId}
