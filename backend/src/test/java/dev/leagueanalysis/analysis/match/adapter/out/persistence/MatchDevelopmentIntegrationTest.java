@@ -89,6 +89,37 @@ class MatchDevelopmentIntegrationTest {
         assertThat(response).doesNotContain("puuid", "sourceCaptureId");
     }
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource({
+        "remake,true", "normal,false", "missing,unknown", "conflicting,unknown", "incomplete,unknown"
+    })
+    void exposesNullableRemakeWithoutReplacingTheRecordedWin(String scenario, String expected) throws Exception {
+        seedCommand.seed();
+        Boolean earlySurrender = "missing".equals(scenario) ? null : "remake".equals(scenario);
+        jdbc.update("update league_analysis.riot_participant set game_ended_in_early_surrender=? where match_id=?",
+                earlySurrender, DemoSeedCommand.MATCH_ID);
+        if ("conflicting".equals(scenario)) {
+            jdbc.update("update league_analysis.riot_participant set game_ended_in_early_surrender=true where match_id=? and participant_id=1",
+                    DemoSeedCommand.MATCH_ID);
+        }
+        if ("incomplete".equals(scenario)) {
+            jdbc.update("delete from league_analysis.riot_participant where match_id=? and participant_id=10", DemoSeedCommand.MATCH_ID);
+        }
+        var response = mockMvc.perform(get("/api/v1/matches/{matchId}/development", DemoSeedCommand.MATCH_ID)
+                .param("focus", "6").param("compare", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.summary.win").value(true))
+                .andReturn().getResponse().getContentAsString();
+        var summary = json.readTree(response).path("summary");
+        assertThat(summary.has("remake")).as("Match detail includes the nullable remake classification").isTrue();
+        if ("unknown".equals(expected)) {
+            assertThat(summary.path("remake").isNull()).isTrue();
+        } else {
+            assertThat(summary.path("remake").isBoolean()).isTrue();
+            assertThat(summary.path("remake").asBoolean()).isEqualTo(Boolean.parseBoolean(expected));
+        }
+    }
+
     @Test
     void malformedAssisterArraysRemainUnavailableWithoutInventingParticipantIds() throws Exception {
         seedCommand.seed();

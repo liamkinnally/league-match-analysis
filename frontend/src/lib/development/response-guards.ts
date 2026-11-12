@@ -34,6 +34,7 @@ function isSummary(value: unknown): value is MatchDevelopmentSummary {
     isInteger(value.focusParticipantId) &&
     isMaybeInteger(value.compareParticipantId) &&
     isBoolean(value.win) &&
+    (value.remake === undefined || value.remake === null || isBoolean(value.remake)) &&
     isInteger(value.kills) &&
     isInteger(value.deaths) &&
     isInteger(value.assists) &&

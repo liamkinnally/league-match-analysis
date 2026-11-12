@@ -167,12 +167,12 @@ test("failed lookup", async ({ page }) => {
     body: JSON.stringify({ runId, gameName: "Unavailable", tagLine: "NA1", status: "FAILED", message: "Lookup could not finish. Search again or explore the sample match.", retryNotBefore: null, queueId: 0, lastUpdated: null, nextRefreshAt: null, previousRunId: null, hasMore: true, matches: [] }),
   }));
   const errors = await openStableDevelopment(page, `/search?runId=${runId}`, false);
-  await expect(page.getByText("Lookup could not finish. Search again or explore the sample match.")).toBeVisible();
+  await expect(page.getByText("Lookup could not finish. Search again to retry.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Find matches" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
   // Keep the failure explanation and search recovery action in the initial narrow viewport.
   const viewportHeight = await page.evaluate(() => innerHeight);
-  for (const recovery of [page.getByText("Lookup could not finish. Search again or explore the sample match."),
+  for (const recovery of [page.getByText("Lookup could not finish. Search again to retry."),
     page.getByRole("button", { name: "Find matches" })]) {
     const bounds = await recovery.boundingBox();
     expect(bounds).not.toBeNull();

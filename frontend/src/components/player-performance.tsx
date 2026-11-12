@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import type { GameAssetCatalog } from "../lib/game-assets/types";
 import { summarizePerformance, type ChampionPerformanceRow } from "../lib/player-lookup/performance";
 import type { MatchSummary } from "../lib/player-lookup/types";
@@ -16,7 +17,7 @@ function ChampionIcon({ row, catalogs }: { row: ChampionPerformanceRow; catalogs
 }
 
 export function RecentPerformance({ matches, catalogs }: Props) {
-  const result = summarizePerformance(matches);
+  const result = useMemo(() => summarizePerformance(matches), [matches]);
   return <section className="player-performance" aria-label="Recent performance">
     <header className="player-performance__heading"><h2>Recent performance</h2><span>{result.games} {result.games === 1 ? "game" : "games"} in this history</span></header>
     {result.games > 0 ? <div className="player-performance__body">
@@ -49,7 +50,7 @@ export function RecentPerformance({ matches, catalogs }: Props) {
 }
 
 export function ChampionPerformance({ matches, catalogs }: Props) {
-  const result = summarizePerformance(matches);
+  const result = useMemo(() => summarizePerformance(matches), [matches]);
   return <section className="player-champions" aria-label="Champion performance">
     <header className="player-performance__heading"><h2>Champions</h2><span>Recent history</span></header>
     {result.champions.length ? <table>

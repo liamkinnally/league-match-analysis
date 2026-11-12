@@ -211,3 +211,37 @@ it("uses a full Riot ID example and never relabels loaded identity from edited i
   expect(screen.getByRole("heading", { name: "Invented#NA1" })).toBeVisible();
   expect(screen.queryByRole("heading", { name: /Edited search/ })).not.toBeInTheDocument();
 });
+
+it("places new lookup progress before cached profile sections while keeping matches usable", async () => {
+  const match = { matchId: "NA1_21", queueId: 420, participantId: 6, championName: "Garen", championId: 86,
+    gameVersion: "16.17.1", endItemIds: [], position: "TOP", win: true, remake: false, startedAtMs: 1788890400000,
+    durationSeconds: 1800, kills: 7, deaths: 2, assists: 9, cs: 180, gold: 12500, timelineAvailable: false };
+  vi.stubGlobal("fetch", vi.fn((url: string, options: RequestInit) => {
+    if (url.startsWith("/api/game-assets")) return Promise.resolve(Response.json({ "16.17.1": assets }));
+    if (options.method === "POST") return new Promise<Response>(() => {});
+    return Promise.resolve(Response.json({ ...running, status: "COMPLETE", matches: [match] }));
+  }));
+  await act(async () => render(<PlayerSearch initialRunId={runId} />));
+  fireEvent.change(screen.getByLabelText("Riot ID"), { target: { value: "Another#NA1" } });
+  fireEvent.click(screen.getByRole("button", { name: "Find matches" }));
+  const status = screen.getByRole("status");
+  expect(status).toHaveTextContent("Starting player lookup");
+  expect(status.compareDocumentPosition(screen.getByRole("region", { name: "Recent performance" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(status.compareDocumentPosition(screen.getByRole("complementary", { name: "Player ranks and champions" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(screen.getByRole("link", { name: "Garen victory match development" })).toHaveAttribute("href", expect.stringContaining("NA1_21/development"));
+});
+
+it.each([
+  { status: 503, message: null },
+  { status: 200, message: "Live lookup is unavailable. Explore the sample match." },
+  { status: 200, message: "Lookup could not finish. Search again or explore the sample match." },
+  { status: 200, message: null },
+])("offers usable recovery when the sample is unavailable ($status, $message)", async ({ status, message }) => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ ...running, status: "FAILED", message }, { status })));
+  const view = render(<PlayerSearch initialRunId={runId}><p>Sample match unavailable</p></PlayerSearch>);
+  await act(async () => {});
+  expect(screen.getByText("Sample match unavailable")).toBeVisible();
+  const notice = view.container.querySelector(".player-lookup__status")!;
+  expect(notice).not.toHaveTextContent(/explore.*sample/i);
+  expect(notice).toHaveTextContent(/retry|try again|search again/i);
+});

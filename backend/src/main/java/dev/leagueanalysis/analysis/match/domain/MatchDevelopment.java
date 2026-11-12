@@ -49,6 +49,7 @@ public record MatchDevelopment(
             int focusParticipantId,
             Integer compareParticipantId,
             boolean win,
+            Boolean remake,
             int kills,
             int deaths,
             int assists,

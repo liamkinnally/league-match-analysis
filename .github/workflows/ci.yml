@@ -65,6 +65,9 @@ jobs:
           bash scripts/ci/test_publish_test_browser.sh
       - name: Install locked dependencies
         run: npm ci
+      - name: Verify launcher runtime and command contracts
+        working-directory: .
+        run: ./scripts/verify task tooling
       - name: Verify frontend task
         working-directory: .
         run: ./scripts/verify task frontend

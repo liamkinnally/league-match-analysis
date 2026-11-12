@@ -13,7 +13,15 @@ public record MatchHeader(
         long gameCreationMs,
         Long gameStartMs,
         Long gameEndMs,
-        long durationMs) {
+        long durationMs,
+        Boolean remake) {
+    public MatchHeader(String matchId, int queueId, int mapId, String gameMode, String gameType,
+            String gameVersion, String dataVersion, long gameCreationMs, Long gameStartMs,
+            Long gameEndMs, long durationMs) {
+        this(matchId, queueId, mapId, gameMode, gameType, gameVersion, dataVersion,
+                gameCreationMs, gameStartMs, gameEndMs, durationMs, null);
+    }
+
     public MatchHeader {
         matchId = TimelineEventKey.requireText(matchId);
         gameMode = TimelineEventKey.requireText(gameMode);

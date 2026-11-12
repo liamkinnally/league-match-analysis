@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, afterEach, expect, it, vi } from "vitest";
 import {
   developmentFixture,
@@ -67,7 +67,10 @@ it("opens rune inspection without changing focus, comparison, interval or metric
   window.history.replaceState(null, "", "/matches/NA1_7000000001/development?focus=6&compare=1&from=480000&to=600000&metric=xp");
   render(<MatchDevelopmentView data={developmentFixture} interval={{ from: 480000, to: 600000 }} invented assets={assets} />);
   fireEvent.click(screen.getByRole("tab", { name: "Runes" }));
-  expect(push).toHaveBeenLastCalledWith("/matches/NA1_7000000001/development?focus=6&compare=1&from=480000&to=600000&metric=xp&finalView=runes", { scroll: false });
+  expect(window.location.search).toBe("?focus=6&compare=1&from=480000&to=600000&metric=xp&finalView=runes");
+  expect(screen.getByRole("tabpanel", { name: "Runes" })).toBeVisible();
+  expect(screen.getByRole("heading", { name: "Name unavailable · Garen" })).toBeVisible();
+  expect(push).not.toHaveBeenCalled();
 });
 
 it("keeps portrait inspection independent and preserves its URL state through analysis controls", () => {
@@ -79,12 +82,14 @@ it("keeps portrait inspection independent and preserves its URL state through an
   portrait.focus();
   fireEvent.click(portrait);
   expect(portrait).toHaveFocus();
-  expect(push).toHaveBeenLastCalledWith("/matches/NA1_7000000001/development?focus=6&compare=1&from=480000&to=600000&metric=cs&finalView=runes&runeParticipant=7", { scroll: false });
+  expect(window.location.search).toBe("?focus=6&compare=1&from=480000&to=600000&metric=cs&finalView=runes&runeParticipant=7");
+  expect(screen.getByRole("heading", { name: "Name unavailable · Vi" })).toBeVisible();
+  expect(push).not.toHaveBeenCalled();
   fireEvent.change(screen.getByRole("combobox", { name: "Compare with opponent" }), { target: { value: "2" } });
-  expect(push).toHaveBeenLastCalledWith("/matches/NA1_7000000001/development?focus=6&compare=2&from=480000&to=600000&metric=cs&finalView=runes&runeParticipant=1", { scroll: false });
+  expect(push).toHaveBeenLastCalledWith("/matches/NA1_7000000001/development?focus=6&compare=2&from=480000&to=600000&metric=cs&finalView=runes&runeParticipant=7", { scroll: false });
   const scoreboardLinks = view.container.querySelectorAll("#scoreboard a[href*='focus=']");
   expect(scoreboardLinks.length).toBeGreaterThan(0);
-  for (const link of scoreboardLinks) expect(link.getAttribute("href")).toContain("finalView=runes&runeParticipant=1");
+  for (const link of scoreboardLinks) expect(link.getAttribute("href")).toContain("finalView=runes&runeParticipant=7");
 });
 
 it("supports final-state keyboard tabs while keeping explicit rune participant", () => {
@@ -94,7 +99,72 @@ it("supports final-state keyboard tabs while keeping explicit rune participant",
   scoreboard.focus();
   fireEvent.keyDown(scoreboard, { key: "ArrowRight" });
   expect(screen.getByRole("tab", { name: "Runes" })).toHaveFocus();
-  expect(push).toHaveBeenLastCalledWith("/matches/NA1_7000000001/development?focus=6&compare=1&from=480000&to=600000&finalView=runes&runeParticipant=7", { scroll: false });
+  expect(screen.getByRole("tabpanel", { name: "Runes" })).toBeVisible();
+  expect(screen.getByRole("heading", { name: "Name unavailable · Vi" })).toBeVisible();
+  expect(new URLSearchParams(window.location.search).get("runeParticipant")).toBe("7");
+  expect(push).not.toHaveBeenCalled();
+});
+
+it("shows a confirmed remake neutrally across the match summary and both teams without changing raw wins", () => {
+  const data = { ...developmentFixture, summary: { ...developmentFixture.summary, remake: true } };
+  const view = render(<MatchDevelopmentView data={data} interval={{ from: 480000, to: 600000 }} invented assets={assets} />);
+  expect(screen.queryAllByText("Victory")).toHaveLength(0);
+  expect(screen.queryAllByText("Defeat")).toHaveLength(0);
+  expect(within(view.container.querySelector<HTMLElement>(".development-result")!).getByText("Remake")).toBeVisible();
+  for (const name of ["Blue team", "Red team"]) {
+    const team = screen.getByRole("heading", { name }).closest("section")!;
+    expect(within(team).getByText("Remake")).toBeVisible();
+    expect(team).not.toHaveClass("match-result--victory");
+    expect(team).not.toHaveClass("match-result--defeat");
+  }
+  expect(data.summary.win).toBe(true);
+  expect(data.roster.map(person => person.win)).toEqual([false, false, true, true]);
+});
+
+it.each([false, null])("preserves recorded outcomes when remake is %s", remake => {
+  const data = { ...developmentFixture, summary: { ...developmentFixture.summary, remake } };
+  const view = render(<MatchDevelopmentView data={data} interval={{ from: 480000, to: 600000 }} invented assets={assets} />);
+  expect(within(view.container.querySelector<HTMLElement>(".development-result")!).getByText("Victory")).toBeVisible();
+  expect(screen.queryByText("Remake")).not.toBeInTheDocument();
+});
+
+it("selects exact recorded intervals locally and restores display state from browser history", () => {
+  const route = "/matches/NA1_7000000001/development?focus=6&compare=1";
+  window.history.replaceState(null, "", `${route}&from=0&to=150000`);
+  render(<MatchDevelopmentView data={partialMetricWindowFixture} interval={{ from: 0, to: 150000 }} invented assets={assets} />);
+  fireEvent.click(screen.getByText("Other recorded intervals"));
+  fireEvent.click(screen.getByRole("link", { name: "0:00–2:00" }));
+  expect(screen.getByLabelText("Selected interval 0:00–2:00")).toBeVisible();
+  expect(screen.getByRole("table", { name: "Before and after differences" })).toHaveTextContent("CS0+1");
+  expect(new URLSearchParams(window.location.search).get("to")).toBe("120000");
+  expect(push).not.toHaveBeenCalled();
+
+  for (const [query, label, participant] of [
+    ["&from=0&to=150000&finalView=runes&runeParticipant=1", "0:00–2:30", "Darius"],
+    ["&from=120000&to=150000&finalView=runes&runeParticipant=7", "2:00–2:30", "Vi"],
+  ]) {
+    window.history.replaceState(null, "", `${route}${query}`);
+    fireEvent(window, new PopStateEvent("popstate"));
+    expect(screen.getByLabelText(`Selected interval ${label}`)).toBeVisible();
+    expect(screen.getByRole("heading", { name: `Name unavailable · ${participant}` })).toBeVisible();
+  }
+  window.history.replaceState(null, "", `${route}&from=1&to=150000&finalView=runes&runeParticipant=99`);
+  fireEvent(window, new PopStateEvent("popstate"));
+  expect(screen.getByLabelText("Selected interval 0:00–2:30")).toBeVisible();
+  expect(screen.getByText(/Requested rune participant unavailable/)).toBeVisible();
+  expect(screen.getByRole("heading", { name: "Name unavailable · Garen" })).toBeVisible();
+});
+
+it("names the timeline region while deferred and after recorded samples load", async () => {
+  let finish!: (response: Response) => void;
+  vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>(resolve => { finish = resolve; })));
+  const data = { ...developmentFixture, summary: { ...developmentFixture.summary, queueId: 450 } };
+  const view = render(<MatchDevelopmentView data={{ ...data, timelineAvailable: false, samples: [], windows: [], suggestedWindows: [], events: [] }} interval={{ from: 0, to: 1800000 }} invented={false} assets={null} />);
+  expect(screen.getByRole("region", { name: "Preparing timeline…" })).toBeVisible();
+  await act(async () => finish(Response.json({ matchId: data.matchId, runId: null, status: "FAILED", retryNotBefore: null })));
+  expect(screen.getByRole("region", { name: "Timeline could not load" })).toBeVisible();
+  view.rerender(<MatchDevelopmentView data={data} interval={{ from: 480000, to: 600000 }} invented={false} assets={null} />);
+  expect(screen.getByRole("region", { name: "Gold difference over time" })).toBeVisible();
 });
 
 it("keeps result styling independent of team side and roster order", () => {
@@ -549,9 +619,9 @@ it("returns to the originating history and preserves it across detail controls",
   const view = render(<MatchDevelopmentView data={developmentFixture} interval={{ from: 480000, to: 600000 }} invented assets={assets} />);
   expect(screen.getByRole("link", { name: "Match history" })).toHaveAttribute("href", `/search?runId=${runId}`);
   fireEvent.click(screen.getByRole("button", { name: /Vi.*Team 200.*participant 7/ }));
-  expect(push.mock.calls.at(-1)?.[0]).toContain(`runeParticipant=7&historyRunId=${runId}`);
+  expect(window.location.search).toContain(`runeParticipant=7&historyRunId=${runId}`);
   fireEvent.click(screen.getByRole("tab", { name: "Runes" }));
-  expect(push.mock.calls.at(-1)?.[0]).toContain(`historyRunId=${runId}`);
+  expect(window.location.search).toContain(`historyRunId=${runId}`);
   fireEvent.change(screen.getByRole("combobox", { name: "Compare with opponent" }), { target: { value: "2" } });
   expect(push.mock.calls.at(-1)?.[0]).toContain(`historyRunId=${runId}`);
   for (const link of view.container.querySelectorAll("a[href*='/development?']")) expect(link.getAttribute("href")).toContain(`historyRunId=${runId}`);

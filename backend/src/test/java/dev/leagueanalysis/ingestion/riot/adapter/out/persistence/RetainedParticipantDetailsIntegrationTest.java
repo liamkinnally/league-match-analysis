@@ -14,6 +14,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,6 +66,49 @@ class RetainedParticipantDetailsIntegrationTest {
         store.readPublicRun(run);
         assertThat(jdbc.queryForList("select xmin::text, to_jsonb(p)::text from league_analysis.riot_participant p order by participant_id"))
                 .isEqualTo(enriched);
+    }
+
+    @Test void currentCachedHistoryAvoidsTransactionsAndDoesNotBlockQueuedWorkBehindAMatchLock() throws Exception {
+        var run = legacyMatch("remake");
+        assertThat(store.enrichParticipantDetails(MATCH)).isTrue();
+        var transactionStarts = new AtomicInteger();
+        var countingTransactions = new org.springframework.transaction.PlatformTransactionManager() {
+            @Override public org.springframework.transaction.TransactionStatus getTransaction(
+                    org.springframework.transaction.TransactionDefinition definition) {
+                transactionStarts.incrementAndGet();
+                return transactions.getTransaction(definition);
+            }
+            @Override public void commit(org.springframework.transaction.TransactionStatus status) {
+                transactions.commit(status);
+            }
+            @Override public void rollback(org.springframework.transaction.TransactionStatus status) {
+                transactions.rollback(status);
+            }
+        };
+        var reader = new JdbcRiotIngestionStore(jdbc, countingTransactions, json);
+        reader.setPrivacyRuntimeGuard(privacyGuard);
+        var worker = Executors.newSingleThreadExecutor();
+        try (var lockHolder = java.util.Objects.requireNonNull(jdbc.getDataSource()).getConnection()) {
+            try {
+                lockHolder.setAutoCommit(false);
+                try (var lock = lockHolder.prepareStatement("select pg_advisory_xact_lock(hashtextextended(?, 0))")) {
+                    lock.setString(1, MATCH);
+                    lock.execute();
+                }
+                var page = worker.submit(() -> reader.readPublicRun(run).orElseThrow());
+                var unrelatedWork = worker.submit(() -> jdbc.queryForObject(
+                        "select count(*) from league_analysis.ingestion_run where id=?", Integer.class, run));
+
+                assertThat(unrelatedWork.get(3, TimeUnit.SECONDS)).isEqualTo(1);
+                assertThat(page.get(1, TimeUnit.SECONDS).matches()).singleElement()
+                        .satisfies(match -> assertThat(match.remake()).isTrue());
+                assertThat(transactionStarts).hasValue(0);
+            } finally {
+                lockHolder.rollback();
+                worker.shutdownNow();
+                worker.awaitTermination(3, TimeUnit.SECONDS);
+            }
+        }
     }
 
     @Test void onlyCurrentMatchCaptureIsUsedEvenWhenRunHasANewerCapture() throws Exception {

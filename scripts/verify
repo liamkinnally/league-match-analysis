@@ -17,6 +17,7 @@ Usage:
   ./scripts/verify focused browser <native Playwright args...>
   ./scripts/verify task backend
   ./scripts/verify task frontend
+  ./scripts/verify task tooling
   ./scripts/verify task cross-layer
   ./scripts/verify ui behavior [native Playwright args...]
   ./scripts/verify ui sample [native Playwright args...]
@@ -27,8 +28,9 @@ Usage:
 Compositions:
   task backend      Maven verify
   task frontend     lint, typecheck, Vitest, production build
+  task tooling      launcher runtime and command contract tests
   task cross-layer  Compose validation, backend task, frontend task, behavior and sample E2E
-  full              Compose validation, both tasks, behavior, sample and visual E2E, hygiene
+  full              tooling, Compose validation, both tasks, behavior, sample and visual E2E, hygiene
 
 Focused arguments are passed unchanged to Maven, Vitest, or Playwright.
 EOF
@@ -81,6 +83,11 @@ task_frontend() {
   run_in "$frontend_dir" npm run typecheck
   run_in "$frontend_dir" npm test
   run_in "$frontend_dir" npm run build
+}
+
+task_tooling() {
+  run_in "$repo_dir" node --test scripts/tests/dev-runtime.test.mjs
+  run_in "$repo_dir" bash scripts/tests/commands.test.sh
 }
 
 ui_behavior() {
@@ -150,6 +157,7 @@ case "$1" in
     case "$2" in
       backend) task_backend ;;
       frontend) task_frontend ;;
+      tooling) task_tooling ;;
       cross-layer)
         compose_validate
         task_backend
@@ -177,6 +185,7 @@ case "$1" in
     ;;
   full)
     [[ $# -eq 1 ]] || { usage >&2; exit 2; }
+    task_tooling
     compose_validate
     task_backend
     task_frontend

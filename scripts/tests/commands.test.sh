@@ -51,6 +51,15 @@ assert_ordered \
   "npm test" \
   "npm run build"
 
+full_output=$(VERIFY_DRY_RUN=1 ./scripts/verify full)
+assert_ordered \
+  "$full_output" \
+  "node --test scripts/tests/dev-runtime.test.mjs" \
+  "bash scripts/tests/commands.test.sh" \
+  "docker compose --env-file" \
+  "./mvnw -B -ntp verify" \
+  "npm run lint"
+
 cross_layer_output=$(VERIFY_DRY_RUN=1 ./scripts/verify task cross-layer)
 assert_ordered \
   "$cross_layer_output" \

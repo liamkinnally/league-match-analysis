@@ -74,7 +74,7 @@ public final class MatchDevelopmentService {
         var focal = focusOverview.orElseThrow();
         var summary = new MatchDevelopment.Summary(
                 overview.queueId(), overview.mapId(), overview.gameMode(), overview.gameVersion(),
-                overview.gameCreationMs(), overview.durationMs(), focus, compare, focal.win(),
+                overview.gameCreationMs(), overview.durationMs(), focus, compare, focal.win(), snapshot.header().remake(),
                 focal.kills(), focal.deaths(), focal.assists(), focal.totalCs(), focal.goldEarned());
         var roster = overview.participants().stream().map(p -> participant(p, overview.gameVersion())).toList();
         var timelineAvailable = snapshot.sourceRevision().timelineCaptureId() != null;

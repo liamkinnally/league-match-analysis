@@ -152,6 +152,7 @@ At a coherent task boundary, run the applicable composition or browser scenario:
 ```bash
 ./scripts/verify task backend
 ./scripts/verify task frontend
+./scripts/verify task tooling
 ./scripts/verify ui behavior
 ./scripts/verify ui sample
 ./scripts/verify task cross-layer
@@ -176,7 +177,7 @@ Keep the [deployment guide](deployment.md) release gates. For a meaningful relea
 ./scripts/package-smoke
 ```
 
-The full composition includes backend/frontend tasks, browser behavior, sample and visual checks, and repository hygiene. CI also runs the packaged-container smoke test. For a changed UI release, inspect the rendered result and complete the pinned visual check with `./scripts/verify ui visual`; reuse its result when the same check is already covered by `full` with unchanged inputs.
+The full composition includes launcher runtime and command contract tests, backend/frontend tasks, browser behavior, sample and visual checks, and repository hygiene. The launcher checks require Node.js 24, installed frontend dependencies and isolated loopback access; they do not start Docker or the application. CI also runs the packaged-container smoke test. For a changed UI release, inspect the rendered result and complete the pinned visual check with `./scripts/verify ui visual`; reuse its result when the same check is already covered by `full` with unchanged inputs.
 
 Each browser suite checks the launched Chrome version before running tests. Host browser tests enable the Chromium sandbox. On persistent Ubuntu systems that restrict user namespaces, follow [Chromium’s sandbox setup guidance](https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md). An executable granted extra privileges must be protected from replacement by unprivileged users. The checkout-path exception in `scripts/ci-browser` is restricted to disposable GitHub-hosted runners.
 

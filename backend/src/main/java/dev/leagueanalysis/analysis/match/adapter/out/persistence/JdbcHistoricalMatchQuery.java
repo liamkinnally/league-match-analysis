@@ -81,9 +81,15 @@ public class JdbcHistoricalMatchQuery implements HistoricalMatchQuery {
                 select match_id, queue_id, map_id, game_mode, game_type, game_version,
                        data_version, game_creation_ms, game_start_ms, game_end_ms,
                        game_duration_seconds, detail_source_capture_id,
-                       timeline_source_capture_id, materialization_version
-                from league_analysis.riot_match
-                where match_id = ?
+                       timeline_source_capture_id, materialization_version,
+                       (select case when count(*) = 10 and count(p.game_ended_in_early_surrender) = 10
+                           then case when bool_and(p.game_ended_in_early_surrender) then true
+                               when not bool_or(p.game_ended_in_early_surrender) then false end
+                           end
+                        from league_analysis.riot_participant p where p.match_id = m.match_id
+                           and not league_analysis.privacy_blocked('puuid', p.puuid)) remake
+                from league_analysis.riot_match m
+                where m.match_id = ?
                 """, (resultSet, rowNumber) -> new HeaderAndRevision(
                         new MatchHeader(
                                 resultSet.getString("match_id"),
@@ -96,7 +102,8 @@ public class JdbcHistoricalMatchQuery implements HistoricalMatchQuery {
                                 resultSet.getLong("game_creation_ms"),
                                 resultSet.getObject("game_start_ms", Long.class),
                                 resultSet.getObject("game_end_ms", Long.class),
-                                Math.multiplyExact(resultSet.getLong("game_duration_seconds"), 1_000)),
+                                Math.multiplyExact(resultSet.getLong("game_duration_seconds"), 1_000),
+                                resultSet.getObject("remake", Boolean.class)),
                         new MatchSourceRevision(
                                 resultSet.getString("match_id"),
                                 resultSet.getInt("map_id"),
