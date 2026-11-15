@@ -17,7 +17,7 @@ Reference details and review steps for LoL Match Analysis. The application UI di
 
 Product description:
 
-> LoL Match Analysis lets players inspect how a completed League of Legends match developed. A region-selected Riot ID search retrieves NA, EUW, EUNE and KR Ranked Solo/Duo, Flex, Draft, Swiftplay and ARAM history across supported queues by default, with an optional Queue Type filter and pages of up to twenty matches. Older history is loaded explicitly, with an account refresh cooldown and timelines fetched when a match is opened. The match page shows final team results, a ten-player scoreboard, builds and current queue-specific ranks. Players can compare recorded gold, CS and XP differences over time and inspect timestamped events within a selected interval. Missing data remains explicit, current ranks are not presented as historical ranks or MMR, and the app makes no causal coaching or replay claims. A clearly labeled synthetic sample is also available.
+> LoL Match Analysis lets players inspect how a completed League of Legends match developed. A region-selected Riot ID search retrieves NA, EUW, EUNE and KR Ranked Solo/Duo, Flex, Draft, Swiftplay and ARAM history across supported queues by default, with an optional Queue Type filter and pages of up to twenty matches. Older history is loaded explicitly, with an account refresh cooldown and timelines fetched when a match is opened. The match page shows final team results, a ten-player scoreboard, builds and current queue-specific ranks. Players can compare recorded gold, CS and XP differences over time and inspect timestamped events within a selected interval. Missing data remains explicit, current ranks are not presented as historical ranks or MMR, and the app makes no causal coaching or replay claims. A cached NA Challenger leaderboard displays up to 300 players in pages of 100, with estimated Challenger and Grandmaster promotion cutoffs; viewing it does not initiate Riot requests. A clearly labeled synthetic sample is also available.
 
 ## Data and API use
 
@@ -28,9 +28,12 @@ Product description:
 | Match-V5 `/lol/match/v5/matches/{matchId}` | Final results and participant data |
 | Match-V5 `/lol/match/v5/matches/{matchId}/timeline` | Recorded events and sampled timeline values |
 | League-V4 `/lol/league/v4/entries/by-puuid/{puuid}` | Current queue-specific ranks on the selected platform |
+| League-V4 `/lol/league/v4/{challenger,grandmaster,master}leagues/by-queue/RANKED_SOLO_5x5` | Paced NA leaderboard snapshots and estimated promotion cutoffs |
+| Account-V1 `/riot/account/v1/accounts/by-puuid/{puuid}` | Cached leaderboard Riot ID enrichment |
+| Summoner-V4 `/lol/summoner/v4/summoners/by-puuid/{puuid}` | Cached leaderboard profile-icon enrichment |
 | Riot Data Dragon and game-asset CDNs | Champion, item, spell, objective and rank images |
 
-Riot API keys are backend runtime secrets. Public projections omit PUUIDs and raw captures. Matches/timelines persist in PostgreSQL; completed searches are cached until an explicit update, with a 15-minute account update cooldown and current ranks have a 5-minute process cache. Provider cooldown and finite queues constrain ingestion. The application has no Riot account sign-in, user passwords, payments or advertising. The policy pages disclose manual data retention and hosting providers.
+Riot API keys are backend runtime secrets. Public projections omit PUUIDs and raw captures. Matches/timelines persist in PostgreSQL; completed searches are cached until an explicit update, with a 15-minute account update cooldown and current ranks have a 5-minute process cache. The NA leaderboard is refreshed in paced background work: tier standings every fifteen minutes and Challenger identity/icon enrichment on a twenty-four-hour cadence, reusing fresh stored observations where available. Leaderboard reads use stored data only. Provider cooldown and finite queues constrain ingestion. The application has no Riot account sign-in, user passwords, payments or advertising. The policy pages disclose manual data retention and hosting providers.
 
 [Player-data removal](player-data-removal.md) requires an operator-verified request and removes whole affected matches for all participants. Database backups can retain earlier copies until a successful scheduled run removes archives older than seven days. Restoring them requires the current external removal ledger.
 
