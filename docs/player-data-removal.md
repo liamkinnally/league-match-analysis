@@ -4,7 +4,7 @@ LoL Match Analysis includes a private operator workflow for removing stored play
 
 ## What the workflow does
 
-A removal starts from a verified stored participant identity. Before any write, the command produces a dry-run report showing the matches and record counts that would be affected.
+A removal starts from a verified stored player identity, including identities known only through the NA Challenger leaderboard. Before any write, the command produces a dry-run report showing the matches and record counts that would be affected.
 
 When executed, the workflow removes complete affected matches rather than deleting one participant from an otherwise intact match. This keeps scoreboards, timelines, source captures and normalized records internally consistent.
 
@@ -13,7 +13,7 @@ Two modes are supported:
 - `exclude` removes the current data and records the verified player so future imports are skipped.
 - `erase-only` removes the current data without blocking a later import.
 
-The workflow also handles related lookup records and source captures. An external ledger stores the minimum information needed to preserve removal decisions across database restores.
+The workflow also handles related lookup records, source captures, cached profile and rank observations, and leaderboard membership/entry records. An external ledger stores the minimum information needed to preserve removal decisions across database restores.
 
 ## Safety checks
 

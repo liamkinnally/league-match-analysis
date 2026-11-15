@@ -53,6 +53,16 @@ Timeline samples are discrete observations. Connecting them in a chart does not 
 
 Current ranks are fetched separately from match ingestion and describe the player's current rank in the selected queue. They are not historical match ranks or MMR.
 
+## Read-path and frontend efficiency
+
+Cached history reads identify missing participant detail extensions in their initial SQL query. Fully enriched matches stay on a read-only path without per-match enrichment transactions or advisory locks; stale matches use the existing guarded, locked backfill from retained detail captures. This preserves the privacy and match-materialization checks while avoiding redundant work during ordinary polls.
+
+Riot HTTP responses have bounded body sizes and whole-response completion deadlines; cancellation releases the shared lookup worker after stalled or oversized responses. Browser-side lookup operations are aborted on navigation, and startup cleanup clears abandoned profile work while retaining ordering fences against stale updates.
+
+On player pages, freshness/countdown ticks update their own small components instead of rebuilding unchanged match history, performance summaries and charts. Game-asset catalogs are reused within the active hook instance and fetched incrementally for missing patch versions, in batches of at most five with at most two requests in flight. Display-only match controls update shareable URL state locally rather than causing a server navigation; comparisons that require different data still fetch it.
+
+These are code-path and regression-test guarantees, not measured end-to-end production speedup claims. The [public lookup guide](public-match-lookup.md) documents provider budgets and the single-instance limitation.
+
 ## Verification
 
 The repository includes unit and integration tests for ingestion, persistence, calculations and privacy behavior; frontend tests for response handling and UI state; Playwright browser tests; visual regression tests; and a packaged-container smoke test against a clean PostgreSQL database.
