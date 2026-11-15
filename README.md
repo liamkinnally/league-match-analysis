@@ -11,6 +11,7 @@ Live lookup is subject to Riot API availability and request limits. Choose **Exp
 - Look up players in North America, Europe West, Europe Nordic & East, and Korea across Summoner’s Rift and ARAM queues, filter by Queue Type, and load older history in pages of up to twenty matches.
 - Open shareable player profiles and find previously cached players with region-specific search suggestions.
 - Review team results, objectives, builds, KDA, CS, gold and current queue-specific ranks when available.
+- Browse a cached NA Challenger leaderboard with up to 300 players, 100-player pages and estimated Challenger/Grandmaster promotion cutoffs. Viewing the leaderboard does not initiate Riot API requests.
 - Compare gold, CS or XP differences over time with player, opponent and interval selections preserved in the URL.
 - Inspect timestamped kills, objectives, item changes and ward events alongside sampled values.
 
@@ -43,6 +44,15 @@ Browser -> Next.js -> Spring Boot -> PostgreSQL
 | Vercel and Railway | Frontend hosting, backend hosting, PostgreSQL and scheduled backups |
 
 The browser talks to Next.js, and server-side requests authenticate to the Spring backend with a separate service token. Riot keys and database credentials stay on the server. Provider responses are stored separately from normalized match records so calculations can be traced back to their source. See [architecture](docs/architecture.md) for more detail.
+
+## Engineering highlights
+
+- **Efficient cached history:** fully enriched match pages avoid unnecessary per-match enrichment transactions and locks. Older records can still be enriched from retained detail captures when needed.
+- **Bounded provider work:** Riot response bodies have size and completion deadlines so stalled responses cannot indefinitely occupy the shared lookup worker. Active lookups share work, and provider budgets and cooldowns constrain requests.
+- **Responsive exploration:** countdowns update without rebuilding unchanged match history and charts; display-only timeline controls update shareable URL state locally; game artwork catalogs load incrementally by patch.
+- **Recovery and verification:** lost privacy database sessions block requests and trigger supervised backend restart, with ledger checks before serving. CI covers backend/frontend tests, browser behavior, visual regression and packaged application smoke checks.
+
+See [architecture](docs/architecture.md), [public match lookup](docs/public-match-lookup.md) and [deployment](docs/deployment.md) for design boundaries and operational details. These are implementation characteristics, not claims of a measured production-wide speedup.
 
 ## Run locally
 
